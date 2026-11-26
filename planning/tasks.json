@@ -875,10 +875,10 @@
       "role": "UI Developer",
       "risk": "medium",
       "acceptance": "Instalación limpia, uno o más proveedores, funding, estrategia, modo, Git y resumen",
-      "status": "todo",
+      "status": "in_progress",
       "evidence": [],
-      "owner": null,
-      "branch": null,
+      "owner": "worker:claude-ui-developer (supervised by orchestrator)",
+      "branch": "feat/s02-t04-onboarding",
       "pr": null,
       "blockers": []
     },
