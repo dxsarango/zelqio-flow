@@ -7,7 +7,15 @@ Foundation corresponde a S01 y G1. Advanced Orchestration corresponde a S02–S0
 
 ## Punto de recuperación
 
-G0 aprobado condicionalmente (2026-11-26). Siguiente paso: S01-T01 (S01-T02 a S01-T05 dependen de ella); no hay trabajo de S01 iniciado. Un solo orquestador raíz escribe tasks.json y PLAN.md. Las ramas `docs/g0-approval-evidence`, `docs/g0-lifecycle-evidence`, `docs/s00-t03-usage-poc`, `docs/s00-t05-subagents-worktrees-poc` y `docs/foundation-validation-backlog` conservan trabajo y worktrees: no archivarlos ni eliminarlos sin la limpieza segura. Pendiente de integración: la rama `docs/s00-feasibility-recovery` (evidencia S00, G0 condicionado y políticas de desarrollo) mediante PR con el check `planning-integrity`. Un sucesor recupera el contexto leyendo AGENTS.md, esta sección, tasks.json, `git worktree list` y la lista de agentes de Paseo, y confirma que no haya otro coordinador activo antes de escribir.
+Verificado el 2026-11-26. G0 aprobado condicionalmente y G1 cerrado; S01 completa (T01–T07 done). S02: T01–T03 done; T04 en curso; T05 (G2) y S03 en adelante sin iniciar. No hay PRs abiertos. Los checks obligatorios de `main` son `planning-integrity` y `check (ubuntu-latest|windows-latest|macos-latest)`.
+
+**S02-T04 (onboarding y ajustes).** Delegada a un UI Developer en su worktree `s02-t04` (rama `feat/s02-t04-onboarding`, sobre `main` en e648553, sin push ni PR). El worker informa cuando termina; si no hay informe, recuperar desde `git log`/`git diff` de ese worktree y de `get_agent_activity`. El orquestador revisa el diff, ejecuta `npm run check`, verifica el flujo en un daemon aislado en EN y ES con un proveedor y con varios, integra desde una rama **nueva** sobre `origin/main` (cherry-pick, sin force-push) y registra evidencia en `tasks.json`. Después prepara la validación del propietario de G2 (enlace, SHA exacto y qué comprobar; ver flujo de validación) y continúa con las tareas independientes.
+
+**Reglas que se aplicaron y siguen vigentes.** No apilar PRs: tras cada squash crear la rama desde `origin/main`. Integrar automáticamente solo lo que cumple la autorización permanente (checks verdes sobre el SHA exacto, `--squash --match-head-commit`). Cada tarea de riesgo alto lleva revisión independiente de otro proveedor cuando está disponible. Worktrees conservados, no archivar ni eliminar: `g0-approval`, `g0-lifecycle`, `s00-t03`, `s00-t05`, `foundation-validation-backlog` y `s02-t04`.
+
+**Pendiente del propietario.** Validar G2 cuando se le entregue. Opcional: instalar la regla de permisos de `gh pr merge` descrita en el flujo. Cualquier ampliación de alcance, protección de repositorio o autorización nueva sigue siendo suya.
+
+**Relevo.** Un solo coordinador con permiso de escribir `tasks.json` y `PLAN.md`: el vigente se identifica por el agente raíz activo en Paseo y el registro de Engram (`coordination/lease`). Un sucesor sin historial lee `AGENTS.md`, esta sección, `tasks.json`, `git worktree list`, `gh pr list`, la lista de agentes de Paseo y `paseo usage ls`, confirma que no hay otro coordinador activo y entonces escribe. Procedimiento completo en [Relevo de coordinación](DEVELOPMENT-WORKFLOW.md#relevo-de-coordinación).
 
 ## S00 — Definition & Feasibility
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
