@@ -2241,11 +2241,30 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Evalúa un snapshot de retirada y bloquea si faltan pruebas de propiedad, limpieza o alcance",
-      "status": "in_progress",
-      "evidence": [],
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm test -- test/worktree-retirement.test.ts",
+          "result": "PASS",
+          "sha": "f5896c4595f35d0dd79c48050c727f170132b072",
+          "date": "2026-11-26",
+          "notes": "3 pruebas sobre main tras la integracion",
+          "limitations": "Evaluacion pura; sin retirada real de worktrees"
+        },
+        {
+          "kind": "ci",
+          "command": "checks ci y planning del PR 36 (head 8dcdc2372051c3b7a41a96befe6265a63f886f32) y de main",
+          "result": "PASS",
+          "sha": "f5896c4595f35d0dd79c48050c727f170132b072",
+          "date": "2026-11-26",
+          "notes": "Integrado con squash y match-head-commit",
+          "limitations": ""
+        }
+      ],
       "owner": "orchestrator",
       "branch": "feat/worktree-cleanup-policy",
-      "pr": null,
+      "pr": 36,
       "blockers": []
     },
     {
