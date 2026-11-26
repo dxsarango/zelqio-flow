@@ -1098,8 +1098,13 @@
       "branch": "feat/s03-t04-resources-dashboard",
       "pr": 27,
       "blockers": [
-        "Owner review of the resources dashboard on the exact candidate SHA."
-      ]
+        "Technical verification and independent review of the updated candidate."
+      ],
+      "deferredReview": {
+        "status": "pending",
+        "scope": "Owner review of the resources dashboard, including hierarchy, provider disclosure, quota presentation and Light/Dark themes.",
+        "humanApproval": false
+      }
     },
     {
       "id": "S03-T05",
