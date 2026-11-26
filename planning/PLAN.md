@@ -1,5 +1,5 @@
 # Plan detallado — Zelqio Flow
-64 tareas en 11 fases. El estado operativo vive en tasks.json (esta tabla no lo duplica); dependencias verificadas por `tools/check-planning.mjs`. Roles son capacidades sugeridas, no asignaciones rígidas. Las fases S01–S10 dependen del gate previo; se puede preparar documentación independiente sin iniciar implementación bloqueada. Los criterios se amplían en PRD, POC y políticas. No estimaciones temporales sin calibración de S00.
+65 tareas en 11 fases. El estado operativo vive en tasks.json (esta tabla no lo duplica); dependencias verificadas por `tools/check-planning.mjs`. Roles son capacidades sugeridas, no asignaciones rígidas. Las fases S01–S10 dependen del gate previo; se puede preparar documentación independiente sin iniciar implementación bloqueada. Los criterios se amplían en PRD, POC y políticas. No estimaciones temporales sin calibración de S00.
 ## Reglas de ejecución
 Ver DEVELOPMENT-WORKFLOW.md y TEST-STRATEGY.md. Los gates requieren evidencia y aprobación según riesgo; G0, G9, G10 explícita del propietario. Un lote contiene solo tareas listas e independientes, con integración serial. No usar el plugin en construcción como dependencia del desarrollo.
 
@@ -98,7 +98,7 @@ La revisión de recursos de S03-T04 recoge la organización de proveedores y el 
 | S05-T01 | DAG y runtime de tareas | S04-T04 | Senior Developer | high | Dependencias acíclicas, estados, leases, idempotencia y límites de concurrencia |
 | S05-T02 | Herramientas de orquestador | S05-T01 | Developer | high | Delegar/consultar/cancelar/recolectar con caller identity y deny por rol |
 | S05-T03 | Workers nativos y mensajes | S05-T02 | Developer | high | Crear con rol/proveedor, parent-child, resultados y permisos visibles en Paseo |
-| S05-T04 | Recuperación y handoff | S05-T03 | Senior Developer | high | Un sucesor autorizado conserva ejecución, intentos y sesiones aunque cambie el árbol nativo; la época anterior no puede repetir efectos |
+| S05-T04 | Recuperación y handoff | S05-T03 | Senior Developer | high | Progreso real y lease con caducidad y exclusión por época. Supervisor local sin inferencia, reintentos acotados y reanudación tras cuota verificada. Conservar intentos y sesiones |
 | S05-T05 | Actividad local y estado | S05-T03 | UI Developer | medium | Mostrar decisiones, tareas, bloqueos; sin copiar conversaciones ni dashboard redundante |
 | S05-T06 | Gate G5 | S05-T04, S05-T05 | Reviewer | high | Delegación bajo demanda, cancelación, recursión negativa y reconciliación demostradas |
 
@@ -130,15 +130,16 @@ La revisión de recursos de S03-T04 recoge la organización de proveedores y el 
 | S08-T02 | Revisión independiente | S08-T01 | Senior Developer | high | Selección cross-provider cuando viable; sin falsa independencia; bloqueos de riesgo |
 | S08-T03 | Servicios y preview | S07-T07 | Developer | high | Servicio nativo, puertos/health/version, host remoto y parada verificados |
 | S08-T04 | Entrega y UX final | S08-T01, S08-T03 | UI Developer | medium | Resultado funcional o bloqueo honesto, preview/PR/diff según modo |
-| S08-T05 | Gate G8 | S08-T02, S08-T04 | QA | high | Escenarios end-to-end docs, UI iterativa, backend, landing local y CI fallido |
+| S08-T06 | Power Management | S08-T03 | Senior Developer | high | Prevención temporal de suspensión y liberación. Suspensión opcional cancelable solo con autorización y ausencia verificable de trabajo protegido. Windows primero |
+| S08-T05 | Gate G8 | S08-T02, S08-T04, S08-T06 | QA | high | Escenarios end-to-end de entrega y ciclo de vida de Power Management. Efectos de energía sujetos a evidencia y autorización |
 
 ## S09 — Hardening
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
 |---|---|---|---|---|---|
 | S09-T01 | Auditoría de seguridad | S08-T05 | Reviewer | high | Amenazas, symlink/junctions, inyección, permisos, rutas, secretos y recursión; hallazgos resueltos |
-| S09-T02 | Fault injection y recuperación | S08-T05 | QA | high | Crash/restart/timeouts/external edits; no duplicación ni pérdida; journal reconciliado |
+| S09-T02 | Fault injection y recuperación | S08-T05 | QA | high | Relevos fallidos, reset, suspensión, reinicio y carreras; no duplicación ni pérdida; journal reconciliado |
 | S09-T03 | Privacidad y retención | S08-T05 | Developer | high | Redacción, expiración segura, export manual y zero telemetry verificado |
-| S09-T04 | Matriz real multiplataforma | S09-T01, S09-T02, S09-T03 | QA | high | Versiones/OS/proveedores con evidencia; desconocidos explícitos y mínimo soportado |
+| S09-T04 | Matriz real multiplataforma | S09-T01, S09-T02, S09-T03 | QA | high | Versiones, proveedores y Power Management en Windows, macOS y Linux. Capacidades sin verificar deshabilitadas |
 | S09-T05 | Actualización y desinstalación | S09-T02, S09-T03 | Developer | high | Migraciones rollback y recursos ajenos intactos; clean install sin terceros |
 | S09-T06 | Gate G9 | S09-T04, S09-T05, S00-T06, S00-T07, S00-T08 | Reviewer | high | Revisión independiente, cierre de validaciones del MVP completo, compatibilidad y aceptación del propietario. |
 

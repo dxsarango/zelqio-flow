@@ -12,3 +12,22 @@ Definition of Done: alcance y criterios satisfechos, pruebas reales registradas,
 - Comprobar retirada con archivos modificados, sin seguimiento o ignorados, operaciones Git activas, validaciones pendientes y referencias concurrentes. Una capacidad de retirada forzada debe bloquear la automatización. Tras una retirada autorizada, verificar lista Git, ruta, refs y evidencia.
 - Usar un repositorio que carezca de reglas exigidas y otro con reglas efectivas cuando estén autorizados. Comprobar denegación ante el SHA incorrecto, checks faltantes y permisos insuficientes. Verificar la identidad del check y su SHA antes de merge.
 - Capturar un control del daemon sin plugin y otro con plugin, con proceso y destinos atribuidos. Probar exportación con datos persistidos y entradas sintéticas que contienen valores que se deben excluir.
+
+## Recuperación desatendida
+
+| Caso | Evidencia esperada | Fase |
+|---|---|---|
+| Sesión registrada sin turno, turno activo con progreso, interrupción y actividad obsoleta | Clasificaciones distintas basadas en identidad del turno, última señal y trabajo pendiente. Un estado `running` por sí solo no acredita progreso. | S05-T04 |
+| Coordinador detenido con workers activos | Caducar el lease vencido, conservar workers y worktrees, adquirir una sola nueva época y rechazar efectos tardíos de la anterior. Si la autoridad es incierta, preservar y conciliar. | S05-T04, G5 |
+| Primer relevo sin acceso a cuota, probe fallido, reset verificado después | Guardar el error y el próximo intento. Aplicar backoff acotado sin colas duplicadas. Reanudar una vez cuando la señal sea fresca y pueda adquirirse la propiedad. Un schedule completado solo acredita la ejecución del comando. | S03-T03, S05-T04, S09-T02 |
+| Relevo rechaza la ejecución por un turno todavía activo; todos los modelos agotados y luego uno se recupera | El supervisor local puede leer la señal de recuperación y arbitrar sin generar inferencia. Ningún modelo es prerrequisito para recuperar la coordinación. Terminar con bloqueo recuperable si se agota el presupuesto de intentos. | S05-T04, S09-T02 |
+| Caída entre adquisición, primer efecto o guardado; reloj alterado; wake y entrega duplicada | Reconciliar el intento y su evidencia, mantener la exclusión mutua, rechazar una época obsoleta y evitar repetir el efecto ante reinicio o cambio de reloj. | S09-T02 |
+
+## Power Management
+
+| Caso | Evidencia esperada | Fase |
+|---|---|---|
+| Prevención de suspensión activada durante trabajo elegible | Solicitud temporal y acotada al proceso. La pantalla se apaga normalmente. Se conserva la configuración de energía y operaciones de usuario existentes. | S08-T06, G8 |
+| Fin, cancelación, fallo irrecuperable, caída o sustitución del coordinador | Liberar la prevención de suspensión. Reconciliar el estado al reiniciar. Una raíz sustituida no prolonga el bloqueo. | S08-T06, S09-T02 |
+| Suspensión al terminar, opt-in desactivado o cancelado, otros proyectos, agentes o procesos protegidos | La suspensión se ejecuta solo con autorización explícita vigente, opción de cancelar y ausencia verificable de trabajo protegido. Si falla una comprobación o falta soporte para enumerarlo, omitir el efecto. Probar primero con adaptadores simulados. | S08-T06, G8 |
+| Windows, macOS y Linux, capacidad parcial y desinstalación | Validar prevención de suspensión, apagado de pantalla y liberación por plataforma. Mantener deshabilitadas las operaciones no verificadas y comprobar que al retirar el plugin no quedan cambios de energía. | S09-T04, S09-T05 |

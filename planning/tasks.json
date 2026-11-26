@@ -1270,7 +1270,7 @@
       ],
       "role": "Senior Developer",
       "risk": "high",
-      "acceptance": "Un sucesor autorizado conserva ejecución, intentos y sesiones aunque cambie el árbol nativo; la época anterior no puede repetir efectos",
+      "acceptance": "Un supervisor local sin inferencia distingue turno activo con progreso, inactividad, interrupción y estado obsoleto. Caduca y recupera el lease de forma atómica, conserva intentos y sesiones y rechaza efectos de una época anterior. Verifica cuotas con un canal independiente del modelo, reintenta con presupuesto y backoff, y reanuda una vez tras un reset verificado. Si falla un probe o se agotan los intentos, persiste un próximo intento o un bloqueo recuperable.",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -1608,16 +1608,34 @@
       "blockers": []
     },
     {
+      "id": "S08-T06",
+      "phase": "S08",
+      "title": "Power Management",
+      "dependencies": [
+        "S08-T03"
+      ],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "Windows primero. Evitar temporalmente la suspensión solo durante trabajo elegible, permitir que la pantalla se apague y conservar la configuración de energía. Liberar al finalizar, cancelar o quedar sin recuperación automática. La suspensión al concluir es opt-in explícito y cancelable, y se omite si hay otros proyectos, agentes, procesos de usuario protegidos o si no se puede verificar su ausencia. Validar con adaptadores simulados antes de cualquier efecto real.",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
       "id": "S08-T05",
       "phase": "S08",
       "title": "Gate G8",
       "dependencies": [
         "S08-T02",
-        "S08-T04"
+        "S08-T04",
+        "S08-T06"
       ],
       "role": "QA",
       "risk": "high",
-      "acceptance": "Escenarios end-to-end docs, UI iterativa, backend, landing local y CI fallido",
+      "acceptance": "Escenarios end-to-end de entrega, CI fallido y ciclo de vida de Power Management. Validar la liberación y los bloqueos de suspensión antes de habilitar efectos.",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -1651,7 +1669,7 @@
       ],
       "role": "QA",
       "risk": "high",
-      "acceptance": "Crash/restart/timeouts/external edits; no duplicación ni pérdida; journal reconciliado",
+      "acceptance": "Crash, reinicio, timeouts, ediciones externas, relevo fallido, reset y suspensión. Sin duplicación o pérdida, journal reconciliado, lease obsoleto rechazado y bloqueo de energía liberado.",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -1687,7 +1705,7 @@
       ],
       "role": "QA",
       "risk": "high",
-      "acceptance": "Versiones/OS/proveedores con evidencia; desconocidos explícitos y mínimo soportado",
+      "acceptance": "Versiones, OS y proveedores con evidencia. Power Management progresivo en Windows, macOS y Linux, con capacidades ausentes o sin evidencia deshabilitadas.",
       "status": "todo",
       "evidence": [],
       "owner": null,
