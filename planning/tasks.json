@@ -1218,7 +1218,7 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "RPC de solo lectura sobre pares exactos, con financiación declarada y cuota sin vincular; excluye consumo",
-      "status": "in_progress",
+      "status": "done",
       "evidence": [
         {
           "kind": "local",
@@ -1240,17 +1240,35 @@
         },
         {
           "kind": "ci",
-          "command": "Required checks on published PR head",
-          "result": "NOT_RUN",
-          "sha": "9abda0717dc4c84d78a215c749403e0369a1ae47",
+          "command": "gh api repos/dxsarango/zelqio-flow/commits/a656229b2787370f8af30002c87b170ec6a9898d/check-runs",
+          "result": "PASS",
+          "sha": "a656229b2787370f8af30002c87b170ec6a9898d",
           "date": "2026-11-26",
-          "notes": "The candidate is preserved on a local branch.",
-          "limitations": "Publication and protected integration are pending."
+          "notes": "PR 33: planning-integrity and the three platform checks passed on the exact published SHA.",
+          "limitations": "CI covers the exact reviewed candidate."
+        },
+        {
+          "kind": "review",
+          "command": "Independent architecture review on a656229",
+          "result": "PASS",
+          "sha": "a656229b2787370f8af30002c87b170ec6a9898d",
+          "date": "2026-11-26",
+          "notes": "Verified advisory behavior, no effects, cost boundaries and unchanged MVP and G4 requirements. Typecheck, lint and 137 tests passed on exact candidate.",
+          "limitations": "Independent review did not rerun the isolated daemon or CI."
+        },
+        {
+          "kind": "integration",
+          "command": "gh pr merge 33 --squash --match-head-commit a656229b2787370f8af30002c87b170ec6a9898d",
+          "result": "PASS",
+          "sha": "af14550ff1a5fd6ce4e4ccc7565c36600897dbf9",
+          "date": "2026-11-26",
+          "notes": "Owner authorized the merge. GitHub reports merged, main matches the squash commit, and its tree matches the verified candidate.",
+          "limitations": "S04-T05 only. Automatic selection and G4 remain gated."
         }
       ],
       "owner": "orchestrator",
       "branch": "feat/s04-routing-recommendations",
-      "pr": null,
+      "pr": 33,
       "blockers": []
     },
     {
@@ -1261,10 +1279,66 @@
       "role": "UI Developer",
       "risk": "high",
       "acceptance": "Aplicación visible al borrador nativo y envío separado; preserva modelo y modo en New Agent y New Workspace",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "blocked",
+      "evidence": [
+        {
+          "kind": "poc",
+          "command": "Paseo 0.17.4 isolated daemon, synthetic provider, and poc/s04-t06/supervised",
+          "result": "PASS",
+          "sha": "2d367197cc5e3763c7b3316041d21077fc6460d3",
+          "date": "2026-11-26",
+          "notes": "New Workspace and New Agent displayed the supervised choice and preserved the latest manual model and mode in the submitted request. Three requests stopped at the guard and zero sessions existed.",
+          "limitations": "Windows web client, synthetic catalog and existing guard. No production control or owner validation."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s04-supervised-selection",
+      "pr": null,
+      "blockers": [
+        "Production application requires an effective, verified funding route and current policy for the exact model.",
+        "Verify that the supported native draft binding preserves explicit choices and effective options while authorization is rechecked."
+      ]
+    },
+    {
+      "id": "S04-T07",
+      "phase": "S04",
+      "title": "Contrato de financiación por ruta",
+      "dependencies": ["S01-T04", "S03-T03"],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "Separa declaración, política y observación; verifica coincidencia y vigencia con adaptadores simulados sin habilitar efectos",
+      "status": "in_progress",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check and targeted independent review",
+          "result": "PASS",
+          "sha": "f2798b5918485e540f5fdab61221769794a62010",
+          "date": "2026-11-26",
+          "notes": "Fixture verifier limits wait time, signals cancellation, returns an opaque evidence reference and ignores late observations. Independent review found no blockers in the deadline and evidence contract.",
+          "limitations": "Real adapter binding, data handling, and compliance with cancellation remain gated."
+        },
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "69f102608ea29c997c9b1084315bc2889b29730f",
+          "date": "2026-11-26",
+          "notes": "152 tests and static checks in the combined local candidate. Funding verifier distinguishes declaration, standing grant and observation. It rejects stale or malformed evidence, attested-only funding, changed scope, and unproven additional charges.",
+          "limitations": "Fixture adapters only. No production registration or CI."
+        },
+        {
+          "kind": "contract",
+          "command": "Claude auth status, Codex App Server account/read and model/list, OpenCode models, and Paseo provider/usage reads",
+          "result": "BLOCKED",
+          "sha": "2d367197cc5e3763c7b3316041d21077fc6460d3",
+          "date": "2026-11-26",
+          "notes": "Real providers supplied partial account and exact model data without inference. No verified binding to the future session endpoint and no additional cost guarantee across the required context.",
+          "limitations": "Read-only evidence only. No real route qualifies for automated use."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s04-supervised-selection",
       "pr": null,
       "blockers": []
     },
@@ -1274,7 +1348,8 @@
       "title": "Hook de creación y configuración",
       "dependencies": [
         "S04-T05",
-        "S04-T06"
+        "S04-T06",
+        "S04-T07"
       ],
       "role": "Developer",
       "risk": "high",
@@ -1353,11 +1428,46 @@
       "blockers": []
     },
     {
+      "id": "S05-T07",
+      "phase": "S05",
+      "title": "Compilación del grafo de dependencias",
+      "dependencies": ["S01-T04"],
+      "role": "Developer",
+      "risk": "low",
+      "acceptance": "Grafo puro y orden determinista; detecta ciclos, IDs repetidos y dependencias ausentes y propone tareas dentro de los slots",
+      "status": "in_progress",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "f2798b5918485e540f5fdab61221769794a62010",
+          "date": "2026-11-26",
+          "notes": "Task planning respects completed dependencies, remaining slots and complete task-state snapshots.",
+          "limitations": "Pure proposal. Reservation and dispatch remain in S05-T01 and its integration path."
+        },
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "69f102608ea29c997c9b1084315bc2889b29730f",
+          "date": "2026-11-26",
+          "notes": "The separate graph commit cb1fc50 passed in the combined candidate, including permuted input, cycles, missing dependencies and a chain of 10,000 tasks.",
+          "limitations": "Pure graph only. Runtime, leases and CI remain separate."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s04-supervised-selection",
+      "pr": null,
+      "blockers": []
+    },
+    {
       "id": "S05-T01",
       "phase": "S05",
       "title": "DAG y runtime de tareas",
       "dependencies": [
-        "S04-T04"
+        "S04-T04",
+        "S05-T07"
       ],
       "role": "Senior Developer",
       "risk": "high",
@@ -1404,11 +1514,46 @@
       "blockers": []
     },
     {
+      "id": "S05-T08",
+      "phase": "S05",
+      "title": "Watchdog y recuperación con fixtures",
+      "dependencies": ["S01-T03", "S03-T03"],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "Clasifica sesión y progreso, conserva época, checkpoint y backoff en un diario local; verifica reanudación sin efectos",
+      "status": "in_progress",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check and targeted independent review of 6e03757",
+          "result": "PASS",
+          "sha": "f2798b5918485e540f5fdab61221769794a62010",
+          "date": "2026-11-26",
+          "notes": "Reopened one-process fixture preserves epoch, backoff and exhausted budget. Independent review confirmed the fixes for stale observations, checkpoint binding and persisted policy.",
+          "limitations": "Host identity, authenticated reconciliation, authorized exhaustion recovery and effect fencing remain pending."
+        },
+        {
+          "kind": "poc",
+          "command": "node poc/s05-lease-lock/probe.mjs and packaged Electron in Node mode",
+          "result": "PASS",
+          "sha": "6e037577f923caaf5a580226cef4775d93c3aa02",
+          "date": "2026-11-26",
+          "notes": "Two SQLite processes contended on one synthetic epoch. Pre-commit interruption rolled back, and a committed transition without reply rejected replay.",
+          "limitations": "Windows temporary row. No production storage change, crash during commit, or host effects."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s04-supervised-selection",
+      "pr": null,
+      "blockers": []
+    },
+    {
       "id": "S05-T04",
       "phase": "S05",
       "title": "Recuperación y handoff",
       "dependencies": [
-        "S05-T03"
+        "S05-T03",
+        "S05-T08"
       ],
       "role": "Senior Developer",
       "risk": "high",
@@ -1456,11 +1601,37 @@
       "blockers": []
     },
     {
+      "id": "S06-T07",
+      "phase": "S06",
+      "title": "Evaluación de snapshots Git",
+      "dependencies": ["S01-T04"],
+      "role": "Developer",
+      "risk": "low",
+      "acceptance": "Contrasta identidad, SHA y estado local con fixtures; sin comandos Git ni permisos de escritura",
+      "status": "in_progress",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "69f102608ea29c997c9b1084315bc2889b29730f",
+          "date": "2026-11-26",
+          "notes": "Snapshot fixtures cover unknown and changed repository/base, unresolved ref, incomplete SHA, pending operation and dirty worktree.",
+          "limitations": "Pure evaluation, no Git commands or authorization. CI and integration pending."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s04-supervised-selection",
+      "pr": null,
+      "blockers": []
+    },
+    {
       "id": "S06-T01",
       "phase": "S06",
       "title": "Preflight y workflows Git",
       "dependencies": [
-        "S05-T06"
+        "S05-T06",
+        "S06-T07"
       ],
       "role": "Senior Developer",
       "risk": "high",
@@ -1490,11 +1661,37 @@
       "blockers": []
     },
     {
+      "id": "S06-T08",
+      "phase": "S06",
+      "title": "Conciliación Git de resultado incierto",
+      "dependencies": ["S01-T04"],
+      "role": "Developer",
+      "risk": "low",
+      "acceptance": "Clasifica refs y conserva intenciones pendientes al reabrir; sin ejecutar Git ni autorizar reintentos",
+      "status": "in_progress",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "f2798b5918485e540f5fdab61221769794a62010",
+          "date": "2026-11-26",
+          "notes": "Imported the verified worker diff. Reopening preserves an unresolved intent and re-observing the exact verified result deduplicates it. Missing journal with backup requires reconciliation.",
+          "limitations": "Fixtures only. Worktree source preserved. S06-T03 retains exclusive lock, external ref revalidation and operation authorization requirements."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s04-supervised-selection",
+      "pr": null,
+      "blockers": []
+    },
+    {
       "id": "S06-T03",
       "phase": "S06",
       "title": "Integración y conflictos",
       "dependencies": [
-        "S06-T02"
+        "S06-T02",
+        "S06-T08"
       ],
       "role": "Senior Developer",
       "risk": "high",

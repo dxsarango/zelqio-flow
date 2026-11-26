@@ -16,6 +16,8 @@ La recomendación determinista se puede desarrollar con Paseo 0.17.4. Las etapas
 
 `Automatic` registra la intención del borrador. Otros clientes pueden reproducir el marcador. Su presencia carece de autoridad propia. Dentro de una política permanente que ya cubra la selección, el acto rutinario de routing no necesita capturar una aprobación humana nueva. Crear, ampliar o renovar ese permiso requiere una fuente de autoridad verificable.
 
+El propietario aprobó esta interpretación progresiva de S04-T02 y S04-T06. FR-12 mantiene la aprobación humana verificable para los efectos que la requieren. La selección automática sigue siendo criterio del MVP y conserva las condiciones de habilitación.
+
 ## Evidencia de financiación
 
 | Fuente | Uso |
@@ -40,3 +42,5 @@ Mantener la financiación original y la restricción vigente en los reintentos. 
 La referencia actual de los hooks describe un identificador de workspace. La sonda de la versión fijada no lo recibió. Varios workspaces pueden compartir directorio, por lo que `config.cwd` por sí solo es insuficiente para autorizar una selección en uno de ellos. La configuración por modelo debe considerar las opciones efectivas que el proveedor aplica al modo. [Hooks de Paseo](https://paseo.sh/docs/plugins/hooks) · [Opciones de proveedor](https://paseo.sh/docs/sdk/provider-options)
 
 La recomendación y las sondas o pruebas con efectos deshabilitados son independientes del bloqueo de activación. [Evidencia de autoridad y selección](../evidence/S04-T02-creation-authority.md)
+
+Los adaptadores de financiación pueden usar señales diferentes y entregar el mismo contrato de evidencia. El contrato mantiene los valores declarado, autorizado y verificado separados. El adaptador acredita una identidad de ruta opaca y evita devolver evidencia cuando falten los enlaces requeridos. [Matriz de adaptadores](../evidence/S04-funding-adapters.md) · [Sonda de selección supervisada](../evidence/S04-T06-supervised-selection.md)
