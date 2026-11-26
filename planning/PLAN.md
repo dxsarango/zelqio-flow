@@ -29,7 +29,14 @@ La revisión de recursos de S03-T04 recoge la organización de proveedores y el 
 
 **Trabajo independiente.** Las investigaciones y pruebas preparatorias pueden avanzar con contratos estables, fixtures propios y sin depender del resultado que espera validación. La implementación, integración y habilitación de capacidades conservan las dependencias y gates aplicables. S03-T02 y S03-T04 comparten el contrato de S03-T01. Una vez integrado ese contrato, la revisión de la interfaz de recursos puede continuar en paralelo con el routing si sus archivos son independientes.
 
-**S03 (cuotas y selección).** [S03-T01 quedó integrado](https://github.com/dxsarango/zelqio-flow/pull/26). La vista de recursos de S03-T04 está preparada para revisión humana sobre `98d17cbd089b75aea4826b7f802b6bbf73fa822b` en el [PR #27](https://github.com/dxsarango/zelqio-flow/pull/27). Usa datos sintéticos para comprobar los estados de cuota y los temas Light y Dark. S03-T03 debe conservar la financiación original y las suspensiones de cuota entre intentos. La selección real de modelos sigue deshabilitada.
+**S03 (cuotas y selección).** G3 completó las verificaciones técnicas de cuota, concurrencia, financiación y selección explicable mediante candidatos ordenados y motivos de exclusión. El journal conserva la financiación original y la suspensión de cuota entre intentos. El dashboard quedó integrado con revisión humana diferida. G3 habilita el desarrollo de S04 y la selección real de modelos sigue deshabilitada. [Dashboard de recursos](https://github.com/dxsarango/zelqio-flow/pull/27) · [Router](https://github.com/dxsarango/zelqio-flow/pull/28) · [Journal local](https://github.com/dxsarango/zelqio-flow/pull/29)
+
+**Revisiones del propietario pendientes.**
+
+| Flujo | SHA | Qué revisar |
+|---|---|---|
+| S02-T04, onboarding y ajustes | `542b1747691c10044ce80f815740368360d81c57` | Diseño visual definitivo y mejoras de la lista anterior. La funcionalidad de este SHA tiene aprobación humana. |
+| S03-T04, dashboard de recursos | `1d010b3c3b34d301fa2357e49dd512e01a4c4492` | Jerarquía, proveedores plegados, cuotas actuales y caducadas, guardado de estrategia, EN/ES, Light/Dark y tamaños compacto y amplio. Se integró con revisión diferida pendiente. |
 
 **Relevo.** Un solo coordinador con permiso de escribir `tasks.json` y `PLAN.md`: el vigente se identifica por el agente raíz activo en Paseo y el registro de Engram (`coordination/lease`). Un sucesor sin historial lee `AGENTS.md`, esta sección, `tasks.json`, `git worktree list`, `gh pr list`, la lista de agentes de Paseo y `paseo usage ls`, confirma que no hay otro coordinador activo y entonces escribe. Procedimiento completo en [Relevo de coordinación](DEVELOPMENT-WORKFLOW.md#relevo-de-coordinación).
 
