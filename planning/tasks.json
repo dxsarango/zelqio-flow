@@ -961,7 +961,7 @@
       ],
       "owner": "orchestrator",
       "branch": "docs/close-g2-onboarding",
-      "pr": null,
+      "pr": 25,
       "blockers": []
     },
     {
@@ -974,10 +974,20 @@
       "role": "Developer",
       "risk": "medium",
       "acceptance": "Fresh/stale/unknown/exhausted/reset diferenciados; API soportada y backoff probado",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check; node tools/check-planning.mjs",
+          "result": "PASS",
+          "sha": "a61b98ce49f003d860adb2cb207b1f7713a1b6c6",
+          "date": "2026-11-26",
+          "notes": "109 tests in 9 files, typecheck, lint and planning integrity. Covered cache coalescing, failure backoff, empty data, ambiguous sources and reset without inferred recovery.",
+          "limitations": "Uses the public SDK contract validated in S00-T03 and a synthetic fixture. This change does not bind usage to an account, model or provider."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s03-t01-usage-adapter",
       "pr": null,
       "blockers": []
     },
