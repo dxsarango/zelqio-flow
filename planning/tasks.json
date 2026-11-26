@@ -756,11 +756,30 @@
       "role": "Developer",
       "risk": "medium",
       "acceptance": "Detectar catálogo y estado con adapter; no hardcode de modelos; errores visibles",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
-      "pr": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check (typecheck, lint, vitest)",
+          "result": "PASS",
+          "sha": "5ae3d68",
+          "date": "2026-11-26",
+          "notes": "40 tests; 6 for the catalog: normalization with arbitrary provider and model ids (no hardcoded names), duplicate model rows, defaults, provider errors and non-ready statuses kept visible, failed read reported as retryable unavailable without leaking details, served through the plugin entry.",
+          "limitations": "Uses only the documented provider snapshot call; ifNoneMatch caching is not used because it is absent from the 0.17.4 SDK typings."
+        },
+        {
+          "kind": "poc",
+          "command": "isolated daemon (own home, loopback port, relay off) + headless Chrome on the app web build; status screen Providers section",
+          "result": "PASS",
+          "sha": "5ae3d68",
+          "date": "2026-11-26",
+          "notes": "The real snapshot rendered through the daemon: providers with status and model counts, plus provider errors shown verbatim (for example a CLI not found). Read-only call; no agent, prompt or quota used. Environment removed afterwards.",
+          "limitations": "The Providers section is a provisional verification surface (technical scaffolding); the product UI belongs to S02-T04 and S03-T04. Windows, Paseo 0.17.4, web build only."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s02-t01-provider-catalog",
+      "pr": 17,
       "blockers": []
     },
     {

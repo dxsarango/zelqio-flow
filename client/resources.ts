@@ -16,6 +16,20 @@ export const resources = {
         off: "Effects disabled",
       },
     },
+    providers: {
+      title: "Providers",
+      loading: "Reading providers…",
+      unavailable: "Providers unavailable",
+      empty: "No providers reported",
+      summary_one: "{{status}} · {{count}} model",
+      summary_other: "{{status}} · {{count}} models",
+      status: {
+        ready: "Ready",
+        loading: "Loading",
+        error: "Error",
+        unavailable: "Unavailable",
+      },
+    },
   },
   es: {
     title: "Zelqio Flow",
@@ -31,6 +45,20 @@ export const resources = {
       effects: {
         on: "Efectos activados",
         off: "Efectos desactivados",
+      },
+    },
+    providers: {
+      title: "Proveedores",
+      loading: "Leyendo proveedores…",
+      unavailable: "Proveedores no disponibles",
+      empty: "No se informaron proveedores",
+      summary_one: "{{status}} · {{count}} modelo",
+      summary_other: "{{status}} · {{count}} modelos",
+      status: {
+        ready: "Listo",
+        loading: "Cargando",
+        error: "Error",
+        unavailable: "No disponible",
       },
     },
   },
