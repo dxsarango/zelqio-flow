@@ -27,7 +27,7 @@ La revisión de recursos de S03-T04 recoge la organización de proveedores y el 
 
 **Condición funcional de la selección de modelos.** S03-T02 y G3 deben verificar que una política de financiación solo gratuita excluye modelos de pago y modelos cuya financiación sea desconocida, incluso al aplicar un modelo predeterminado o un fallback de S03-T03. La elección en S02-T04 solo guarda la preferencia del proveedor. El candidato aprobado no selecciona modelos ni inicia sesiones, y el estado del plugin mantiene los efectos deshabilitados. La capacidad de selección queda condicionada a evidencia del tipo de financiación por modelo y a pruebas negativas sin consumo de pago.
 
-**Trabajo independiente.** Las investigaciones y pruebas preparatorias pueden avanzar con contratos estables, fixtures propios y sin depender del resultado que espera validación. La implementación, integración y habilitación de capacidades conservan las dependencias y gates aplicables. S03-T02 y S03-T04 comparten el contrato de S03-T01. Una vez integrado ese contrato, la revisión de la interfaz de recursos puede continuar en paralelo con el routing si sus archivos son independientes.
+**Continuidad y trabajo independiente.** Cada cierre inicia el siguiente ciclo de desarrollo mientras haya trabajo elegible o preparaciones útiles. Las investigaciones y componentes puros pueden avanzar con contratos estables, simulaciones y fixtures propios. S05-T07 y S05-T08 preparan el grafo y la recuperación sin runtime de agentes. S06-T07 y S06-T08 evalúan snapshots y conciliación Git sin ejecutar comandos. S04-T07 evalúa financiación sin conectar selección ni lanzamiento. Las dependencias de integración, habilitación y gates siguen vigentes. [Ciclo continuo](DEVELOPMENT-WORKFLOW.md#ciclo-continuo)
 
 **S03 (cuotas y selección).** G3 completó las verificaciones técnicas de cuota, concurrencia, financiación y selección explicable mediante candidatos ordenados y motivos de exclusión. El journal conserva la financiación original y la suspensión de cuota entre intentos. El dashboard quedó integrado con revisión humana diferida. G3 habilita el desarrollo de S04 y la selección real de modelos sigue deshabilitada. [Dashboard de recursos](https://github.com/dxsarango/zelqio-flow/pull/27) · [Router](https://github.com/dxsarango/zelqio-flow/pull/28) · [Journal local](https://github.com/dxsarango/zelqio-flow/pull/29)
 
@@ -48,7 +48,9 @@ La autorización temporal de revisión diferida terminó al regresar el propieta
 - Mantener estable el tamaño del compositor al activar Automática. Evaluar un menú contextual compacto para elegir el estado, explicar su alcance y recordar preferencias.
 - Reutilizar componentes nativos de Paseo y comprobar Light y Dark. Representar las cuotas según la procedencia verificada y dejar sin asociación las fuentes que no puedan vincularse con certeza a proveedores o modelos.
 
-**S04.** S04-T01 quedó integrado con aprobación funcional y revisión visual integral pendiente. S04-T05 conserva la recomendación consultiva en el candidato local `9abda07`, con 137 tests y prueba del RPC en el daemon aislado. Publicación, CI y entrega están pendientes. S04-T06 prepara la selección supervisada y puede probar el compositor con fixtures antes de integrar la recomendación. La sonda de S04-T02 aplicó una selección sintética antes de abrir la sesión y preservó un modelo explícito. La selección automática espera autorización permanente verificable, financiación ligada al destino y evidencia de preservación del modelo en ambos flujos nativos. S04-T03 y G4 conservan sus dependencias de producción. [Evidencia del hook](../docs/evidence/S04-T02-creation-authority.md) · [ADR](../docs/adr/S04-routing-authority.md)
+**S04.** S04-T01 quedó integrado con aprobación funcional y revisión visual integral pendiente. S04-T05 se integró en `af14550` tras la revisión arquitectónica independiente y los cuatro checks del SHA `a656229`. El propietario aprobó el enfoque progresivo y conservó el requisito de selección automática. S04-T06 verificó ambos compositores con catálogo sintético y cero sesiones. S04-T07 añadió fecha límite y cancelación a la lectura de financiación con fixtures. La integración de selección en el producto espera adaptadores que acrediten la ruta y la financiación, y una superficie que preserve elecciones y opciones del borrador. S04-T03 y G4 conservan sus dependencias. [PR #33](https://github.com/dxsarango/zelqio-flow/pull/33) · [Sonda supervisada](../docs/evidence/S04-T06-supervised-selection.md) · [Matriz de financiación](../docs/evidence/S04-funding-adapters.md)
+
+**S05 y S06.** Candidatos locales verificados sobre fixtures. S05-T07 calcula tareas listas y slots sin asignarlas. S05-T08 conserva épocas y reintentos al reabrir el diario local, y su sonda SQLite probó arbitraje entre procesos y recuperación de una fila sintética en Windows. S06-T08 conserva intenciones Git frente a respuestas inciertas y mantiene la operación pendiente hasta observar el SHA esperado. La escritura de efectos sigue sujeta a autorización, exclusión real y gates. [Evidencia del Watchdog](../docs/evidence/S05-watchdog-fixtures.md)
 
 **Relevo.** Un solo coordinador con permiso de escribir `tasks.json` y `PLAN.md`: el vigente se identifica por el agente raíz activo en Paseo y el registro de Engram (`coordination/lease`). Un sucesor sin historial lee `AGENTS.md`, esta sección, `tasks.json`, `git worktree list`, `gh pr list`, la lista de agentes de Paseo y `paseo usage ls`, confirma que no hay otro coordinador activo y entonces escribe. Procedimiento completo en [Relevo de coordinación](DEVELOPMENT-WORKFLOW.md#relevo-de-coordinación).
 
@@ -102,26 +104,31 @@ La autorización temporal de revisión diferida terminó al regresar el propieta
 | S04-T01 | Control nativo y metadata | S03-T05 | UI Developer | high | New Agent/New Workspace, disabled/automatic y persistencia del opt-in; no chat separado |
 | S04-T05 | Recomendación determinista de routing | S04-T01 | Developer | low | RPC de solo lectura sobre pares exactos, con financiación declarada y cuota sin vincular; excluye consumo |
 | S04-T06 | Selección supervisada en el compositor | S04-T05 | UI Developer | high | Aplicación visible al borrador nativo y envío separado; preserva modelo y modo en New Agent y New Workspace |
-| S04-T02 | Hook de creación y configuración | S04-T05, S04-T06 | Developer | high | Proveedor/modelo/permiso antes de primer mensaje; respeta selección explícita y errores |
+| S04-T07 | Contrato de financiación por ruta | S01-T04, S03-T03 | Senior Developer | high | Separa declaración, política y observación; verifica coincidencia y vigencia con adaptadores simulados sin habilitar efectos |
+| S04-T02 | Hook de creación y configuración | S04-T05, S04-T06, S04-T07 | Developer | high | Proveedor/modelo/permiso antes de primer mensaje; respeta selección explícita y errores |
 | S04-T03 | Identidad de sesiones gestionadas | S04-T02 | Senior Developer | high | Registro autoritativo de raíz/worker y no intervención en sesiones ajenas |
 | S04-T04 | Gate G4 | S04-T03 | QA | high | E2E mínimo de sesión nativa y opt-out, sin cambios globales ni perfiles |
 
 ## S05 — Agent Orchestration
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
 |---|---|---|---|---|---|
-| S05-T01 | DAG y runtime de tareas | S04-T04 | Senior Developer | high | Dependencias acíclicas, estados, leases, idempotencia y límites de concurrencia |
+| S05-T07 | Compilación del grafo de dependencias | S01-T04 | Developer | low | Grafo puro y orden determinista; detecta ciclos, IDs repetidos y dependencias ausentes y propone tareas dentro de los slots |
+| S05-T08 | Watchdog y recuperación con fixtures | S01-T03, S03-T03 | Senior Developer | high | Clasifica sesión y progreso, conserva época, checkpoint y backoff en un diario local; verifica reanudación sin efectos |
+| S05-T01 | DAG y runtime de tareas | S04-T04, S05-T07 | Senior Developer | high | Dependencias acíclicas, estados, leases, idempotencia y límites de concurrencia |
 | S05-T02 | Herramientas de orquestador | S05-T01 | Developer | high | Delegar/consultar/cancelar/recolectar con caller identity y deny por rol |
 | S05-T03 | Workers nativos y mensajes | S05-T02 | Developer | high | Crear con rol/proveedor, parent-child, resultados y permisos visibles en Paseo |
-| S05-T04 | Recuperación y handoff | S05-T03 | Senior Developer | high | Progreso real y lease con caducidad y exclusión por época. Supervisor local sin inferencia, reintentos acotados y reanudación tras cuota verificada. Conservar intentos y sesiones |
+| S05-T04 | Recuperación y handoff | S05-T03, S05-T08 | Senior Developer | high | Progreso real y lease con caducidad y exclusión por época. Supervisor local sin inferencia, reintentos acotados y reanudación tras cuota verificada. Conservar intentos y sesiones |
 | S05-T05 | Actividad local y estado | S05-T03 | UI Developer | medium | Mostrar decisiones, tareas, bloqueos; sin copiar conversaciones ni dashboard redundante |
 | S05-T06 | Gate G5 | S05-T04, S05-T05 | Reviewer | high | Delegación bajo demanda, cancelación, recursión negativa y reconciliación demostradas |
 
 ## S06 — Git Coordinator
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
 |---|---|---|---|---|---|
-| S06-T01 | Preflight y workflows Git | S05-T06 | Senior Developer | high | Repo/remotos/base/dirty/permissions; Git local, PR, fork, direct y no-Git diferenciados |
+| S06-T07 | Evaluación de snapshots Git | S01-T04 | Developer | low | Contrasta identidad, SHA y estado local con fixtures; sin comandos Git ni permisos de escritura |
+| S06-T08 | Conciliación Git de resultado incierto | S01-T04 | Developer | low | Clasifica refs y conserva intenciones pendientes al reabrir; sin ejecutar Git ni autorizar reintentos |
+| S06-T01 | Preflight y workflows Git | S05-T06, S06-T07 | Senior Developer | high | Repo/remotos/base/dirty/permissions; Git local, PR, fork, direct y no-Git diferenciados |
 | S06-T02 | Ramas, worktrees y commits | S06-T01 | Developer | high | Base exacta, staging seguro y retirada verificable sin fuerza, solo con checkout limpio, refs preservadas y sin trabajo ni validaciones pendientes |
-| S06-T03 | Integración y conflictos | S06-T02 | Senior Developer | high | Lock común, CAS/revalidación, integración serial, journal y recuperación sin pérdida |
+| S06-T03 | Integración y conflictos | S06-T02, S06-T08 | Senior Developer | high | Lock común, CAS/revalidación, integración serial, journal y recuperación sin pérdida |
 | S06-T04 | Adaptador GitHub | S06-T01 | Developer | high | gh autenticado y destino explícito; checks/protecciones por SHA; denegación si falta capacidad para aplicar la política |
 | S06-T05 | UI Git y evidencia | S06-T02, S06-T04 | UI Developer | medium | Mostrar workflow, ramas, SHA, permisos y bloqueos; cambios de configuración confirmados |
 | S06-T06 | Gate G6 | S06-T03, S06-T05 | Reviewer | high | Fixtures Git y sandbox remoto; pruebas negativas, conflictos y rechazo por rulesets |
