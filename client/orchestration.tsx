@@ -1,13 +1,14 @@
 import type { PluginComposerItemProps } from "@getpaseo/plugin/client";
-import { useComposer, useTranslation } from "@getpaseo/plugin/client";
+import { useComposer, useSettings, useTranslation } from "@getpaseo/plugin/client";
 import { useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { draftOrchestration, orchestrationMetadataPatch } from "../shared/orchestration";
+import { draftOrchestration, draftPreference, orchestrationMetadataPatch } from "../shared/orchestration";
 import { messages } from "./translations";
 
 export function DraftOrchestrationControl({ theme }: PluginComposerItemProps) {
   const composer = useComposer();
   const { t } = useTranslation(messages);
+  const preference = useSettings(draftPreference);
   const pending = useRef(false);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -16,6 +17,8 @@ export function DraftOrchestrationControl({ theme }: PluginComposerItemProps) {
   const mode = draftOrchestration(composer.agent.metadata);
   const colors = theme.colors;
   const automatic = mode === "automatic";
+  const remembered = preference.status === "ready" ? preference.values.remembered : null;
+  const canRemember = preference.status === "ready" && remembered !== mode;
 
   const toggle = async () => {
     if (pending.current) return;
@@ -62,6 +65,27 @@ export function DraftOrchestrationControl({ theme }: PluginComposerItemProps) {
       {automatic || failed ? (
         <Text accessibilityRole={failed ? "alert" : undefined} style={{ color: failed ? colors.statusDanger : colors.foregroundMuted, fontSize: 12, marginTop: 3 }}>
           {t(failed ? "orchestration.saveFailed" : "orchestration.inactive")}
+        </Text>
+      ) : null}
+      {!automatic && remembered === "automatic" ? (
+        <Text style={{ color: colors.foregroundMuted, fontSize: 12, marginTop: 3 }}>
+          {t("orchestration.rememberedAutomatic")}
+        </Text>
+      ) : null}
+      {canRemember ? (
+        <Pressable
+          testID="zelqio-orchestration-remember"
+          accessibilityRole="button"
+          disabled={saving || preference.saving}
+          onPress={() => void preference.save({ remembered: mode }, preference.revision)}
+          style={({ pressed }) => ({ alignSelf: "flex-start", paddingVertical: 6, opacity: pressed ? 0.65 : 1 })}
+        >
+          <Text style={{ color: colors.foreground, fontSize: 12 }}>{t("orchestration.remember")}</Text>
+        </Pressable>
+      ) : null}
+      {preference.saveError ? (
+        <Text accessibilityRole="alert" style={{ color: colors.statusDanger, fontSize: 12 }}>
+          {t("orchestration.rememberFailed")}
         </Text>
       ) : null}
     </View>

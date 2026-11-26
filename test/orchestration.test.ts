@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { draftOrchestration, orchestrationMetadataPatch } from "../shared/orchestration";
+import contribute from "../index.server";
+import { draftOrchestration, draftPreference, orchestrationMetadataPatch } from "../shared/orchestration";
+import { createMockServer } from "./mock-sdk";
 
 describe("draft orchestration intent", () => {
+  it("persists a disabled-by-default host preference separately from draft intent", () => {
+    const mock = createMockServer();
+    contribute(mock.server);
+    expect(mock.settings()).toContain(draftPreference.id);
+    expect(draftPreference.schema.parse({})).toEqual({ remembered: "disabled" });
+    expect(draftPreference.schema.parse({ remembered: "automatic" })).toEqual({ remembered: "automatic" });
+    expect(draftOrchestration({})).toBe("disabled");
+  });
+
   it("persists the opt-in as serializable draft metadata and removes only its own key when disabled", () => {
     const initial = { otherPlugin: { keep: true } };
     const draft = { ...initial, ...orchestrationMetadataPatch("automatic") };

@@ -1,9 +1,18 @@
+import { defineSettings } from "@getpaseo/plugin";
 import { z } from "zod";
 
 const metadataKey = "zelqio-flow.orchestration";
 const optIn = z.strictObject({ version: z.literal(1), mode: z.literal("automatic") });
 
-export type DraftOrchestration = "disabled" | "automatic";
+const draftMode = z.enum(["disabled", "automatic"]);
+export type DraftOrchestration = z.infer<typeof draftMode>;
+
+export const draftPreference = defineSettings({
+  id: "draft-orchestration",
+  scope: "host",
+  version: 1,
+  schema: z.strictObject({ remembered: draftMode.default("disabled") }),
+});
 
 /** Draft metadata records intent only. It does not authorize routing, spending or session management. */
 export function draftOrchestration(metadata: Readonly<Record<string, unknown>>): DraftOrchestration {

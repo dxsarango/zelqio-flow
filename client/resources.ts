@@ -9,6 +9,9 @@ export const resources = {
       automatic: "Automatic",
       inactive: "This marks the draft. Automatic model selection is still disabled.",
       saveFailed: "Could not update the draft.",
+      remember: "Remember this choice on this host",
+      rememberedAutomatic: "Saved preference: Automatic. Use the switch to apply it to this draft.",
+      rememberFailed: "Could not save the preference.",
     },
     resources: {
       title: "Resources",
@@ -216,6 +219,9 @@ export const resources = {
       automatic: "Automática",
       inactive: "Esto marca el borrador. La selección automática de modelos sigue desactivada.",
       saveFailed: "No se pudo actualizar el borrador.",
+      remember: "Recordar esta elección en este host",
+      rememberedAutomatic: "Preferencia guardada de modo automático. Usa el selector para aplicarla a este borrador.",
+      rememberFailed: "No se pudo guardar la preferencia.",
     },
     resources: {
       title: "Recursos",
