@@ -27,3 +27,8 @@ Para repetir la comprobación adicional, arrancar el mismo home aislado, localiz
 
 - **PASS en el fixture de exportación.** `node poc/s00-t08/export-probe.mjs` produjo un JSON con versión, ID de comprobación, veredicto y SHA. La prueba verificó que se omitieran ubicación, notas, mensajes y una credencial simulada. Rechazó valores inválidos en los campos permitidos. Solo usó datos sintéticos.
 - El log del daemon aislado registra que Paseo intentó descargar modelos locales de voz en los tres arranques del ensayo, incluido el de la inspección TCP. Ese log identifica una fuente de tráfico de la plataforma. Falta correlacionar la conexión observada con una operación concreta y probar la exportación con estado persistido real. POC-16 sigue bloqueado para el criterio completo.
+
+## Seguimiento de G0
+
+- **POC-12, persistencia de aprobación.** La sonda posterior pasó 31 comprobaciones. Confirmó stop/start real, pendientes preservados por workspace y SHA, reintento idempotente e invalidación por cambios. La persistencia mantiene la decisión en el dominio del fixture. La autenticación humana, la caída abrupta y la recuperación de operaciones activas siguen pendientes. [Aprobación y persistencia](G0-approval-persistence.md)
+- **POC-16, atribución controlada.** Cuatro controles, con y sin plugins y con dictado activado o desactivado, atribuyeron las conexiones reproducidas a descargas de voz de Paseo en GitHub Releases y su CDN. El destino histórico no se guardó. El criterio completo sigue abierto por cobertura y exportación de estado persistido real. [Red, limpieza y continuidad](G0-lifecycle-privacy.md)

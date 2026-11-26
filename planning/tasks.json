@@ -136,6 +136,36 @@
           "date": "2026-11-25",
           "notes": "POC-08 teardown: native archive removed tracked edits and an untracked file from a disposable dirty worktree.",
           "limitations": "Release use of parallel writable worktrees requires a safe lifecycle decision at G0. Local Git and lifecycle POCs can proceed in fixtures."
+        },
+        {
+          "kind": "observation",
+          "path": "docs/evidence/S00-T05-subagents-worktrees.md",
+          "check": "Task lineage after coordinator archive",
+          "result": "PASS",
+          "command": "Paseo agent status for parent and two project children",
+          "date": "2026-11-26",
+          "notes": "Existing child sessions retained task labels and lost native parent labels after outside archival of the previous coordinator.",
+          "limitations": "Technical fencing, durability and coordinator succession still require S05-T04."
+        },
+        {
+          "kind": "poc",
+          "path": "docs/evidence/G0-lifecycle-privacy.md",
+          "check": "POC-08 externally owned worktree alternative",
+          "result": "PASS",
+          "command": "node poc/s00-t08/lifecycle/run.cjs <install> <scratch> workspace <git>",
+          "date": "2026-11-26",
+          "notes": "Paseo archived external workspace records and retained both checkouts. Plain Git rejected dirty removal and removed only the clean disposable checkout.",
+          "limitations": "Externally owned fixtures only. Managed teardown still uses force; integrated history and ignored files still need explicit validation."
+        },
+        {
+          "kind": "poc",
+          "path": "docs/evidence/G0-lifecycle-privacy.md",
+          "check": "POC-07 logical lineage after coordinator archive",
+          "result": "PASS",
+          "command": "node poc/s00-t08/lifecycle/run.cjs <install> <scratch> workspace <git>",
+          "date": "2026-11-26",
+          "notes": "New coordinator metadata and local history retained task lineage across archive and ordered restart. Same-workspace child archived; cross-workspace child detached.",
+          "limitations": "Mock sessions without prompts. Native reparenting and active jobs not verified."
         }
       ],
       "owner": "orchestrator",
@@ -152,7 +182,7 @@
       ],
       "role": "Senior Developer",
       "risk": "high",
-      "acceptance": "POC-09/10/15: dos ramas integradas, conflicto recuperado, PR sandbox, SHA y rechazo por reglas",
+      "acceptance": "POC-09/10/15: integración, recuperación de conflictos, PR privado, checks por SHA, rechazos y capacidad efectiva de protecciones/auto-merge",
       "status": "blocked",
       "evidence": [
         {
@@ -176,21 +206,43 @@
           "limitations": "Git process recovery only. No Paseo active turn or product journal exercised."
         },
         {
+          "kind": "ci",
+          "path": "docs/evidence/S00-T06-git-publication.md",
+          "check": "POC-15 publication and CI",
+          "result": "PASS",
+          "command": "gh pr view; gh run list",
+          "date": "2026-11-26",
+          "notes": "Private sandbox: branch push and PR #1. Fixture check failed on initial head and succeeded on corrected exact SHA; local, remote, PR and run matched.",
+          "limitations": "Synthetic fixtures only.",
+          "sha": "5ae109bce5f8559a530b6ab7beba9e2cd9d67845"
+        },
+        {
           "kind": "poc",
           "path": "docs/evidence/S00-T06-git-publication.md",
-          "check": "POC-15",
-          "command": null,
-          "result": "BLOCKED",
+          "check": "POC-15 denied operations",
+          "result": "PASS",
+          "command": "GitHub API: merge with stale sha, anonymous POST /issues, self approval",
           "date": "2026-11-26",
-          "notes": "A disposable GitHub repository is required for PR, CI, SHA and rejection tests.",
-          "limitations": "The Zelqio Flow repository was inspected read-only for protection settings."
+          "notes": "HTTP 409 for stale SHA, HTTP 401 for anonymous write and HTTP 422 for author self-approval. The base was unchanged.",
+          "limitations": "Required branch rules and positive independent approval were not exercised.",
+          "sha": "5ae109bce5f8559a530b6ab7beba9e2cd9d67845"
+        },
+        {
+          "kind": "poc",
+          "path": "docs/evidence/S00-T06-git-publication.md",
+          "check": "POC-15 protections and auto-merge",
+          "result": "BLOCKED",
+          "command": "GitHub API: branch protection, effective rules and allow_auto_merge",
+          "date": "2026-11-26",
+          "notes": "Private plan rejected protections and effective rules with HTTP 403. Auto-merge setting stayed false. Kept PR open.",
+          "limitations": "No live branch-rule rejection, auto-merge, or queue. No visibility change."
         }
       ],
       "owner": "orchestrator",
       "branch": "docs/s00-feasibility-recovery",
       "pr": null,
       "blockers": [
-        "Identify and authorize a disposable GitHub repository for the POC-15 write operations."
+        "The authorized private sandbox cannot enable branch protection or auto-merge under its current plan. Required-rule rejection and protected automatic merge remain unverified."
       ]
     },
     {
@@ -202,7 +254,7 @@
       ],
       "role": "UI Developer",
       "risk": "high",
-      "acceptance": "POC-11/17: servicio ligado a versión y actor de aprobación verificable; alternativa UI si chat no prueba actor",
+      "acceptance": "POC-11/17: servicio ligado a versión y aprobación de tarea/SHA por actor autenticado; operación manual si la UI carece de procedencia verificable",
       "status": "blocked",
       "evidence": [
         {
@@ -233,13 +285,22 @@
           "date": "2026-11-26",
           "sha": "00e60e0ab55134d7e019d89412548337350ff1d6",
           "notes": "All nine original files were preserved byte-for-byte in a local commit on the original task branch."
+        },
+        {
+          "kind": "analysis",
+          "path": "docs/evidence/G0-approval-persistence.md",
+          "check": "POC-17 native human provenance",
+          "result": "FAIL",
+          "date": "2026-11-26",
+          "notes": "Pinned runtime analysis corroborated the T07 panel run: plugin RPC receives no authenticated human actor. A caller-supplied client type has no authority.",
+          "limitations": "Separated external authentication is a design alternative. The sandbox rejected self-review; a positive independently authenticated flow remains unverified."
         }
       ],
       "owner": "orchestrator",
       "branch": "docs/s00-feasibility-recovery",
       "pr": null,
       "blockers": [
-        "An approval channel with an independently verifiable actor and SHA is required before accepting POC-17."
+        "Paseo 0.17.4 plugin RPC does not expose independently verifiable human provenance. Use manual-only handling pending a verified authority and owner approval of scope."
       ]
     },
     {
@@ -252,7 +313,7 @@
       ],
       "role": "QA",
       "risk": "high",
-      "acceptance": "POC-12/13/14/16: reinicio, desactivación, desinstalación, inspección de tráfico y estado saneado",
+      "acceptance": "POC-12/13/14/16: recuperar pendientes al reiniciar sin otorgar permisos, preservar el entorno al retirar y atribuir tráfico y estado exportado",
       "status": "blocked",
       "evidence": [
         {
@@ -308,14 +369,34 @@
           "date": "2026-11-26",
           "notes": "Allowlisted fixture export dropped synthetic paths, notes, messages and credential. Malformed allowed fields were rejected.",
           "limitations": "Synthetic input only. A real daemon state export was not tested."
+        },
+        {
+          "kind": "poc",
+          "path": "docs/evidence/G0-approval-persistence.md",
+          "check": "POC-12 pending approval durability",
+          "result": "PASS",
+          "command": "poc/s00-t08/approval-restart/run.ps1 -Install <install> -Scratch <scratch> -Port 16821",
+          "date": "2026-11-26",
+          "notes": "31 checks passed in real Windows Paseo stop/start across two workspaces. Preserved pending requests and invalidated stale SHA or policy. Consume mock had no effect.",
+          "limitations": "Authentication, process death during write, concurrent writers and native active turns were not exercised."
+        },
+        {
+          "kind": "poc",
+          "path": "docs/evidence/G0-lifecycle-privacy.md",
+          "check": "POC-16 reproduced traffic attribution",
+          "result": "PASS",
+          "command": "node poc/s00-t08/lifecycle/run.cjs <install> <scratch> network",
+          "date": "2026-11-26",
+          "notes": "Four controls with dictation and plugin toggles. Correlated both connections per enabled control to Paseo speech-model downloads, none in disabled controls.",
+          "limitations": "Original T08 socket unidentifiable, no historical endpoint. Child processes, IPv6, transient sockets and real-state export remain unverified."
         }
       ],
       "owner": "orchestrator",
       "branch": "docs/s00-feasibility-recovery",
       "pr": null,
       "blockers": [
-        "A durable approval and operation state/reconciliation mechanism has not been verified through a daemon restart.",
-        "Correlate the observed connection, expand traffic coverage, and verify a sanitized export from persisted fixture state."
+        "Ordered restart of synthetic approvals passed. Active runs, crash/concurrency and effects reconciliation remain unverified.",
+        "Reproduced traffic was attributed to Paseo speech downloads. Historical endpoint, wider traffic scope and real-state export remain unverified."
       ]
     },
     {
@@ -331,13 +412,26 @@
       ],
       "role": "Reviewer",
       "risk": "high",
-      "acceptance": "Revisión independiente de evidencia y decisión de viabilidad; aprobación humana de versión y arquitectura",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "acceptance": "Revisión independiente de evidencia, viabilidad por capacidad y decisión explícita del propietario sobre versión, arquitectura y alcance",
+      "status": "blocked",
+      "evidence": [
+        {
+          "kind": "decision",
+          "path": "docs/evidence/G0-decision.md",
+          "check": "Gate G0 proposal",
+          "result": "BLOCKED",
+          "command": "Review S00 runtime, GitHub and local evidence",
+          "date": "2026-11-26",
+          "notes": "Supervised local core conditionally viable. Full automation remains blocked; independent review and owner scope decision are required.",
+          "limitations": "G0 remains unapproved. S01 is outside scope."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "docs/s00-feasibility-recovery",
       "pr": null,
-      "blockers": []
+      "blockers": [
+        "S00-T06, S00-T07 and S00-T08 remain incomplete for full automation. Owner approval is required for a narrower G0 scope, or the blockers must be resolved."
+      ]
     },
     {
       "id": "S01-T01",
@@ -573,7 +667,7 @@
       ],
       "role": "Developer",
       "risk": "high",
-      "acceptance": "Retry acotado, razones, preservación de estado y bloqueo cuando no hay candidato",
+      "acceptance": "Reintento acotado, exclusión por agotamiento, preservación de trabajo y reincorporación verificable para nuevas tareas",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -744,7 +838,7 @@
       ],
       "role": "Senior Developer",
       "risk": "high",
-      "acceptance": "Reinicio y cuota agotada recuperan estado sin duplicar trabajo ni perder resultados",
+      "acceptance": "Un sucesor autorizado conserva ejecución, intentos y sesiones aunque cambie el árbol nativo; la época anterior no puede repetir efectos",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -813,7 +907,7 @@
       ],
       "role": "Developer",
       "risk": "high",
-      "acceptance": "Paseo worktrees, base SHA, nomenclatura configurable, staging seguro y preservación de cambios",
+      "acceptance": "Base exacta, staging seguro y retirada verificable sin fuerza, solo con checkout limpio, refs preservadas y sin trabajo ni validaciones pendientes",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -847,7 +941,7 @@
       ],
       "role": "Developer",
       "risk": "high",
-      "acceptance": "gh autenticado, destino explícito, repo/PR/push/checks/merge autorizados; sin tokens propios",
+      "acceptance": "gh autenticado y destino explícito; checks/protecciones por SHA; denegación si falta capacidad para aplicar la política",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -900,7 +994,7 @@
       ],
       "role": "Senior Developer",
       "risk": "high",
-      "acceptance": "Actor/acción/SHA/política verificables; revalidar ante cambios, estado durable",
+      "acceptance": "Actor humano verificable y tarea/acción/SHA/política ligados; pendientes se recuperan tras reinicio y efectos revalidan y deduplican",
       "status": "todo",
       "evidence": [],
       "owner": null,

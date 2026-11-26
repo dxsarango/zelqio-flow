@@ -26,6 +26,8 @@ La rama local `docs/s00-t07-services-approval-poc` preserva los nueve archivos o
 
 **Resultado FAIL.** La sonda cambia un registro en memoria y carece de efectos Git. La decisión sobre un mecanismo de aprobación verificable queda para G0. Una aprobación de esta sonda no habilita acciones del producto.
 
+El seguimiento de G0 confirmó por inspección del SDK y del daemon 0.17.4 que el contexto del RPC carece de actor o sesión verificable y que la identificación del tipo de cliente es declarativa. Un panel puede presentar la solicitud y la evidencia exacta. La alternativa propuesta para efectos sensibles es una revisión autenticada independiente ligada a ese SHA o ejecución manual por el propietario. GitHub rechazó la autoaprobación en el sandbox. La aprobación positiva por un segundo actor quedó sin probar. [Procedencia y persistencia](G0-approval-persistence.md) · [POC-15](S00-T06-git-publication.md).
+
 ## Reproducción aislada
 
 1. Preparar un home nuevo de Paseo 0.17.4 en loopback `:16780` con relay desactivado y plugins habilitados. Crear un Git desechable con los archivos de [fixture](../../poc/s00-t07/fixture/) y registrar un workspace. Para ensayar cambio de SHA, usar un branch-off desechable.

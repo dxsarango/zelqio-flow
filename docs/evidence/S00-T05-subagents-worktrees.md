@@ -158,3 +158,9 @@ Detener también el servidor estático y Chrome del POC. El estado final observa
 Se enviaron seis turnos al modelo OpenCode Iceman Free, incluido el turno interrumpido. El log registra los intentos adicionales para provocar un permiso y cancelar. Cero envíos a Claude y Codex, cero créditos pagados y cero aprobaciones automáticas. [Registro](../../poc/s00-t05/results/inference-log.txt).
 
 El archivado y reinicio se comprobaron con agentes ya inactivos. Quedan fuera la recuperación de turnos activos tras reinicio, la aprobación positiva, otros proveedores y otros sistemas operativos. El archivado sucio se probó con una edición en un archivo rastreado y un archivo sin seguimiento en un worktree del fixture.
+
+## Continuidad observada al retomar G0
+
+Al consultar las sesiones existentes, el orquestador anterior ya figuraba archivado. Dos sesiones cerradas de otros workspaces seguían disponibles y conservaban sus etiquetas de tarea S00-T03 y S00-T05. Su etiqueta de padre nativo había desaparecido. Se consultó el estado sin ejecutar archivado ni eliminar worktrees durante esta comprobación.
+
+Las etiquetas ayudan a localizar una sesión, pero su ausencia o modificación debe tolerarse. El vínculo autoritativo propuesto es un registro local que conserva el ID estable de ejecución, el ID de tarea, el intento, el agente y la época de coordinación. La prueba de sucesión, exclusión de la época anterior y conciliación de resultados tardíos forma parte de S05-T04.
