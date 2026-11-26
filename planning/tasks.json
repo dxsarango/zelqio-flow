@@ -738,7 +738,7 @@
       ],
       "role": "Reviewer",
       "risk": "medium",
-      "acceptance": "Revisión independiente por Codex de server/store.ts y test/store.test.ts cuando su cuota esté disponible; hallazgos corregidos o registrados. Decidir y probar la limpieza segura de temporales .tmp-* y .bak.tmp-* tras cierres abruptos. No bloquea G1 ni tareas independientes.",
+      "acceptance": "Revisión independiente por Codex de server/store.ts, server/policy.ts y sus tests cuando su cuota esté disponible; hallazgos corregidos o registrados. Decidir y probar la limpieza segura de temporales .tmp-* y .bak.tmp-* tras cierres abruptos. No bloquea G1 ni tareas independientes.",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -773,11 +773,30 @@
       "role": "Senior Developer",
       "risk": "high",
       "acceptance": "Precedencia global/proyecto/sesión y deny, acciones remotas separadas, pruebas negativas",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
-      "pr": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check (typecheck, lint, vitest)",
+          "result": "PASS",
+          "sha": "032e3cf",
+          "date": "2026-11-26",
+          "notes": "59 tests, 19 for the engine: deny by default for every action, unknown action and malformed policy fail closed, any-scope deny beats every allow, sessions can only restrict and a session allow is flagged and ignored, global allows never authorize remote or sensitive actions, remote allows need a specific project-bound resource (no bare wildcard, none missing), push/fetch/merge are authorized separately, resource globs treat regex metacharacters literally, static validation of stored layers.",
+          "limitations": "Pure engine: not yet wired to settings storage, tools or UI (S02-T03, S02-T04 and later tasks). Modes and strategy do not influence decisions yet."
+        },
+        {
+          "kind": "review",
+          "command": "focused read-only review of server/policy.ts, shared/policy.ts and test/policy.test.ts by a free OpenCode model; finding verified by the orchestrator",
+          "result": "PASS",
+          "sha": "032e3cf",
+          "date": "2026-11-26",
+          "notes": "One confirmed high finding: evaluate accepted a remote allow with no resource (only validateLayers rejected it), which would authorize a remote action. Fixed in evaluate itself (isBound) with 4 regression tests. Prototype-key, glob backtracking and fail-closed paths were traced with no issue.",
+          "limitations": "Reviewer is a free model; a Codex pass over this engine is added to S01-T07 when its quota returns."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s02-t02-policy-engine",
+      "pr": 18,
       "blockers": []
     },
     {
