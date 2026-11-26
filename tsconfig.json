@@ -21,6 +21,8 @@
     "index.server.ts",
     "client/**/*",
     "server/**/*",
-    "shared/**/*"
+    "shared/**/*",
+    "test/**/*",
+    "vitest.config.ts"
   ]
 }
