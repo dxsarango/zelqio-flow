@@ -4,3 +4,6 @@ Leer README, PRD y planning/tasks.json antes de trabajar. Seguir DEVELOPMENT-WOR
 
 ## Continuidad
 Orden "Continúa con el desarrollo de Zelqio Flow" (o similar): usar la skill `zelqio-flow-development` (`.agents/skills/zelqio-flow-development/SKILL.md`; `.claude/skills/` contiene solo un puntero). Si no se descubre como skill, leer ese archivo y seguirlo. El estado persistente es `planning/tasks.json` (reflejado en `planning/PLAN.md`); solo el orquestador raíz lo escribe.
+
+## Worktrees de Zelqio Flow
+Aplicar la [limpieza segura](planning/DEVELOPMENT-WORKFLOW.md#limpieza-segura-de-worktrees) al cerrar tareas. Archivar individualmente una sesión y archivar su workspace son operaciones distintas. La política se limita a este repositorio.

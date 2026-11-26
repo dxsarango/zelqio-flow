@@ -21,7 +21,8 @@ Si eres worker (briefing delegado): ejecuta solo tu tarea, reporta y no uses est
 8. **Delegar** solo si aporta valor (tareas independientes, escritura en worktree propio, revisión cruzada según riesgo). Ejecutar directamente si es más barato que el briefing. Con herramientas Paseo, aplicar la política global de orquestación del entorno (perfiles, proveedores, cuotas, worktrees); sin ellas, trabajar directamente. Briefing: ID, objetivo, dependencias aceptadas, archivos permitidos, non-goals, aceptación, comandos de verificación, riesgo, formato de entrega. Los workers no delegan, no hacen push/merge.
 9. **Integrar y validar**: revisar el diff real; ejecutar las comprobaciones; integrar en serie; verificar el resultado consolidado. Nunca marcar `done` por el relato de un worker.
 10. **Registrar** en tasks.json: `status`, `owner`, `branch`, `pr`, `blockers`, `evidence` (lista de objetos: `{kind, command, result: PASS|FAIL|BLOCKED|NOT_RUN, sha, date, notes, limitations}`; local y CI separados, sin secretos ni rutas personales). Reflejar en PLAN.md si cambia algo visible. Guardar en Engram solo decisiones/aprendizajes durables.
-11. **Continuar** automáticamente con la siguiente tarea elegible.
+11. **Limpieza segura**: al cerrar una tarea, aplicar la política de `planning/DEVELOPMENT-WORKFLOW.md#limpieza-segura-de-worktrees`. Archivar workspaces solo tras verificar preservación, actividad y validaciones; excluir el checkout principal.
+12. **Continuar** automáticamente con la siguiente tarea elegible.
 
 ## Git y entrega (Smart Review)
 

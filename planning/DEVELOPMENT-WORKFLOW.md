@@ -16,3 +16,13 @@ ID + objetivo + dependencias aceptadas + archivos/contratos permitidos + non-goa
 
 ## Rondas y control
 Antes de cada lote: identificar ready tasks, contratos y archivos; reservar worktrees, asignar roles y límites. Después: recoger evidencia, revisar cross-provider según riesgo, integrar y ejecutar checks consolidados. Gates G0–G10 seriales como condición de salida, no impiden preparación documental independiente. No avanzar con blocker crítico. El plan puede refinarse mediante ADR/PR sin ocultar cambios de alcance.
+
+## Limpieza segura de worktrees
+
+El orquestador aplica esta política solo a Zelqio Flow después de completar, integrar y verificar una tarea. El checkout principal queda fuera de la limpieza de worktrees de tarea. En Paseo 0.17.4, el archivado nativo de un workspace administrado invoca internamente `git worktree remove --force`. El [hallazgo de S00-T05](../docs/evidence/S00-T05-subagents-worktrees.md#poc-08) documenta la pérdida de archivos que produjo en un fixture sucio. Conservar los worktrees de tarea en esa versión.
+
+1. Identificar el workspace de Paseo y verificar la ruta, la rama, el SHA, el Git común y la pertenencia a Zelqio Flow con `git worktree list --porcelain`. Confirmar que los commits están integrados en el destino autorizado y que el trabajo y las evidencias tienen referencias recuperables.
+2. Comprobar que el workspace no tiene agentes activos, trabajo en cola, terminales o servicios en uso, solicitudes de permiso, aprobaciones ni pruebas funcionales pendientes. El archivado de una sesión padre puede afectar a sus descendientes. Inspeccionar ese alcance antes de archivar sesiones.
+3. Inspeccionar el estado del índice y del checkout con `git status --porcelain=v1 --untracked-files=all --ignored=matching`. Verificar también que no haya conflictos ni una operación Git en curso. Conservar el workspace si hay trabajo incompleto, errores de cuota, cambios sin preservar, validaciones pendientes o un alcance que no se pueda comprobar.
+4. Repetir la comprobación de actividad, SHA y estado justo antes de archivar. Archivar un solo workspace a la vez con la operación nativa de Paseo que corresponda al ID verificado. Usarla cuando la versión instalada permita retirar el checkout sin eliminación forzada. Si no hay un mecanismo nativo seguro, conservar el workspace. No usar borrado manual, comandos destructivos ni opciones de fuerza.
+5. Verificar después que Paseo ya no lista el workspace como activo, que Git ya no lista el worktree, que la ruta exacta dejó de existir y que las referencias y evidencias siguen accesibles. Registrar el resultado y cualquier discrepancia. Si la retirada no se confirma, conservar el estado para revisión.
