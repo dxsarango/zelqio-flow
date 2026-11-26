@@ -7,7 +7,7 @@ Foundation corresponde a S01 y G1. Advanced Orchestration corresponde a S02–S0
 
 ## Punto de recuperación
 
-Verificado el 2026-11-26. G0 aprobado condicionalmente y G1 cerrado. S01 y S02 completas. El [PR #24](https://github.com/dxsarango/zelqio-flow/pull/24) integró S02-T04 en `8afd8f4`. G2 cumplió sus criterios y el registro de cierre habilita S03 al integrarse. S00-T06–T08 conservan sus bloqueos.
+Verificado el 2026-11-26. G0 aprobado condicionalmente y G1 cerrado. S01 y S02 completas. El [PR #24](https://github.com/dxsarango/zelqio-flow/pull/24) integró S02-T04 en `8afd8f4`. El [PR #25](https://github.com/dxsarango/zelqio-flow/pull/25) cerró G2 en `8dcc063` y habilitó S03. S00-T06–T08 conservan sus bloqueos.
 
 **S02-T04 (onboarding y ajustes).** El worktree del worker conserva los commits `fbf0125` y `6771ff7`. El árbol de `8afd8f4` coincide con `542b1747691c10044ce80f815740368360d81c57`, verificado en [Paseo aislado](http://127.0.0.1:16875/). Pasaron tipos, lint, 105 tests en 8 archivos e integridad de la planificación en Windows local. GitHub confirmó los cuatro checks obligatorios en el SHA aprobado. La verificación EN/ES con uno y varios proveedores y la revisión de permisos de G2 constan en `tasks.json`.
 
