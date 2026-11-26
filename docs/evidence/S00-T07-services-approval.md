@@ -2,6 +2,8 @@
 
 Paseo 0.17.4 en Windows, daemon con home propio en loopback `:16780`, servicio del fixture en `:16781`, frontend web de esa misma versión en Chrome headless. Se recuperaron la sonda, el cliente y el registro de eventos del ensayo interrumpido. La comprobación adicional de servicio, proxy y túnel no usó inferencia.
 
+La rama local `docs/s00-t07-services-approval-poc` preserva los nueve archivos originales en `00e60e0`. La copia consolidada usa un perfil de navegador nuevo por ejecución.
+
 ## POC-11 — Servicio local
 
 | Comprobación | Resultado | Evidencia |

@@ -224,6 +224,15 @@
           "date": "2026-11-25",
           "notes": "Panel bound action to exact SHA and rejected stale requests. UI and generic client shared the same handler context, which exposed no authentic human actor.",
           "limitations": "No trusted chat approval path or external review mechanism verified."
+        },
+        {
+          "kind": "recovery",
+          "path": "docs/evidence/S00-T07-services-approval.md",
+          "check": "S00-T07 original artifacts",
+          "result": "PASS",
+          "date": "2026-11-26",
+          "sha": "00e60e0ab55134d7e019d89412548337350ff1d6",
+          "notes": "All nine original files were preserved byte-for-byte in a local commit on the original task branch."
         }
       ],
       "owner": "orchestrator",
@@ -287,8 +296,18 @@
           "command": "poc/s00-t08/run.ps1 -Install <paseo-install> -Scratch <sandbox>; Get-NetTCPConnection -OwningProcess <listenerPid>",
           "result": "BLOCKED",
           "date": "2026-11-26",
-          "notes": "Listener PID differed from the recorded PID. One established non-loopback TCP connection was observed on the listener process and left unattributed.",
-          "limitations": "Spot sample only. Native Paseo/provider traffic was not distinguished from plugin traffic; sanitized export unverified."
+          "notes": "Listener PID differed from the recorded PID. One established non-loopback TCP connection was observed on the listener process and left unattributed. The isolated daemon log recorded background speech model downloads during startup.",
+          "limitations": "The connection was not correlated with a particular operation. A sanitized export passed only on synthetic data."
+        },
+        {
+          "kind": "fixture",
+          "path": "docs/evidence/S00-T08-persistence-isolation-privacy.md",
+          "check": "POC-16 synthetic export",
+          "command": "node poc/s00-t08/export-probe.mjs",
+          "result": "PASS",
+          "date": "2026-11-26",
+          "notes": "Allowlisted fixture export dropped synthetic paths, notes, messages and credential. Malformed allowed fields were rejected.",
+          "limitations": "Synthetic input only. A real daemon state export was not tested."
         }
       ],
       "owner": "orchestrator",
@@ -296,7 +315,7 @@
       "pr": null,
       "blockers": [
         "A durable approval and operation state/reconciliation mechanism has not been verified through a daemon restart.",
-        "Attribute the observed connection, expand traffic coverage, and verify a sanitized export for POC-16."
+        "Correlate the observed connection, expand traffic coverage, and verify a sanitized export from persisted fixture state."
       ]
     },
     {

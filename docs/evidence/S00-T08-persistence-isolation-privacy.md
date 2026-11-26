@@ -22,3 +22,8 @@ La reconciliación de un turno activo, los permisos pendientes de un agente y la
 La ruta de scratch debe empezar vacía y los dos puertos deben estar libres. El script crea un Git de prueba, registra un workspace local, instala los dos plugins del repositorio, crea una solicitud vinculada a HEAD y ejecuta el servicio. Reinicia el daemon, comprueba el estado del servicio y la solicitud, vuelve a arrancar el servicio y desactiva y retira el plugin S00-T07. El script toma instantáneas TCP del PID del daemon antes y después del reinicio y lo detiene al finalizar. El fixture queda disponible para inspección.
 
 Para repetir la comprobación adicional, arrancar el mismo home aislado, localizar el listener con `Get-NetTCPConnection -State Listen -LocalAddress 127.0.0.1 -LocalPort 16800` y consultar las conexiones con `Get-NetTCPConnection -OwningProcess <pid-del-listener>`. La inspección registró estado y alcance de la dirección. La parada final cerró ambos puertos del fixture.
+
+## Comprobación adicional de POC-16
+
+- **PASS en el fixture de exportación.** `node poc/s00-t08/export-probe.mjs` produjo un JSON con versión, ID de comprobación, veredicto y SHA. La prueba verificó que se omitieran ubicación, notas, mensajes y una credencial simulada. Rechazó valores inválidos en los campos permitidos. Solo usó datos sintéticos.
+- El log del daemon aislado registra que Paseo intentó descargar modelos locales de voz en los tres arranques del ensayo, incluido el de la inspección TCP. Ese log identifica una fuente de tráfico de la plataforma. Falta correlacionar la conexión observada con una operación concreta y probar la exportación con estado persistido real. POC-16 sigue bloqueado para el criterio completo.
