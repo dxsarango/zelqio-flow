@@ -1,8 +1,7 @@
 import { z } from "zod";
-import type { UsageSnapshot, UsageStatus } from "../shared/usage";
+import { MAX_USAGE_AGE_MS, type UsageSnapshot, type UsageStatus } from "../shared/usage";
 
 const READ_INTERVAL_MS = 30_000;
-const MAX_AGE_MS = 5 * 60_000;
 const MAX_BACKOFF_MS = 2 * 60_000;
 
 const sdkUsage = z.object({
@@ -33,7 +32,7 @@ function reportTime(value: number | null): string | null {
 function classifyWindow(remaining: number | null, observed: number | null, resets: number | null, now: number, available: boolean): UsageStatus {
   if (remaining === null || observed === null || observed > now) return "unknown";
   if (resets !== null && resets <= now) return "reset";
-  if (!available || now - observed >= MAX_AGE_MS) return "stale";
+  if (!available || now - observed >= MAX_USAGE_AGE_MS) return "stale";
   return remaining === 0 ? "exhausted" : "fresh";
 }
 

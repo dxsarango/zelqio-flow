@@ -2,13 +2,13 @@ import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import { useRpc, useTranslation } from "@getpaseo/plugin/client";
 import { SettingsAction, SettingsRow, SettingsSection, SettingsSelect } from "@getpaseo/plugin/client/ui";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import type { CatalogProvider } from "../shared/providers";
 import { unwrapResult } from "../shared/rpc";
 import { STRATEGIES, type ZelqioSettings } from "../shared/settings";
 import { statusRpc } from "../shared/status";
-import { usageListRpc } from "../shared/usage";
+import { displayedUsageStatus, usageListRpc } from "../shared/usage";
 import { useCatalog, useZelqioSettings } from "./settings-common";
 import { messages } from "./translations";
 
@@ -86,13 +86,19 @@ function ProvidersSection() {
 
 function UsageSection() {
   const { t, locale } = useTranslation(messages);
+  const [now, setNow] = useState(Date.now);
   const read = useRpc(usageListRpc);
   const usage = useQuery({
     queryKey: ["zelqio.usage"],
     queryFn: async () => unwrapResult(await read({})),
     staleTime: 30_000,
+    refetchInterval: 30_000,
     retry: false,
   });
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1_000);
+    return () => clearInterval(timer);
+  }, []);
   const reports = usage.data?.reports ?? [];
   const unavailable = usage.isError || usage.data?.status === "unavailable";
   const dates = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
@@ -109,14 +115,18 @@ function UsageSection() {
             label={report.sourceId}
             hint={report.fetchedAt ? t("resources.observed", { at: dates.format(new Date(report.fetchedAt)) }) : t("resources.noObservation")}
           />
-          {!report.windows.length ? <SettingsRow label={t("resources.status.unknown")} /> : null}
+          {!report.windows.length ? (
+            <SettingsRow label={t(report.status === "error" ? "resources.sourceError" : "resources.status.unknown")} />
+          ) : null}
           {report.windows.map((window, windowIndex) => {
-            const visiblePercent = (window.status === "fresh" || window.status === "exhausted") && window.remainingPct !== null;
-            const state = t(`resources.status.${window.status}`);
+            const status = displayedUsageStatus(window, report.fetchedAt, !unavailable, now);
+            const state = t(`resources.status.${status}`);
             const label = window.durationSeconds === 18_000
               ? t("resources.fiveHours")
               : window.durationSeconds === 604_800 ? t("resources.weekly") : window.id;
-            const remaining = visiblePercent ? t("resources.remaining", { value: percent.format(window.remainingPct! / 100) }) : state;
+            const remaining = (status === "fresh" || status === "exhausted") && window.remainingPct !== null
+              ? t("resources.remaining", { value: percent.format(window.remainingPct / 100) })
+              : state;
             const reset = window.resetsAt ? t("resources.resetAt", { at: dates.format(new Date(window.resetsAt)) }) : "";
             return <SettingsRow key={JSON.stringify([window.id, windowIndex])} label={label} hint={[remaining, reset].filter(Boolean).join(" · ")} />;
           })}

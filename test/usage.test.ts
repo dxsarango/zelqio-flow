@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import contribute from "../index.server";
 import { UsageCache } from "../server/usage";
 import { providersListRpc } from "../shared/providers";
-import { usageListRpc } from "../shared/usage";
+import { displayedUsageStatus, MAX_USAGE_AGE_MS, usageListRpc } from "../shared/usage";
 import { createMockServer } from "./mock-sdk";
 
 const start = Date.parse("2026-11-26T12:00:00Z");
@@ -30,6 +30,14 @@ function usageFixture(fetchedAt = at()) {
 }
 
 describe("provider usage", () => {
+  it("withdraws cached current percentages after a reset, stale report or failed refresh", () => {
+    const cached = { status: "fresh", resetsAt: at(60_000) } as const;
+    expect(displayedUsageStatus(cached, at(), true, start + 59_999)).toBe("fresh");
+    expect(displayedUsageStatus(cached, at(), true, start + 60_000)).toBe("reset");
+    expect(displayedUsageStatus(cached, at(), false, start + 10_000)).toBe("stale");
+    expect(displayedUsageStatus({ status: "exhausted", resetsAt: null }, at(), true, start + MAX_USAGE_AGE_MS)).toBe("stale");
+  });
+
   it("preserves source ambiguity and distinguishes exhausted, fresh and unknown windows", async () => {
     const cache = new UsageCache(() => start);
     const snapshot = await cache.read(async () => usageFixture());
