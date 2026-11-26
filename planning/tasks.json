@@ -875,11 +875,66 @@
       "role": "UI Developer",
       "risk": "medium",
       "acceptance": "Instalación limpia, uno o más proveedores, funding, estrategia, modo, Git y resumen",
-      "status": "in_progress",
-      "evidence": [],
-      "owner": "worker:claude-ui-developer (supervised by orchestrator)",
-      "branch": "feat/s02-t04-onboarding",
-      "pr": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "source",
+          "command": "git cherry-pick fbf0125 6771ff7",
+          "result": "PASS",
+          "sha": "542b1747691c10044ce80f815740368360d81c57",
+          "date": "2026-11-26",
+          "notes": "Both worker commits applied cleanly to f6d04d8 on a new branch. Source worktree preserved.",
+          "limitations": "Local integration candidate."
+        },
+        {
+          "kind": "local",
+          "command": "npm run check && node tools/check-planning.mjs",
+          "result": "PASS",
+          "sha": "542b1747691c10044ce80f815740368360d81c57",
+          "date": "2026-11-26",
+          "notes": "Typecheck, lint, 105 tests across 8 files, and planning integrity passed on Windows.",
+          "limitations": "Local only."
+        },
+        {
+          "kind": "ui",
+          "command": "Paseo 0.17.4 isolated daemon + browser",
+          "result": "PASS",
+          "sha": "542b1747691c10044ce80f815740368360d81c57",
+          "date": "2026-11-26",
+          "notes": "Fresh setup and returning settings in EN and ES with Claude alone and with Codex and OpenCode auxiliary. Verified consumption opt-in and Autopilot confirmation in EN, saved settings and checked remote publication remained denied. Verified the loopback preview bootstrap in a fresh browser profile.",
+          "limitations": "Owner approval pending. Screen readers, concurrency conflicts, provider removal end to end, and invalid settings writes at the transport layer were not exercised."
+        },
+        {
+          "kind": "local",
+          "command": "npm run check; node tools/check-planning.mjs",
+          "result": "PASS",
+          "sha": "542b1747691c10044ce80f815740368360d81c57",
+          "date": "2026-11-26",
+          "notes": "Repeated in the clean validation worktree. Typecheck, lint, 105 tests in 8 files, and planning integrity passed.",
+          "limitations": "Windows local checks. GitHub CI for the candidate is still pending."
+        },
+        {
+          "kind": "owner",
+          "command": "Owner functional acceptance",
+          "result": "PASS",
+          "sha": "542b1747691c10044ce80f815740368360d81c57",
+          "date": "2026-11-26",
+          "notes": "Explicit functional approval from the owner. Final visual design is deferred, with follow-up scoped in the plan.",
+          "limitations": "Functional acceptance only."
+        },
+        {
+          "kind": "ci",
+          "command": "GitHub commit check-runs and PR #24",
+          "result": "PASS",
+          "sha": "542b1747691c10044ce80f815740368360d81c57",
+          "date": "2026-11-26",
+          "notes": "Required planning-integrity, Ubuntu, Windows and macOS checks passed. The protected squash merge has a tree identical to the approved SHA.",
+          "limitations": "CI on the PR candidate."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s02-t04-integration",
+      "pr": 24,
       "blockers": []
     },
     {
@@ -892,10 +947,20 @@
       "role": "Reviewer",
       "risk": "medium",
       "acceptance": "Flujo EN/ES validado con proveedor único y múltiples; permisos no elevados",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "Review isolated setup evidence and merged tree for PR #24",
+          "result": "PASS",
+          "sha": "8afd8f4b874ac0f7848aac7f4d80b443206d56d8",
+          "date": "2026-11-26",
+          "notes": "Accepted the isolated EN/ES flow with one or multiple providers and owner acceptance of the identical candidate. Server setup registers settings and read-only catalog, role and status RPCs. Foundation reports effects disabled. No routing, model selection, session launch or permission escalation in this change.",
+          "limitations": "Only the Foundation setup gate. Model funding enforcement remains a prerequisite of S03 and G3."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "docs/close-g2-onboarding",
       "pr": null,
       "blockers": []
     },
@@ -925,7 +990,7 @@
       ],
       "role": "Senior Developer",
       "risk": "medium",
-      "acceptance": "Elegibilidad y estrategias, empate y reservas, sin tokens adicionales ni sustitución de funding",
+      "acceptance": "Elegibilidad y estrategias, empate y reservas, sin tokens adicionales ni sustitución de funding Los proveedores solo gratuitos admiten exclusivamente modelos con gratuidad verificada, incluso al resolver un modelo predeterminado.",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -942,7 +1007,7 @@
       ],
       "role": "Developer",
       "risk": "high",
-      "acceptance": "Reintento acotado, exclusión por agotamiento, preservación de trabajo y reincorporación verificable para nuevas tareas",
+      "acceptance": "Reintento acotado, exclusión por agotamiento, preservación de trabajo y reincorporación verificable para nuevas tareas El fallback mantiene la restriccion de financiacion por modelo.",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -977,7 +1042,7 @@
       ],
       "role": "QA",
       "risk": "medium",
-      "acceptance": "Pruebas deterministas de cuota/empate/concurrencia/funding y selección explicable",
+      "acceptance": "Pruebas deterministas de cuota/empate/concurrencia/funding y selección explicable Pruebas negativas para modelos de pago y de financiacion desconocida bajo una politica solo gratuita, incluidos predeterminados y fallback.",
       "status": "todo",
       "evidence": [],
       "owner": null,
