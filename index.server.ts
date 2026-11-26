@@ -6,6 +6,7 @@ import { registerZelqioSettings } from "./server/settings";
 import { getStatus } from "./server/status";
 import { UsageCache } from "./server/usage";
 import { providersListRpc } from "./shared/providers";
+import { draftPreference } from "./shared/orchestration";
 import { rolesListRpc } from "./shared/roles";
 import { statusRpc } from "./shared/status";
 import { usageListRpc } from "./shared/usage";
@@ -14,6 +15,7 @@ export default function contribute(server: PluginServerContext) {
   let usage = new UsageCache();
   let catalogHash: string | undefined;
   registerZelqioSettings(server);
+  server.registerSettings(draftPreference);
   handleZelqio(server, statusRpc, getStatus);
   handleZelqio(server, providersListRpc, async (_input, { paseo }) => {
     const catalog = await readCatalog(paseoSnapshotSource(paseo));
