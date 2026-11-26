@@ -2241,10 +2241,10 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Evalúa un snapshot de retirada y bloquea si faltan pruebas de propiedad, limpieza o alcance",
-      "status": "todo",
+      "status": "in_progress",
       "evidence": [],
-      "owner": null,
-      "branch": null,
+      "owner": "orchestrator",
+      "branch": "feat/worktree-cleanup-policy",
       "pr": null,
       "blockers": []
     },
@@ -2258,11 +2258,11 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Contrasta checks de fixtures con SHA, app, resultado y reglas exigidas",
-      "status": "in_progress",
-      "evidence": [],
+      "status": "done",
+      "evidence": [{ "kind": "ci", "command": "GitHub PR #35 required checks", "result": "PASS", "sha": "b0932d431885227a0786b1f7b4ba34acbfb78ab2", "date": "2026-11-26", "notes": "Planning and three OS checks passed on the exact PR head. Integrated into main under Smart Review.", "limitations": "Pure evaluator only. Runtime effects remain gated." }],
       "owner": "orchestrator",
       "branch": "feat/parallel-implementation",
-      "pr": null,
+      "pr": 35,
       "blockers": []
     },
     {
@@ -2310,11 +2310,11 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Propone adquisición y liberación temporal, y suspensión solo con autorización y ausencia verificada de trabajo protegido",
-      "status": "in_progress",
-      "evidence": [],
+      "status": "done",
+      "evidence": [{ "kind": "ci", "command": "GitHub PR #35 required checks", "result": "PASS", "sha": "b0932d431885227a0786b1f7b4ba34acbfb78ab2", "date": "2026-11-26", "notes": "Planning and three OS checks passed on the exact PR head. Integrated into main under Smart Review.", "limitations": "Pure evaluator only. Runtime effects remain gated." }],
       "owner": "orchestrator",
       "branch": "feat/parallel-implementation",
-      "pr": null,
+      "pr": 35,
       "blockers": []
     },
     {
