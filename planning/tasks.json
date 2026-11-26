@@ -2206,11 +2206,30 @@
       "role": "Developer",
       "risk": "medium",
       "acceptance": "Reserva slots e intentos idempotentes en fixtures locales; conserva ambigüedad tras reinicio",
-      "status": "in_progress",
-      "evidence": [],
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "9d5225bb08dffb454bfb893ac210dc6506983c74",
+          "date": "2026-11-26",
+          "notes": "202 pruebas, 4 de attempt-journal",
+          "limitations": "Fixture puro; no verifica el host ni inicia agentes"
+        },
+        {
+          "kind": "ci",
+          "command": "checks ci (3 sistemas) y planning del PR 38",
+          "result": "PASS",
+          "sha": "c470b7af07c2af168128cd2d714131825956bbb5",
+          "date": "2026-11-26",
+          "notes": "Integrado con squash y match-head-commit",
+          "limitations": "Sin revision independiente de otro proveedor"
+        }
+      ],
       "owner": "orchestrator",
       "branch": "feat/s05-t09-attempt-journal",
-      "pr": null,
+      "pr": 38,
       "blockers": []
     },
     {
