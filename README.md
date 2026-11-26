@@ -14,3 +14,11 @@ Plugin independiente, licencia MIT, interfaz EN/ES, distribución objetivo en el
 - [Plan detallado](planning/PLAN.md), [tareas JSON](planning/tasks.json), [flujo de desarrollo](planning/DEVELOPMENT-WORKFLOW.md), [bootstrap](planning/BOOTSTRAP.md).
 
 La fuente de verdad de alcance es PRD; las decisiones técnicas aprobadas se registran en ADR; el estado operativo se registra en tasks.json. No marcar una capacidad como validada por documentación únicamente. Las propuestas no aprobadas se identifican como tales. No publicar datos privados ni configuraciones de desarrollo personales.
+
+## Desarrollo local (Foundation)
+El repositorio raíz es el plugin de Paseo (`paseo-plugin.json`, `index.client.tsx`, `index.server.ts`, `client/`, `server/`, `shared/`). Requisitos: Node.js 24, Paseo 0.17.4 (el manifest limita a `>=0.17.4 <0.18.0`) y Windows para Foundation.
+- `npm ci` instala dependencias fijadas; `npm run check` ejecuta typecheck, lint y pruebas unitarias. CI ejecuta lo mismo en Linux, Windows y macOS.
+- Probar el plugin siempre en un daemon aislado: `paseo daemon config set daemon.listen 127.0.0.1:<puerto> --home <carpeta>`, `daemon.relay.enabled false`, `pluginsEnabled true`; `paseo daemon start --home <carpeta>` y `paseo plugin install <ruta-del-repo> --home <carpeta>`. No instalar en el daemon habitual.
+- `node tools/serve-app.mjs <app-dist> <puerto> <host:puerto-daemon>` sirve la app web preconectada al daemon aislado para validar la interfaz.
+- Los efectos avanzados permanecen desactivados en Foundation; la interfaz actual es una pantalla de estado de solo lectura.
+
