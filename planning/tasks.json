@@ -988,7 +988,7 @@
       ],
       "owner": "orchestrator",
       "branch": "feat/s03-t01-usage-adapter",
-      "pr": null,
+      "pr": 26,
       "blockers": []
     },
     {
@@ -1035,12 +1035,31 @@
       "role": "UI Developer",
       "risk": "low",
       "acceptance": "Cuotas reales con freshness y unknown, preferencias editables y razón de selección",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "awaiting_validation",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check; node tools/check-planning.mjs",
+          "result": "PASS",
+          "sha": "98d17cbd089b75aea4826b7f802b6bbf73fa822b",
+          "date": "2026-11-26",
+          "notes": "109 tests in 9 files, typecheck, lint and planning integrity.",
+          "limitations": "Windows local checks."
+        },
+        {
+          "kind": "local",
+          "command": "Isolated Paseo 0.17.4 and Chrome",
+          "result": "PASS",
+          "sha": "98d17cbd089b75aea4826b7f802b6bbf73fa822b",
+          "date": "2026-11-26",
+          "notes": "Rendered the actual plugin with synthetic quota reports on a loopback daemon without agents or projects. Verified Light and Dark, expanding unavailable providers, and saving routing strategy.",
+          "limitations": "Synthetic reports. Human acceptance of the dashboard is pending. The UI shows that automatic selection is disabled."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s03-t04-resources-dashboard",
       "pr": null,
-      "blockers": []
+      "blockers": ["Owner review of the resources dashboard on the exact candidate SHA."]
     },
     {
       "id": "S03-T05",
