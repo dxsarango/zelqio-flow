@@ -37,10 +37,20 @@
       "role": "UI Developer",
       "risk": "high",
       "acceptance": "POC-01/02: control nativo, opt-in, metadata, proveedor correcto antes de inferencia y sesión normal intacta",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "poc",
+          "path": "docs/evidence/S00-T02-composer-routing.md",
+          "artifacts": "poc/s00-t02/",
+          "result": "PASS",
+          "date": "2026-11-25",
+          "notes": "POC-01/02 on Paseo 0.17.4 (isolated daemon, web build in headless Chrome, OpenCode free inference only): addComposerItem/addNewWorkspaceItem host the opt-in control; host settings persist it; agent.create.before applies provider/model/mode before any session/inference, fails closed on throw or invalid provider, respects manual override, leaves non-opted-in sessions untouched. FAIL rows: 1.8 (workspace metadata does not reach initial agent), 1.10 (setProvider at cold mount rejected) - design implications recorded.",
+          "limitations": "Electron window, compact/mobile/theme, plugin-down and hook-timeout (fail-open expected), multi-plugin ordering, restart persistence and type-checking NOT RUN; surfaces missing from plugin reference docs were found in the runtime."
+        }
+      ],
+      "owner": "worker:claude-ui-developer (verified by orchestrator)",
+      "branch": "docs/s00-t02-composer-poc",
       "pr": null,
       "blockers": []
     },

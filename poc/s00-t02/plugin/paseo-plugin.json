@@ -1,0 +1,6 @@
+{
+  "id": "zelqio-poc-t02",
+  "name": "Zelqio POC T02 (disposable)",
+  "description": "Disposable proof of concept for composer control and creation-hook routing. Not product code.",
+  "requirements": { "paseo": ">=0.17.4 <0.18.0" }
+}
