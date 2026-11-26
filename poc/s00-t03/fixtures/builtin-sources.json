@@ -1,0 +1,87 @@
+﻿[
+    {
+        "directory":  "claude-usage-source",
+        "sourceId":  "claude",
+        "providers":  [
+                          "claude",
+                          "pi",
+                          "omp"
+                      ],
+        "loaded":  true
+    },
+    {
+        "directory":  "codex-usage-source",
+        "sourceId":  "codex",
+        "providers":  [
+                          "codex",
+                          "opencode",
+                          "pi",
+                          "omp"
+                      ],
+        "loaded":  true
+    },
+    {
+        "directory":  "copilot-usage-source",
+        "sourceId":  "copilot",
+        "providers":  [
+                          "copilot"
+                      ],
+        "loaded":  true
+    },
+    {
+        "directory":  "cursor-usage-source",
+        "sourceId":  "cursor",
+        "providers":  [
+                          "cursor"
+                      ],
+        "loaded":  true
+    },
+    {
+        "directory":  "grok-usage-source",
+        "sourceId":  "grok",
+        "providers":  [
+
+                      ],
+        "loaded":  true
+    },
+    {
+        "directory":  "kimi-usage-source",
+        "sourceId":  "kimi",
+        "providers":  [
+                          "kimi"
+                      ],
+        "loaded":  true
+    },
+    {
+        "directory":  "minimax-usage-source",
+        "sourceId":  "minimax",
+        "providers":  [
+
+                      ],
+        "loaded":  true
+    },
+    {
+        "directory":  "opencode-go-usage-source",
+        "sourceId":  "opencode-go",
+        "providers":  [
+                          "opencode"
+                      ],
+        "loaded":  true
+    },
+    {
+        "directory":  "openrouter-host-usage-source",
+        "sourceId":  "openrouter-host",
+        "providers":  [
+
+                      ],
+        "loaded":  true
+    },
+    {
+        "directory":  "zai-usage-source",
+        "sourceId":  "zai",
+        "providers":  [
+
+                      ],
+        "loaded":  true
+    }
+]

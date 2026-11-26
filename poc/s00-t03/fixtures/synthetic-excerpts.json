@@ -1,0 +1,102 @@
+{
+  "capture": "Selected values from the successful isolated run at 2026-11-26T04:15Z, before a later invocation replaced the full fixture",
+  "providerModelsCli": [
+    {
+      "model": "Fixture model",
+      "id": "fixture-model",
+      "description": "",
+      "thinkingOptionIds": ["low"],
+      "defaultThinkingOptionId": "low",
+      "thinkingOptions": "low"
+    }
+  ],
+  "snapshotReadyEntry": {
+    "provider": "s00-t03-catalog",
+    "status": "ready",
+    "enabled": true,
+    "source": "custom",
+    "label": "S00-T03 catalog fixture",
+    "description": "Plugin provider S00-T03 catalog fixture",
+    "defaultModeId": "review",
+    "modes": [{"id": "review", "label": "Review"}],
+    "models": [
+      {
+        "provider": "s00-t03-catalog",
+        "id": "fixture-model",
+        "label": "Fixture model",
+        "contextWindowMaxTokens": 8192,
+        "isDefault": true,
+        "thinkingOptions": [{"id": "low", "label": "Low"}],
+        "defaultThinkingOptionId": "low"
+      }
+    ],
+    "fetchedAt": "2026-11-26T04:15:53.782Z"
+  },
+  "cliAvailableReport": {
+    "id": "s00-t03-fixture:available",
+    "sourceId": "s00-t03-fixture",
+    "sourceLabel": "S00-T03 fixture",
+    "account": "<redacted>",
+    "fetchedAt": "2026-11-26T04:15:55.555Z",
+    "report": {
+      "status": "available",
+      "observedAt": "2026-11-26T04:15:55.556Z",
+      "windows": [
+        {"id": "zero", "label": "Zero", "usedPct": 0, "remainingPct": 100},
+        {"id": "full", "label": "Full", "usedPct": 100, "remainingPct": 0},
+        {"id": "unknown", "label": "Unknown", "usedPct": null},
+        {"id": "timed", "label": "Timed", "resetsAt": "2026-11-26T04:45:55.556Z", "durationSeconds": 18000}
+      ]
+    },
+    "successfulAt": "2026-11-26T04:15:55.558Z",
+    "defaultEnabled": false
+  },
+  "cliUnavailableReport": {
+    "status": "unavailable",
+    "problem": {"kind": "no_quota", "detail": "S00-T03 synthetic absence"}
+  },
+  "cliErrorReport": {"status": "error", "error": "S00-T03 synthetic failure"},
+  "cliCachedAttemptFetchedAt": "2026-11-26T04:15:55.555Z",
+  "cliRefreshedAttemptFetchedAt": "2026-11-26T04:15:57.059Z",
+  "sdkUsage": {
+    "requestId": "<redacted>",
+    "fetchedAt": "2026-11-26T04:15:55.555Z",
+    "providers": [
+      {
+        "providerId": "s00-t03-fixture",
+        "displayName": "S00-T03 fixture (available)",
+        "status": "available",
+        "planLabel": null,
+        "windows": [
+          {"id": "zero", "label": "Zero", "usedPct": 0, "remainingPct": 100},
+          {"id": "full", "label": "Full", "usedPct": 100, "remainingPct": 0},
+          {"id": "unknown", "label": "Unknown", "usedPct": null},
+          {"id": "timed", "label": "Timed", "resetsAt": "2026-11-26T04:45:55.556Z", "durationSeconds": 18000}
+        ],
+        "balances": [],
+        "details": [],
+        "error": null
+      },
+      {
+        "providerId": "s00-t03-fixture",
+        "displayName": "S00-T03 fixture (unavailable)",
+        "status": "unavailable",
+        "planLabel": null,
+        "windows": [],
+        "balances": [],
+        "details": [],
+        "error": "S00-T03 synthetic absence"
+      },
+      {
+        "providerId": "s00-t03-fixture",
+        "displayName": "S00-T03 fixture (error)",
+        "status": "error",
+        "planLabel": null,
+        "windows": [],
+        "balances": [],
+        "details": [],
+        "error": "S00-T03 synthetic failure"
+      }
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "id": "s00-t03-quota-probe",
+  "requirements": { "paseo": ">=0.17.4" }
+}
