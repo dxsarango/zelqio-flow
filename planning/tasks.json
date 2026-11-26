@@ -739,11 +739,30 @@
       "role": "Reviewer",
       "risk": "medium",
       "acceptance": "Revisión independiente por Codex de server/store.ts, server/policy.ts y sus tests cuando su cuota esté disponible; hallazgos corregidos o registrados. Decidir y probar la limpieza segura de temporales .tmp-* y .bak.tmp-* tras cierres abruptos. No bloquea G1 ni tareas independientes.",
-      "status": "in_progress",
-      "evidence": [],
-      "owner": "worker:codex-independent-reviewer (supervised by orchestrator)",
-      "branch": null,
-      "pr": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "review",
+          "command": "independent read-only review by Codex of server/store.ts, server/policy.ts, shared/policy.ts and their tests; npm run check run by the reviewer (81 tests)",
+          "result": "PASS",
+          "sha": "6505511",
+          "date": "2026-11-26",
+          "notes": "Six confirmed findings, all fixed with regression tests: (high) a save could erase a newer-version backup, now never rotated over; (high) two spellings of a directory path bypassed the per-file queue on case-insensitive filesystems, now a case-insensitive key; (high) a misspelled policy scope (sesion) dropped its deny and allowed the action, now policy schemas are strict and evaluate fails closed; (medium) valid older data without a migration path was treated as corrupt and could be deleted, now unsupported and untouched, and keepCorrupt keeps at least the copy just preserved; (medium) the two-instance test did not prove serialization, now gated; (low) the unknown-action test fixture omitted its rule, now fixed.",
+          "limitations": "Reviewer findings come from reading and one test run; no fuzzing. Directory symlinks and 8.3 short names are not normalized in the queue key."
+        },
+        {
+          "kind": "local",
+          "command": "npm run check (typecheck, lint, vitest)",
+          "result": "PASS",
+          "sha": "6505511",
+          "date": "2026-11-26",
+          "notes": "90 tests. Temp cleanup decision: automatic cleanup is rejected because age and process ids cannot prove a writer is dead; the store exposes cleanTemps({quiescent: true}), offline only, removing regular files with this store exact temp names and nothing else (tested on matching, non-matching and directory names).",
+          "limitations": "Automatic cleanup waits for an OS-backed exclusive lock shared by all writers; cross-process locking remains open in the validation matrix."
+        }
+      ],
+      "owner": "worker:codex-independent-reviewer (verified by orchestrator)",
+      "branch": "fix/s01-t07-review-findings",
+      "pr": 21,
       "blockers": []
     },
     {
