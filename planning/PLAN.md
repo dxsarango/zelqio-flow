@@ -1,5 +1,5 @@
 # Plan detallado — Zelqio Flow
-64 tareas en 11 fases. El estado operativo vive en tasks.json (esta tabla no lo duplica); dependencias verificadas por `tools/check-planning.mjs`. Roles son capacidades sugeridas, no asignaciones rígidas. Las fases S01–S10 dependen del gate previo; se puede preparar documentación independiente sin iniciar implementación bloqueada. Los criterios se amplían en PRD, POC y políticas. No estimaciones temporales sin calibración de S00.
+65 tareas en 11 fases. El estado operativo vive en tasks.json (esta tabla no lo duplica); dependencias verificadas por `tools/check-planning.mjs`. Roles son capacidades sugeridas, no asignaciones rígidas. Las fases S01–S10 dependen del gate previo; se puede preparar documentación independiente sin iniciar implementación bloqueada. Los criterios se amplían en PRD, POC y políticas. No estimaciones temporales sin calibración de S00.
 ## Reglas de ejecución
 Ver DEVELOPMENT-WORKFLOW.md y TEST-STRATEGY.md. Los gates requieren evidencia y aprobación según riesgo; G0, G9, G10 explícita del propietario. Un lote contiene solo tareas listas e independientes, con integración serial. No usar el plugin en construcción como dependencia del desarrollo.
 
@@ -33,10 +33,22 @@ La revisión de recursos de S03-T04 recoge la organización de proveedores y el 
 
 **Revisiones del propietario pendientes.**
 
+La autorización temporal de revisión diferida terminó al regresar el propietario. El dashboard integrado conserva su revisión pendiente y las nuevas interfaces siguen la validación ordinaria.
+
 | Flujo | SHA | Qué revisar |
 |---|---|---|
 | S02-T04, onboarding y ajustes | `542b1747691c10044ce80f815740368360d81c57` | Diseño visual definitivo y mejoras de la lista anterior. La funcionalidad de este SHA tiene aprobación humana. |
-| S03-T04, dashboard de recursos | `1d010b3c3b34d301fa2357e49dd512e01a4c4492` | Jerarquía, proveedores plegados, cuotas actuales y caducadas, guardado de estrategia, EN/ES, Light/Dark y tamaños compacto y amplio. Se integró con revisión diferida pendiente. |
+| S03-T04, dashboard de recursos | `1d010b3c3b34d301fa2357e49dd512e01a4c4492` | Presentación funcional aprobada. El diseño visual definitivo se agrupa con onboarding y compositor. |
+| S04-T01, compositor nativo | `4002d3e8b973c322fb70880ff461cb66c90031b7` | Integración observada por el propietario en New Workspace y aceptada para el SHA indicado. El diseño visual definitivo sigue pendiente. [PR #31](https://github.com/dxsarango/zelqio-flow/pull/31) |
+
+**Revisión integral de UI/UX (S08-T04).**
+
+- Mostrar indicadores visuales de cuotas y agrupar proveedores y ventanas de consumo en una vista compacta. Distinguir proveedores principales, auxiliares y desactivados. Mantener plegados por defecto los proveedores no disponibles y los detalles técnicos.
+- Mejorar jerarquía, espaciado y aprovechamiento del espacio. Unificar la navegación del setup y el dashboard.
+- Mantener estable el tamaño del compositor al activar Automática. Evaluar un menú contextual compacto para elegir el estado, explicar su alcance y recordar preferencias.
+- Reutilizar componentes nativos de Paseo y comprobar Light y Dark. Representar las cuotas según la procedencia verificada y dejar sin asociación las fuentes que no puedan vincularse con certeza a proveedores o modelos.
+
+**S04.** El SDK ofrece el hook de creación y recibe metadata modificable. Esta marca documenta intención y carece de autoridad por sí sola. S04-T02 debe comprobar que el proveedor, modelo, financiación y permisos autorizados estén vinculados a la solicitud exacta antes de habilitar ningún efecto.
 
 **Relevo.** Un solo coordinador con permiso de escribir `tasks.json` y `PLAN.md`: el vigente se identifica por el agente raíz activo en Paseo y el registro de Engram (`coordination/lease`). Un sucesor sin historial lee `AGENTS.md`, esta sección, `tasks.json`, `git worktree list`, `gh pr list`, la lista de agentes de Paseo y `paseo usage ls`, confirma que no hay otro coordinador activo y entonces escribe. Procedimiento completo en [Relevo de coordinación](DEVELOPMENT-WORKFLOW.md#relevo-de-coordinación).
 
@@ -98,7 +110,7 @@ La revisión de recursos de S03-T04 recoge la organización de proveedores y el 
 | S05-T01 | DAG y runtime de tareas | S04-T04 | Senior Developer | high | Dependencias acíclicas, estados, leases, idempotencia y límites de concurrencia |
 | S05-T02 | Herramientas de orquestador | S05-T01 | Developer | high | Delegar/consultar/cancelar/recolectar con caller identity y deny por rol |
 | S05-T03 | Workers nativos y mensajes | S05-T02 | Developer | high | Crear con rol/proveedor, parent-child, resultados y permisos visibles en Paseo |
-| S05-T04 | Recuperación y handoff | S05-T03 | Senior Developer | high | Un sucesor autorizado conserva ejecución, intentos y sesiones aunque cambie el árbol nativo; la época anterior no puede repetir efectos |
+| S05-T04 | Recuperación y handoff | S05-T03 | Senior Developer | high | Progreso real y lease con caducidad y exclusión por época. Supervisor local sin inferencia, reintentos acotados y reanudación tras cuota verificada. Conservar intentos y sesiones |
 | S05-T05 | Actividad local y estado | S05-T03 | UI Developer | medium | Mostrar decisiones, tareas, bloqueos; sin copiar conversaciones ni dashboard redundante |
 | S05-T06 | Gate G5 | S05-T04, S05-T05 | Reviewer | high | Delegación bajo demanda, cancelación, recursión negativa y reconciliación demostradas |
 
@@ -130,15 +142,16 @@ La revisión de recursos de S03-T04 recoge la organización de proveedores y el 
 | S08-T02 | Revisión independiente | S08-T01 | Senior Developer | high | Selección cross-provider cuando viable; sin falsa independencia; bloqueos de riesgo |
 | S08-T03 | Servicios y preview | S07-T07 | Developer | high | Servicio nativo, puertos/health/version, host remoto y parada verificados |
 | S08-T04 | Entrega y UX final | S08-T01, S08-T03 | UI Developer | medium | Resultado funcional o bloqueo honesto, preview/PR/diff según modo |
-| S08-T05 | Gate G8 | S08-T02, S08-T04 | QA | high | Escenarios end-to-end docs, UI iterativa, backend, landing local y CI fallido |
+| S08-T06 | Power Management | S08-T03 | Senior Developer | high | Prevención temporal de suspensión y liberación. Suspensión opcional cancelable solo con autorización y ausencia verificable de trabajo protegido. Windows primero |
+| S08-T05 | Gate G8 | S08-T02, S08-T04, S08-T06 | QA | high | Escenarios end-to-end de entrega y ciclo de vida de Power Management. Efectos de energía sujetos a evidencia y autorización |
 
 ## S09 — Hardening
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
 |---|---|---|---|---|---|
 | S09-T01 | Auditoría de seguridad | S08-T05 | Reviewer | high | Amenazas, symlink/junctions, inyección, permisos, rutas, secretos y recursión; hallazgos resueltos |
-| S09-T02 | Fault injection y recuperación | S08-T05 | QA | high | Crash/restart/timeouts/external edits; no duplicación ni pérdida; journal reconciliado |
+| S09-T02 | Fault injection y recuperación | S08-T05 | QA | high | Relevos fallidos, reset, suspensión, reinicio y carreras; no duplicación ni pérdida; journal reconciliado |
 | S09-T03 | Privacidad y retención | S08-T05 | Developer | high | Redacción, expiración segura, export manual y zero telemetry verificado |
-| S09-T04 | Matriz real multiplataforma | S09-T01, S09-T02, S09-T03 | QA | high | Versiones/OS/proveedores con evidencia; desconocidos explícitos y mínimo soportado |
+| S09-T04 | Matriz real multiplataforma | S09-T01, S09-T02, S09-T03 | QA | high | Versiones, proveedores y Power Management en Windows, macOS y Linux. Capacidades sin verificar deshabilitadas |
 | S09-T05 | Actualización y desinstalación | S09-T02, S09-T03 | Developer | high | Migraciones rollback y recursos ajenos intactos; clean install sin terceros |
 | S09-T06 | Gate G9 | S09-T04, S09-T05, S00-T06, S00-T07, S00-T08 | Reviewer | high | Revisión independiente, cierre de validaciones del MVP completo, compatibilidad y aceptación del propietario. |
 

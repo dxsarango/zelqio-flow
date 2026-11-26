@@ -1110,8 +1110,13 @@
       "deferredReview": {
         "status": "pending",
         "sha": "1d010b3c3b34d301fa2357e49dd512e01a4c4492",
-        "scope": "Owner review of the resources dashboard, including hierarchy, provider disclosure, quota presentation and Light/Dark themes.",
+        "scope": "Final visual design during the integrated UI/UX review in S08-T04.",
         "humanApproval": false
+      },
+      "functionalApproval": {
+        "status": "approved",
+        "sha": "1d010b3c3b34d301fa2357e49dd512e01a4c4492",
+        "scope": "Functional presentation of the resources dashboard."
       }
     },
     {
@@ -1152,12 +1157,58 @@
       "role": "UI Developer",
       "risk": "high",
       "acceptance": "New Agent/New Workspace, disabled/automatic y persistencia del opt-in; no chat separado",
-      "status": "in_progress",
-      "evidence": [],
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check; node tools/check-planning.mjs",
+          "result": "PASS",
+          "sha": "4002d3e8b973c322fb70880ff461cb66c90031b7",
+          "date": "2026-11-26",
+          "notes": "129 tests, typecheck, lint and planning integrity.",
+          "limitations": "Windows local checks."
+        },
+        {
+          "kind": "local",
+          "command": "Isolated Paseo 0.17.4 native web composers",
+          "result": "PASS",
+          "sha": "4002d3e8b973c322fb70880ff461cb66c90031b7",
+          "date": "2026-11-26",
+          "notes": "Verified New Workspace and New Agent switching from disabled to automatic. Reload kept the explicitly saved host preference while the draft started disabled. Explicitly applying it restored the draft marker. Switching off and remembering that choice cleared the saved automatic preference. No agents started.",
+          "limitations": "Catalog-only fixture and Chrome. The owner observed New Workspace, and automated browser evidence covers both native composers."
+        },
+        {
+          "kind": "review",
+          "command": "Independent review of native intent and host preference",
+          "result": "PASS",
+          "sha": "4002d3e8b973c322fb70880ff461cb66c90031b7",
+          "date": "2026-11-26",
+          "notes": "Verified strict own marker fields, CAS, disabled default and no implicit metadata, spend or session effects.",
+          "limitations": "Static code review on the exact candidate."
+        },
+        {
+          "kind": "ci",
+          "command": "GitHub commit check-runs for PR #31",
+          "result": "PASS",
+          "sha": "4002d3e8b973c322fb70880ff461cb66c90031b7",
+          "date": "2026-11-26",
+          "notes": "All four required checks passed, including macOS. The protected squash merge tree matches the approved candidate.",
+          "limitations": "CI on the PR candidate."
+        }
+      ],
       "owner": "orchestrator",
       "branch": "feat/s04-t01-native-opt-in",
-      "pr": null,
-      "blockers": []
+      "pr": 31,
+      "blockers": [],
+      "functionalApproval": {
+        "status": "approved",
+        "sha": "4002d3e8b973c322fb70880ff461cb66c90031b7",
+        "scope": "Owner accepted the observed native compositor integration in New Workspace, conditional on technical verification of both composers."
+      },
+      "visualReview": {
+        "status": "pending",
+        "scope": "Final compositor design during the integrated UI/UX review in S08-T04."
+      }
     },
     {
       "id": "S04-T02",
@@ -1270,7 +1321,7 @@
       ],
       "role": "Senior Developer",
       "risk": "high",
-      "acceptance": "Un sucesor autorizado conserva ejecución, intentos y sesiones aunque cambie el árbol nativo; la época anterior no puede repetir efectos",
+      "acceptance": "Un supervisor local sin inferencia distingue turno activo con progreso, inactividad, interrupción y estado obsoleto. Caduca y recupera el lease de forma atómica, conserva intentos y sesiones y rechaza efectos de una época anterior. Verifica cuotas con un canal independiente del modelo, reintenta con presupuesto y backoff, y reanuda una vez tras un reset verificado. Si falla un probe o se agotan los intentos, persiste un próximo intento o un bloqueo recuperable.",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -1608,16 +1659,34 @@
       "blockers": []
     },
     {
+      "id": "S08-T06",
+      "phase": "S08",
+      "title": "Power Management",
+      "dependencies": [
+        "S08-T03"
+      ],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "Windows primero. Evitar temporalmente la suspensión solo durante trabajo elegible, permitir que la pantalla se apague y conservar la configuración de energía. Liberar al finalizar, cancelar o quedar sin recuperación automática. La suspensión al concluir es opt-in explícito y cancelable, y se omite si hay otros proyectos, agentes, procesos de usuario protegidos o si no se puede verificar su ausencia. Validar con adaptadores simulados antes de cualquier efecto real.",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
       "id": "S08-T05",
       "phase": "S08",
       "title": "Gate G8",
       "dependencies": [
         "S08-T02",
-        "S08-T04"
+        "S08-T04",
+        "S08-T06"
       ],
       "role": "QA",
       "risk": "high",
-      "acceptance": "Escenarios end-to-end docs, UI iterativa, backend, landing local y CI fallido",
+      "acceptance": "Escenarios end-to-end de entrega, CI fallido y ciclo de vida de Power Management. Validar la liberación y los bloqueos de suspensión antes de habilitar efectos.",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -1651,7 +1720,7 @@
       ],
       "role": "QA",
       "risk": "high",
-      "acceptance": "Crash/restart/timeouts/external edits; no duplicación ni pérdida; journal reconciliado",
+      "acceptance": "Crash, reinicio, timeouts, ediciones externas, relevo fallido, reset y suspensión. Sin duplicación o pérdida, journal reconciliado, lease obsoleto rechazado y bloqueo de energía liberado.",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -1687,7 +1756,7 @@
       ],
       "role": "QA",
       "risk": "high",
-      "acceptance": "Versiones/OS/proveedores con evidencia; desconocidos explícitos y mínimo soportado",
+      "acceptance": "Versiones, OS y proveedores con evidencia. Power Management progresivo en Windows, macOS y Linux, con capacidades ausentes o sin evidencia deshabilitadas.",
       "status": "todo",
       "evidence": [],
       "owner": null,
