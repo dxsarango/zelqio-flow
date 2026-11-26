@@ -91,10 +91,20 @@
       "role": "Senior Developer",
       "risk": "high",
       "acceptance": "POC-04/05/06: agente directo, caller identity, MCP on/off y matriz de restricciones reales",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "poc",
+          "path": "docs/evidence/S00-T04-roles-tools-permissions.md",
+          "artifacts": "poc/s00-t04/",
+          "result": "PASS",
+          "date": "2026-11-25",
+          "notes": "POC-04 PASS (direct agent creation, no Agent Profiles, caller-chosen agentId). POC-05 PASS WITH CONDITIONS: per-session tool injection before first turn works, but caller identity on the Paseo-MCP route (callerAgentId URL param) is spoofable (05.3 FAIL); identity-safe route is a plugin-hosted MCP server with per-session bearer secret (verified on OpenCode/Codex, authenticated connect on Claude). POC-06 restriction matrix produced: Paseo tool policy is per provider only; per-session deny works for Claude (Bash/Task/Agent) and OpenCode (bash); agent.open.before parent-label veto blocks child creation; Codex shell not removable (behavioral anti-recursion).",
+          "limitations": "Several matrix cells NOT RUN (Codex subagent switch, Claude mcp__paseo deny, OpenCode permission.task, non-default thinking, own-MCP secret exposure to same-user processes, daemon password mode). Claude/Codex per-session restriction claims are model-reported. Inference used: Claude 2, Codex 2, OpenCode free 8 trivial prompts."
+        }
+      ],
+      "owner": "worker:claude-senior-developer (verified by orchestrator)",
+      "branch": "docs/s00-t04-roles-tools-poc",
       "pr": null,
       "blockers": []
     },

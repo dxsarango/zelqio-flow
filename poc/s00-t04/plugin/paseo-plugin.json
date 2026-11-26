@@ -1,0 +1,6 @@
+{
+  "id": "zf-poc-t04",
+  "name": "Zelqio Flow POC S00-T04",
+  "description": "Disposable POC: direct agent creation, per-agent tools, caller identity, hook observation. Not product code.",
+  "requirements": { "paseo": ">=0.17.4 <0.18.0" }
+}
