@@ -1024,7 +1024,7 @@
       ],
       "owner": "orchestrator",
       "branch": "feat/s03-t02-deterministic-router",
-      "pr": null,
+      "pr": 28,
       "blockers": []
     },
     {
@@ -1037,10 +1037,10 @@
       "role": "Developer",
       "risk": "high",
       "acceptance": "Reintento acotado, exclusión por agotamiento, preservación de trabajo y reincorporación verificable para nuevas tareas El fallback mantiene la restriccion de financiacion por modelo.",
-      "status": "todo",
+      "status": "in_progress",
       "evidence": [],
-      "owner": null,
-      "branch": null,
+      "owner": "orchestrator",
+      "branch": "feat/s03-t03-fallback-journal",
       "pr": null,
       "blockers": []
     },

@@ -167,7 +167,7 @@ export class VersionedStore<T> {
     return this.enqueue(() => this.loadNow());
   }
 
-  private async loadNow(): Promise<LoadResult<T>> {
+  private async loadNow(repair = true): Promise<LoadResult<T>> {
     await this.fs.mkdir(this.options.dir);
     this.checked = true;
     this.writable = true;
@@ -184,6 +184,9 @@ export class VersionedStore<T> {
     if (backup === "newer") {
       this.writable = false;
       return { data: this.options.defaults(), status: "unsupported_version" };
+    }
+    if (!repair && (mainText !== null || backupText !== null)) {
+      throw new ZelqioError("disabled", "Stored state requires reconciliation before updating.");
     }
     let preserved: string | undefined;
     if (mainText !== null) preserved = await this.preserveCorrupt("");
@@ -239,6 +242,19 @@ export class VersionedStore<T> {
 
   save(data: T): Promise<void> {
     return this.enqueue(() => this.saveNow(data));
+  }
+
+  /** Serializes read, decision and save for all instances using the same file in this process. */
+  update<R>(change: (current: T) => { result: R; next?: T }): Promise<R> {
+    return this.enqueue(async () => {
+      const current = await this.loadNow(false);
+      if (current.status === "unsupported_version") {
+        throw new ZelqioError("disabled", "Stored data was written by a newer version.");
+      }
+      const { result, next } = change(current.data);
+      if (next !== undefined) await this.saveNow(next);
+      return result;
+    });
   }
 
   private async saveNow(data: T): Promise<void> {
