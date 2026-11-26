@@ -1139,7 +1139,7 @@
       ],
       "owner": "orchestrator",
       "branch": "docs/close-g3-deferred-review",
-      "pr": null,
+      "pr": 30,
       "blockers": []
     },
     {
@@ -1152,10 +1152,10 @@
       "role": "UI Developer",
       "risk": "high",
       "acceptance": "New Agent/New Workspace, disabled/automatic y persistencia del opt-in; no chat separado",
-      "status": "todo",
+      "status": "in_progress",
       "evidence": [],
-      "owner": null,
-      "branch": null,
+      "owner": "orchestrator",
+      "branch": "feat/s04-t01-native-opt-in",
       "pr": null,
       "blockers": []
     },

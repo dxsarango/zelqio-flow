@@ -2,6 +2,14 @@
 export const resources = {
   en: {
     title: "Zelqio Flow",
+    orchestration: {
+      title: "Orchestration",
+      control: "Orchestration · {{mode}}",
+      disabled: "Disabled",
+      automatic: "Automatic",
+      inactive: "This marks the draft. Automatic model selection is still disabled.",
+      saveFailed: "Could not update the draft.",
+    },
     resources: {
       title: "Resources",
       selectionInactive: "Automatic model selection is disabled in this version.",
@@ -201,6 +209,14 @@ export const resources = {
   },
   es: {
     title: "Zelqio Flow",
+    orchestration: {
+      title: "Orquestación",
+      control: "Orquestación · {{mode}}",
+      disabled: "Desactivada",
+      automatic: "Automática",
+      inactive: "Esto marca el borrador. La selección automática de modelos sigue desactivada.",
+      saveFailed: "No se pudo actualizar el borrador.",
+    },
     resources: {
       title: "Recursos",
       selectionInactive: "La selección automática de modelos está desactivada en esta versión.",
