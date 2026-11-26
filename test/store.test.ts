@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -211,16 +212,16 @@ describe("VersionedStore review regressions", () => {
     expect((await make2().load()).status).toBe("created");
   });
 
-  it("prunes corrupt copies by numeric timestamp and never reports a pruned name", async () => {
+  it("prunes corrupt copies by numeric timestamp and never deletes the copy it just made", async () => {
     for (const t of [9, 10, 11]) {
       await writeFile(join(dir, "settings.json"), "garbage");
       await make2({ now: () => t, keepCorrupt: 2 }).load();
     }
     expect((await files()).filter((f) => f.includes("corrupt"))).toEqual(["settings.json.corrupt-10", "settings.json.corrupt-11"]);
     await writeFile(join(dir, "settings.json"), "garbage");
-    const none = await make2({ now: () => 12, keepCorrupt: 0 }).load();
-    expect(none.preserved).toBeUndefined();
-    expect((await files()).filter((f) => f.includes("corrupt"))).toEqual([]);
+    const zero = await make2({ now: () => 12, keepCorrupt: 0 }).load();
+    expect(zero.preserved).toBe("settings.json.corrupt-12"); // keepCorrupt: 0 still keeps the copy just preserved
+    expect((await files()).filter((f) => f.includes("corrupt"))).toEqual(["settings.json.corrupt-12"]);
   });
 
   it("does not overwrite an older corrupt copy that has the same name", async () => {
@@ -232,5 +233,114 @@ describe("VersionedStore review regressions", () => {
     expect(copies).toHaveLength(2);
     const contents = await Promise.all(copies.map((f) => readFile(join(dir, f), "utf8")));
     expect(contents.sort()).toEqual(["first", "second"]);
+  });
+});
+
+describe("independent review findings (S01-T07)", () => {
+  const make3 = (overrides: Record<string, unknown> = {}) =>
+    new VersionedStore({ dir, name: "settings", version: 2, schema: v2, defaults: () => ({ name: "default", count: 0 }), ...overrides });
+  const doc = (schemaVersion: number, data: unknown) => JSON.stringify({ schemaVersion, data });
+
+  it("never rotates over a newer-version backup", async () => {
+    const newerBak = doc(3, { future: true });
+    await writeFile(join(dir, "settings.json"), doc(2, { name: "a", count: 1 }));
+    await writeFile(join(dir, "settings.json.bak"), newerBak);
+    const store = make3();
+    expect((await store.load()).status).toBe("ok");
+    await store.save({ name: "b", count: 2 });
+    await store.save({ name: "c", count: 3 });
+    expect(await readFile(join(dir, "settings.json.bak"), "utf8")).toBe(newerBak);
+    expect((await make3().load()).data).toEqual({ name: "c", count: 3 });
+  });
+
+  it("treats valid older data without a migration path as unsupported and leaves it untouched", async () => {
+    const old = doc(1, { name: "old" });
+    await writeFile(join(dir, "settings.json"), old);
+    const store = make3({ keepCorrupt: 0 });
+    expect((await store.load()).status).toBe("unsupported_version");
+    await expect(store.save({ name: "x", count: 1 })).rejects.toMatchObject({ code: "disabled" });
+    expect(await readFile(join(dir, "settings.json"), "utf8")).toBe(old);
+    expect(await files()).toEqual(["settings.json"]);
+  });
+
+  it("does not lose the only copy when a save fails right after a missing-migration load", async () => {
+    const old = doc(1, { name: "old" });
+    await writeFile(join(dir, "settings.json"), old);
+    await expect(make3({ fs: failing("writeFileSynced", 1) }).save({ name: "x", count: 1 })).rejects.toBeDefined();
+    expect(await readFile(join(dir, "settings.json"), "utf8")).toBe(old);
+  });
+
+  it("serializes writers that spell the directory differently (case-insensitive key)", async (ctx) => {
+    const alias = dir.toUpperCase() === dir ? dir.toLowerCase() : dir.toUpperCase();
+    if (!existsSync(alias)) return ctx.skip(); // case-sensitive filesystem: the two spellings are different directories
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const order: string[] = [];
+    const gated = (label: string, wait: boolean): FsOps => ({
+      ...nodeFs,
+      async writeFileSynced(path, data) {
+        order.push(label + ":start");
+        if (wait) await gate;
+        await nodeFs.writeFileSynced(path, data);
+        order.push(label + ":end");
+      },
+    });
+    const a = make3({ fs: gated("a", true) });
+    const b = make3({ dir: alias, fs: gated("b", false) });
+    const first = a.save({ name: "a", count: 1 });
+    await new Promise((r) => setTimeout(r, 30));
+    const second = b.save({ name: "b", count: 2 });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(order).toEqual(["a:start"]); // b must wait for a, even through another spelling of the path
+    release();
+    await Promise.all([first, second]);
+    expect(order).toEqual(["a:start", "a:end", "b:start", "b:end"]);
+    expect((await make3().load()).data).toEqual({ name: "b", count: 2 });
+  });
+
+  it("makes the same-instance two-writer test observe real serialization", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const order: string[] = [];
+    const slow: FsOps = {
+      ...nodeFs,
+      async writeFileSynced(path, data) {
+        order.push("write");
+        await gate;
+        await nodeFs.writeFileSynced(path, data);
+      },
+    };
+    const a = make3({ fs: slow });
+    const b = make3({ fs: { ...nodeFs, async writeFileSynced(p: string, d: string) { order.push("b-write"); await nodeFs.writeFileSynced(p, d); } } });
+    const p1 = a.save({ name: "a", count: 1 });
+    await new Promise((r) => setTimeout(r, 30));
+    const p2 = b.save({ name: "b", count: 2 });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(order).toEqual(["write"]);
+    release();
+    await Promise.all([p1, p2]);
+    expect(order).toEqual(["write", "b-write"]);
+  });
+});
+
+describe("offline temp cleanup (S01-T07 decision)", () => {
+  it("removes only this store's exact temp names and leaves everything else", async () => {
+    const { mkdir } = await import("node:fs/promises");
+    const store = new VersionedStore({ dir, name: "settings", version: 2, schema: v2, defaults: () => ({ name: "d", count: 0 }) });
+    await store.save({ name: "a", count: 1 });
+    await store.save({ name: "b", count: 2 });
+    const stale = ["settings.json.tmp-123-1-1700000000000", "settings.json.bak.tmp-123-1-1700000000000"];
+    const keep = ["other.json.tmp-1-1-1", "settings.json.tmp-abc", "settings.json.tmp-1-1-1.keep", "notes.txt"];
+    for (const f of [...stale, ...keep]) await writeFile(join(dir, f), "x");
+    await mkdir(join(dir, "settings.json.tmp-9-9-9"));
+    const removed = await store.cleanTemps({ quiescent: true });
+    expect(removed).toEqual([...stale].sort());
+    expect(await files()).toEqual(["notes.txt", "other.json.tmp-1-1-1", "settings.json", "settings.json.bak", "settings.json.tmp-1-1-1.keep", "settings.json.tmp-9-9-9", "settings.json.tmp-abc"]);
+    expect((await store.load()).data).toEqual({ name: "b", count: 2 });
+  });
+
+  it("refuses to run without the exclusive-access acknowledgement", async () => {
+    const store = new VersionedStore({ dir, name: "settings", version: 2, schema: v2, defaults: () => ({ name: "d", count: 0 }) });
+    await expect(store.cleanTemps({} as never)).rejects.toMatchObject({ code: "invalid_input" });
   });
 });

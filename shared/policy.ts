@@ -39,17 +39,23 @@ export const policyRule = z.object({
    * Required (and not a bare wildcard) for allow rules on remote and sensitive actions.
    */
   resource: z.string().min(1).optional(),
-});
+}).strict();
 export type PolicyRule = z.infer<typeof policyRule>;
 
-export const policyLayers = z.object({
-  global: z.array(policyRule).default([]),
-  project: z.array(policyRule).default([]),
-  session: z.array(policyRule).default([]),
-});
+/**
+ * Strict on purpose: an unknown key (for example a misspelled scope such as `sesion`) must make the whole policy
+ * invalid, never be silently dropped together with the rules under it.
+ */
+export const policyLayers = z
+  .object({
+    global: z.array(policyRule).default([]),
+    project: z.array(policyRule).default([]),
+    session: z.array(policyRule).default([]),
+  })
+  .strict();
 export type PolicyLayers = z.input<typeof policyLayers>;
 
-export const policyRequest = z.object({ action: actionId, resource: z.string().min(1).optional() });
+export const policyRequest = z.object({ action: actionId, resource: z.string().min(1).optional() }).strict();
 export type PolicyRequest = z.infer<typeof policyRequest>;
 
 export const decisionReason = z.enum([
