@@ -32,6 +32,8 @@ La revisión de `1a5576a20047a4a1edce95cb4bb4c4345c472192` recomendó **no aprob
 
 La revisión ejecutó la comprobación de las 63 tareas, verificaciones de diff y sintaxis, la prueba GitHub sintética local y el fixture de exportación. Las validaciones de GitHub alojado y daemon se evaluaron sobre la evidencia registrada.
 
+La revisión de seguimiento verificó las correcciones en `bfc2e68578f9fa5c5bfcf521ad2ba8d2278bbda7` con la comprobación de las 63 tareas y del diff. Confirmó los límites del alcance local y la recomendación de viabilidad condicionada para desarrollo. G0 completo sigue bloqueado. Abrir S01 para el alcance acotado requiere aprobación explícita y actualizar los criterios y dependencias del plan.
+
 ## Candidato de publicación
 
 Publicar mediante PR autorizado contra `main` las instrucciones del proyecto, las propuestas de PRD y arquitectura, los criterios de planificación, las evidencias saneadas y las sondas reproducibles con datos sintéticos. Someter los cambios técnicos de alto riesgo a revisión independiente y respetar `planning-integrity`, SHA y reglas del destino. La decisión de G0 se mantiene explícitamente pendiente en la documentación.

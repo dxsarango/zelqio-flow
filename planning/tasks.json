@@ -444,6 +444,17 @@
           "date": "2026-11-26",
           "notes": "Local evidence and manual handoff. No product GitHub operations, automatic succession, live archival or automatic cleanup in the proposed scope.",
           "limitations": "Requires explicit owner approval and updated scoped acceptance before S01."
+        },
+        {
+          "kind": "review",
+          "path": "docs/evidence/G0-decision.md",
+          "check": "Independent review follow-up",
+          "result": "PASS",
+          "sha": "bfc2e68578f9fa5c5bfcf521ad2ba8d2278bbda7",
+          "date": "2026-11-26",
+          "command": "node tools/check-planning.mjs; git diff --check 1a5576a..bfc2e68",
+          "notes": "Scope corrections verified. Full G0 blocked; supervised local-only scope conditionally viable for development after explicit owner approval and scoped plan update.",
+          "limitations": "Release privacy and retirement tests remain pending. Review is not gate approval."
         }
       ],
       "owner": "orchestrator",
