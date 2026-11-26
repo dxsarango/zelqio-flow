@@ -4,15 +4,15 @@ import type { ZelqioSettings } from "../shared/settings";
 import { resolveRoles } from "./roles";
 import { route, type RoutingModelFacts } from "./router";
 
-/** Evaluates reviewed declarations for advice. The resulting data never establishes selection or spending authority. */
+/** Evaluates caller declarations for advice. The resulting data never establishes selection or spending authority. */
 export function previewRouting(input: RoutingPreviewInput, catalog: ProviderCatalogData, settings: ZelqioSettings, now: number) {
   const models = new Map<string, Map<string, RoutingModelFacts>>();
   for (const entry of input.models) {
-    const reviewed = Date.parse(entry.reviewedAt);
+    const declared = Date.parse(entry.declaredAt);
     const expires = Date.parse(entry.expiresAt);
     const facts: RoutingModelFacts = {
       permitted: true,
-      funding: reviewed <= now && now < expires ? entry.funding : undefined,
+      funding: declared <= now && now < expires ? entry.funding : undefined,
     };
     let provider = models.get(entry.provider);
     if (!provider) {
@@ -33,7 +33,7 @@ export function previewRouting(input: RoutingPreviewInput, catalog: ProviderCata
     status: "advisory" as const,
     quota: "unbound" as const,
     strategy: decision.strategy,
-    recommended: selected && declaredFunding ? { ...selected, declaredFunding } : null,
+    recommended: selected && declaredFunding ? { ...selected, declaredFunding, quota: "unbound" as const } : null,
     excluded: decision.excluded,
   };
 }

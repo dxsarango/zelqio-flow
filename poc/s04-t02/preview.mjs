@@ -27,16 +27,16 @@ try {
   });
   assert.equal(saved.status, "saved");
 
-  const reviewedAt = new Date(Date.now() - 60_000).toISOString();
+  const declaredAt = new Date(Date.now() - 60_000).toISOString();
   const expiresAt = new Date(Date.now() + 60_000).toISOString();
-  const free = { provider, model: "fixture-model", funding: "free", reviewedAt, expiresAt };
+  const free = { provider, model: "fixture-model", funding: "free", declaredAt, expiresAt };
   const paid = { ...free, model: "fixture-manual", funding: "consumption" };
   const route = (models) => call("zelqio.routing.preview", { role: "developer", capability: "implement", models });
   const preview = await route([free, paid]);
   assert.equal(preview.ok, true);
   assert.equal(preview.data.status, "advisory");
   assert.equal(preview.data.quota, "unbound");
-  assert.deepEqual(preview.data.recommended, { provider, model: free.model, declaredFunding: "free" });
+  assert.deepEqual(preview.data.recommended, { provider, model: free.model, declaredFunding: "free", quota: "unbound" });
   assert(preview.data.excluded.some(entry => entry.target.provider === provider
     && entry.target.model === paid.model && entry.reason === "funding_mismatch"));
   assert.deepEqual(await route([paid, free]), preview);

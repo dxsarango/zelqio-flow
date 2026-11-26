@@ -33,3 +33,17 @@ Las trazas se limitan a los nombres de los campos, la presencia del marcador, el
 ## Revisión independiente
 
 La revisión estática de otro proveedor sobre `ad681ea` confirmó que la recomendación y la selección acotada por una autorización vigente se pueden evaluar por separado. Identificó como pendientes la procedencia de la autorización, el vínculo con la ruta de facturación y la preservación del modelo explícito. Requirió probar que un hook posterior recibe la configuración cambiada. La sonda de esta revisión cubre esa propagación con el catálogo sintético.
+
+La revisión del RPC consultivo corroboró la exclusión de consumo y la separación de autoridad. A partir de sus observaciones, cada recomendación incluye el estado de cuota sin vincular. Las fechas indican la vigencia declarada por el solicitante y se cubren entradas extra de autoridad, IDs ambiguos y discrepancias de financiación.
+
+## RPC consultivo en el daemon aislado
+
+Instalar también Zelqio Flow en el daemon desechable indicado arriba. `preview.mjs` usa el cliente de Paseo 0.17.4 y el RPC de ajustes para habilitar temporalmente el proveedor sintético. A continuación verifica `zelqio.routing.preview`, la exclusión del modelo por consumo, la respuesta estable al invertir el orden de las declaraciones y la conservación de la revisión de ajustes tras la consulta.
+
+```powershell
+$env:ELECTRON_RUN_AS_NODE = '1'
+& (Join-Path $install 'Paseo.exe') poc/s04-t02/preview.mjs $install 127.0.0.1:16893 | Out-String
+Remove-Item Env:ELECTRON_RUN_AS_NODE
+```
+
+PASS en Windows con catálogo y financiación sintéticos. La sonda usó tres solicitudes rechazadas por el guard y cero sesiones. La recomendación carece de validación visual en New Agent o New Workspace. CI multiplataforma pendiente sobre el candidato publicado.
