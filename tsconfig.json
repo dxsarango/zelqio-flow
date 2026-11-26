@@ -23,6 +23,6 @@
     "server/**/*",
     "shared/**/*",
     "test/**/*",
-    "vitest.config.ts"
+    "vitest.config.mts"
   ]
 }
