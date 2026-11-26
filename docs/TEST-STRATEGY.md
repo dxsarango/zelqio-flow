@@ -13,6 +13,13 @@ Definition of Done: alcance y criterios satisfechos, pruebas reales registradas,
 - Usar un repositorio que carezca de reglas exigidas y otro con reglas efectivas cuando estén autorizados. Comprobar denegación ante el SHA incorrecto, checks faltantes y permisos insuficientes. Verificar la identidad del check y su SHA antes de merge.
 - Capturar un control del daemon sin plugin y otro con plugin, con proceso y destinos atribuidos. Probar exportación con datos persistidos y entradas sintéticas que contienen valores que se deben excluir.
 
+## Autoridad y financiación del routing
+
+- Recomendar con un catálogo sintético y declaraciones por modelo. Comprobar que los modelos ausentes, ambiguos o con financiación caducada o desconocida quedan fuera, incluso si llevan una etiqueta `Free`. Excluir consumo aunque el host haya guardado opt-in y verificar que el RPC no lanza sesiones.
+- En New Agent y New Workspace, comprobar que la selección supervisada se muestra antes de enviar. Cambiar manualmente de modelo o de modo y verificar que la creación conserva los valores finales. Cubrir cambio de borrador y escrituras fallidas.
+- Antes de habilitar selección automática, usar un catálogo aislado y probar marca forjada, política ausente o revocada, cambios de cuenta, endpoint, host, proyecto o modo, y financiación del modelo desconocida o que cambió. Verificar que la política válida permite decisiones repetidas dentro del mismo alcance sin una nueva aprobación.
+- Comprobar que un reintento conserva tanto la financiación original como la restricción vigente. Excluir un candidato sin evidencia actual y reconciliar la suspensión tras una señal fresca. Verificar por separado lanzamiento, delegación, permisos, aprobación humana y gasto.
+
 ## Recuperación desatendida
 
 | Caso | Evidencia esperada | Fase |

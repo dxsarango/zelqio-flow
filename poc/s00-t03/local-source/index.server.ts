@@ -35,6 +35,10 @@ export default function contribute(server: PluginServerContext) {
                     contextWindowMaxTokens: 8192,
                     thinkingOptions: [{ id: "low", label: "Low" }],
                     defaultThinkingOptionId: "low",
+                  }, {
+                    id: "fixture-manual",
+                    label: "Fixture explicit model",
+                    contextWindowMaxTokens: 8192,
                   }],
                   modes: [{ id: "review", label: "Review" }],
                   defaultMode: "review",

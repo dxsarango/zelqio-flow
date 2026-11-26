@@ -17,12 +17,23 @@ try {
   const provider = "s00-t03-catalog";
   const catalog = await api.providers.waitForReady({ timeoutMs: 15_000 });
   assert(catalog.entries.some(entry => entry.provider === provider && entry.status === "ready"), "Synthetic catalog expected");
-  for (const metadata of [undefined, { "zelqio-flow.orchestration": { version: 1, mode: "automatic" } }]) {
+  const automatic = { "zelqio-flow.orchestration": { version: 1, mode: "automatic" } };
+  await assert.rejects(
+    api.agents.create({ cwd: resolve(fixture), config: { provider }, metadata: automatic }),
+    /Expected config.provider in "provider\/model" format/,
+  );
+  console.log(JSON.stringify({ scenario: "sdk-model-required", rejected: true }));
+  const scenarios = [
+    { id: "ordinary", config: { provider, model: "fixture-manual" } },
+    { id: "eligible", config: { provider }, metadata: automatic },
+    { id: "explicit", config: { provider, model: "fixture-manual" }, metadata: automatic },
+  ];
+  for (const { id, config, metadata } of scenarios) {
     await assert.rejects(
-      api.agents.create({ cwd: resolve(fixture), config: { provider: provider + "/fixture-model" }, metadata }),
+      client.createAgent({ config: { cwd: resolve(fixture), modeId: "review", ...config }, metadata }),
       /S04-T02 fixture stopped before opening a session/,
     );
-    console.log(JSON.stringify({ suppliedDraftMarker: !!metadata, guardRejected: true }));
+    console.log(JSON.stringify({ scenario: id, guardRejected: true }));
   }
 } finally {
   await client.close();

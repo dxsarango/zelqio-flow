@@ -1211,11 +1211,42 @@
       }
     },
     {
+      "id": "S04-T05",
+      "phase": "S04",
+      "title": "Recomendación determinista de routing",
+      "dependencies": ["S04-T01"],
+      "role": "Developer",
+      "risk": "low",
+      "acceptance": "RPC de solo lectura sobre pares exactos, con financiación declarada y cuota sin vincular; excluye consumo",
+      "status": "in_progress",
+      "evidence": [],
+      "owner": "orchestrator",
+      "branch": "feat/s04-routing-recommendations",
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S04-T06",
+      "phase": "S04",
+      "title": "Selección supervisada en el compositor",
+      "dependencies": ["S04-T05"],
+      "role": "UI Developer",
+      "risk": "high",
+      "acceptance": "Aplicación visible al borrador nativo y envío separado; preserva modelo y modo en New Agent y New Workspace",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
       "id": "S04-T02",
       "phase": "S04",
       "title": "Hook de creación y configuración",
       "dependencies": [
-        "S04-T01"
+        "S04-T05",
+        "S04-T06"
       ],
       "role": "Developer",
       "risk": "high",
@@ -1242,10 +1273,12 @@
         }
       ],
       "owner": "orchestrator",
-      "branch": "docs/s04-t02-creation-evidence",
+      "branch": "feat/s04-routing-recommendations",
       "pr": null,
       "blockers": [
-        "Prove verified request authority and financing and permissions bound to the exact provider and model before enabling automatic routing."
+        "Verify a standing policy with trusted provenance, revocation, and effective project and host binding.",
+        "Verify exact-model billing and usable quota on the effective account or endpoint, including no paid fallback.",
+        "Verify the native flows preserve explicit model choice and effective permissions and options before an automatic change."
       ]
     },
     {
