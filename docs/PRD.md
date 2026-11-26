@@ -29,7 +29,15 @@ NFR-01: No fork, parche de app.asar, API privada ni dependencia obligatoria de o
 ## Alcance MVP
 Todos los FR anteriores; GitHub como primer adaptador remoto; Claude, Codex y OpenCode como matriz inicial, no lista rígida. Default propuesto: Review First + Balanced; autorización de publicación denegada hasta configurar. No crear perfiles, importar perfiles ni modificar perfiles nativos. No obligar a crear repositorios remotos. No dependencia ni integración específica inicial con Engram, Memorise, Quick Chat, Context Mode, Observatory, Playbooks o Ensemble. Compatibilidad de coexistencia sin administrar esos plugins. No memoria semántica propia, chat paralelo, editor, motor de agentes, cliente Git completo, SaaS, despliegue automático de producción ni soporte específico GitLab/Bitbucket en MVP.
 
-Una fase inicial local supervisada se plantea como alcance separado sujeto a aprobación de G0. Incluye un escritor, comprobaciones locales y entrega manual al propietario. La propuesta mantiene deshabilitadas la sucesión automática, las operaciones GitHub del plugin y la limpieza automática. [Alcance propuesto y aceptación](adr/G0-supervised-scope.md)
+## Niveles de madurez
+
+| Nivel | Capacidades y autorización |
+|---|---|
+| **Foundation** | Inicio de S01 aprobado condicionalmente para Windows y Paseo 0.17.4. Implementación local supervisada, un escritor por unidad de ejecución, recuperación manual y acciones sensibles a cargo del propietario. [Decisión G0](adr/G0-supervised-scope.md) |
+| **Advanced Orchestration** | Concurrencia segura, fallback automático, recuperación del orquestador, persistencia robusta, limpieza segura y Smart Review. Habilitación condicionada a evidencia verificable, permisos y gates por capacidad. |
+| **Complete MVP** | Cumplimiento de todos los FR/NFR originales, incluidos routing inteligente, orquestación multiagente, paralelismo, los cuatro modos, coordinación Git, privacidad y compatibilidad validada en Windows, macOS y Linux. |
+
+Los pendientes tienen evidencia, alternativas, riesgos, pruebas y fase responsable en la [matriz de validación](VALIDATION-BACKLOG.md). La distribución pública exige completar el alcance del MVP, verificar compatibilidad, instalación, retirada, privacidad y seguridad, obtener los checks requeridos y aprobar G9, G10 y la publicación. El PR autorizado de evidencias S00 es una operación de desarrollo separada.
 
 ## Éxito
 Instalar sobre Paseo limpio, configurar, iniciar sesión nativa, seleccionar automáticamente proveedor, delegar solo cuando aporta valor, recuperar resultados, integrar cambios verificables y entregar según modo. Usuario puede desactivar el plugin y seguir usando Paseo. Bloqueo explícito si permisos, capacidades o evidencias no bastan.

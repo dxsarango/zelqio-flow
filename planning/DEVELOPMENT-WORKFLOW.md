@@ -3,7 +3,39 @@
 El propietario desarrollará desde su Paseo actual, con Claude y Codex principales y OpenCode gratuito auxiliar. Esta configuración es exclusivamente del entorno de desarrollo personal, no una dependencia de Zelqio Flow ni un requisito para colaboradores. No publicar configuraciones privadas, rutas, memorias ni instrucciones globales. Engram/Context Mode/Observatory pueden ayudar al propietario, pero el producto y sus pruebas de aceptación no dependen de ellos.
 
 ## Operación
-Un orquestador raíz por lote de tareas dependientes. Claude y Codex tienen la misma prioridad, con selección por especialización, complejidad, disponibilidad y continuidad. OpenCode Free es apoyo oportunista para trabajo delimitado. Senior para decisiones complejas, Developer para implementación, UI Developer para UI y revisión independiente de otro proveedor cuando aporte valor. Mantener workers sin recursión y delegar si el beneficio supera el coste. Ante agotamiento, preservar trabajo y referencias, comprobar tareas activas y transferir el contexto mínimo al sucesor. Registrar el agotamiento en la sesión y reincorporar el proveedor al confirmarse disponibilidad. Retomar con el orquestador vigente y sesiones nuevas cuando sean necesarias. Las tareas, evidencia y referencias de recuperación permanecen en la planificación versionada.
+Un orquestador raíz autorizado por lote. El repositorio y la planificación contienen lo necesario para continuar desde un contexto nuevo. El orquestador decide dentro del alcance aprobado, investiga alternativas con documentación oficial y pruebas, usa revisión independiente según el riesgo y registra decisiones arquitectónicas en ADR. Puede ajustar el plan con justificación técnica y trazabilidad, preservando el alcance funcional. Continúa con trabajo independiente mientras haya tareas bloqueadas y resuelve las instrucciones disponibles antes de escalar.
+
+Escalar al propietario cambios sustanciales de alcance, riesgos de seguridad o privacidad, costos adicionales, autorizaciones nuevas, operaciones irreversibles, validaciones humanas y gates obligatorios. Presentar en la sesión de Paseo el problema, las alternativas, sus riesgos, la recomendación sustentada y la autorización exacta que se necesita. La decisión pertenece al propietario.
+
+Esta política rige el entorno de desarrollo. Las restricciones verificadas y aprobadas del producto se definen en el PRD y el ADR de G0. El equipo puede trabajar con Claude, Codex y worktrees independientes mientras Foundation mantiene sus efectos locales y supervisados.
+
+## Proveedores y cuotas
+
+Claude y Codex son principales con igual prioridad. Elegir por especialización, complejidad, disponibilidad y continuidad. OpenCode Free es apoyo oportunista para trabajo acotado. Grok queda reservado a Agent Observatory. Usar perfiles de desarrollo según disponibilidad, mantener workers sin recursión y buscar revisión de otro proveedor cuando el riesgo lo justifique.
+
+Consultar cuota mediante mecanismos soportados cuando existan y distinguir datos desconocidos, vencidos, agotados y verificados. Los umbrales son orientativos y se aplican a la ventana relevante de cada proveedor con datos confiables. Con datos desconocidos o vencidos, usar evidencia operativa y el fallback documentado.
+
+| Cuota restante verificada | Acción |
+|---|---|
+| Más de 30 % | Operar normalmente. |
+| De 15 % a 30 % | Priorizar tareas acotadas. |
+| Desde 5 % y menos de 15 % | Preparar transferencia preventiva. |
+| Mayor de 0 % y menor de 5 % | Consolidar estado y ceder la coordinación. |
+| Agotada | Excluir temporalmente al proveedor de nuevas asignaciones. |
+| Restablecida | Reincorporar automáticamente a la elegibilidad si una señal soportada lo confirma. Aceptar confirmación explícita del propietario si falta esa señal. |
+
+Mantener el orquestador vigente mientras pueda continuar de forma eficiente. La reincorporación habilita tareas futuras y conserva las asignaciones en curso. El registro temporal de agotamiento sigue la política de la sesión de Paseo. Evitar reintentos repetidos o estimaciones sin evidencia.
+
+## Relevo de coordinación
+
+Ante agotamiento próximo, interrupción o límite de contexto, preparar un punto de recuperación antes de transferir:
+
+1. Reconciliar `planning/tasks.json` con Git, Paseo y CI. Registrar tareas, agentes activos, asignaciones, bloqueos, operaciones remotas y aprobaciones pendientes.
+2. Preservar cambios, ramas, commits, worktrees, evidencias y sesiones. Identificar trabajo aún sin commit, el SHA integrado o revisado y el destino previsto. Mantener a los workers independientes en curso.
+3. Guardar en Engram las decisiones duraderas y las referencias necesarias para recuperar la rama, los worktrees, la evidencia y el siguiente paso. Mantener el estado de ejecución en la planificación versionada y evitar copiar chats completos o secretos.
+4. Entregar una instrucción breve que permita recuperar el contexto sin la conversación anterior. Confirmar la autoridad del sucesor y asegurar que exista un solo orquestador con permiso de escribir planificación, integrar o publicar. Conservar el linaje y las sesiones anteriores.
+
+Usar transferencia automática únicamente si el entorno ofrece una operación soportada y verificada de cesión de autoridad. En Paseo, una sesión creada por el orquestador sigue en su árbol. Prepararla sin autorizar efectos mientras sea subagente. La separación del árbol requiere la acción del propietario. Tras esa acción, el sucesor confirma el punto de recuperación antes de coordinar. Mantener la transferencia manual mientras falte una operación segura.
 
 ## Paralelismo y Git del proyecto
 Cada tarea tiene ID, dependencia, salida, criterio y riesgo. Solo ejecutar cuando dependencias aceptadas. Propuesta: hasta 3 workers concurrentes como punto de partida ajustable, con un responsable de integración. Tareas que escriben archivos solapados se serializan o tienen contrato previo; usar worktrees nativos de Paseo para escrituras independientes. No implementar contra contratos todavía no aprobados. Una rama/PR por unidad lógica (puede agrupar tareas inseparables con trazabilidad), no un PR por cada subagente obligatoriamente. Conventional Commits, ramas `type/description`, sin secretos, sin atribuciones de IA en commits/PR/comentarios como preferencia del propietario para este proyecto. No imponer reglas Engram específicas. No fusionar sin verificar protecciones, SHA y CI; si no se pueden verificar, detener y pedir decisión, no saltar reglas.

@@ -406,14 +406,13 @@
       "dependencies": [
         "S00-T02",
         "S00-T03",
-        "S00-T06",
-        "S00-T07",
-        "S00-T08"
+        "S00-T04",
+        "S00-T05"
       ],
       "role": "Reviewer",
       "risk": "high",
-      "acceptance": "Revisión independiente de evidencia, viabilidad por capacidad y decisión explícita del propietario sobre versión, arquitectura y alcance",
-      "status": "blocked",
+      "acceptance": "Revisión independiente y aprobación condicionada de Foundation; validaciones del MVP completo siguen como prerequisitos de G9.",
+      "status": "done",
       "evidence": [
         {
           "kind": "decision",
@@ -455,15 +454,34 @@
           "command": "node tools/check-planning.mjs; git diff --check 1a5576a..bfc2e68",
           "notes": "Scope corrections verified. Full G0 blocked; supervised local-only scope conditionally viable for development after explicit owner approval and scoped plan update.",
           "limitations": "Release privacy and retirement tests remain pending. Review is not gate approval."
+        },
+        {
+          "kind": "approval",
+          "path": "docs/adr/G0-supervised-scope.md",
+          "check": "Owner conditional Foundation approval",
+          "result": "PASS",
+          "date": "2026-11-26",
+          "notes": "The owner explicitly authorized S01 under the Foundation scope. The original MVP, its pending validations and the later gates are retained.",
+          "limitations": "Approval covers local supervised implementation on Windows with Paseo 0.17.4. Distribution and higher maturity require separate validation and approval."
         }
       ],
       "owner": "orchestrator",
       "branch": "docs/s00-feasibility-recovery",
       "pr": null,
-      "blockers": [
-        "S00-T06, S00-T07 and S00-T08 block the full scope. Keep their requirements open.",
-        "To open S01 for supervised local scope, the owner must explicitly approve the scope ADR and update scoped acceptance/dependencies."
-      ]
+      "blockers": [],
+      "approval": {
+        "status": "conditional",
+        "scope": "Foundation",
+        "platform": "Windows",
+        "paseo": "0.17.4",
+        "date": "2026-11-26",
+        "record": "docs/adr/G0-supervised-scope.md",
+        "openValidationTasks": [
+          "S00-T06",
+          "S00-T07",
+          "S00-T08"
+        ]
+      }
     },
     {
       "id": "S01-T01",
@@ -562,7 +580,7 @@
       ],
       "role": "Reviewer",
       "risk": "medium",
-      "acceptance": "Plugin instalable limpio, CI y documentación verificados",
+      "acceptance": "Instalación aislada Windows/Paseo 0.17.4, CI y documentación verificados, Smart Review para cambios visuales y efectos avanzados inactivos.",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -1319,11 +1337,14 @@
       "title": "Gate G9",
       "dependencies": [
         "S09-T04",
-        "S09-T05"
+        "S09-T05",
+        "S00-T06",
+        "S00-T07",
+        "S00-T08"
       ],
       "role": "Reviewer",
       "risk": "high",
-      "acceptance": "Revisión independiente, sin blockers críticos, aceptación de propietario",
+      "acceptance": "Revisión independiente, cierre de validaciones del MVP completo, compatibilidad y aceptación del propietario.",
       "status": "todo",
       "evidence": [],
       "owner": null,

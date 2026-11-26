@@ -2,6 +2,8 @@
 
 Fecha 2026-11-26. Entorno principal de prueba Windows y Paseo 0.17.4. El alcance usa fixtures desechables, un daemon aislado para las sondas locales y un sandbox privado para la sonda de GitHub. Las conclusiones se limitan a las condiciones indicadas por cada prueba.
 
+**Decisión del propietario:** G0 aprobado condicionalmente para iniciar Foundation local supervisado en Windows y Paseo 0.17.4. El alcance completo sigue sujeto a sus validaciones y gates. [ADR vigente](../adr/G0-supervised-scope.md) · [Pendientes](../VALIDATION-BACKLOG.md)
+
 ## Capacidades comprobadas y límites
 
 | POC | Resultado | Límite y decisión requerida |
@@ -36,6 +38,6 @@ La revisión de seguimiento verificó las correcciones en `bfc2e68578f9fa5c5bfcf
 
 ## Candidato de publicación
 
-Publicar mediante PR autorizado contra `main` las instrucciones del proyecto, las propuestas de PRD y arquitectura, los criterios de planificación, las evidencias saneadas y las sondas reproducibles con datos sintéticos. Someter los cambios técnicos de alto riesgo a revisión independiente y respetar `planning-integrity`, SHA y reglas del destino. La decisión de G0 se mantiene explícitamente pendiente en la documentación.
+Publicar mediante PR autorizado contra `main` las instrucciones del proyecto, las propuestas de PRD y arquitectura, los criterios de planificación, las evidencias saneadas y las sondas reproducibles con datos sintéticos. Someter los cambios técnicos de alto riesgo a revisión independiente y respetar `planning-integrity`, SHA y reglas del destino. El propietario autorizó este paquete saneado de S00. La distribución pública del plugin sigue sujeta a Complete MVP, G9, G10 y autorización de release.
 
 Conservar localmente el snapshot original `00e60e0`, las ramas de investigación, los registros brutos, los directorios de fixture y los datos operativos. El sandbox privado conserva la fixture GitHub. El historial de la rama de coordinación conserva `2b2c8ea`, `d0ae9ea` y `b7e3eff`.

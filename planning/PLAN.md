@@ -3,6 +3,12 @@
 ## Reglas de ejecución
 Ver DEVELOPMENT-WORKFLOW.md y TEST-STRATEGY.md. Los gates requieren evidencia y aprobación según riesgo; G0, G9, G10 explícita del propietario. Un lote contiene solo tareas listas e independientes, con integración serial. No usar el plugin en construcción como dependencia del desarrollo.
 
+Foundation corresponde a S01 y G1. Advanced Orchestration corresponde a S02–S08 y se habilita por capacidad y gate. Complete MVP corresponde a S09–S10 y conserva todos los requisitos originales.
+
+## Punto de recuperación
+
+G0 aprobado condicionalmente (2026-11-26). Siguiente paso: S01-T01 (S01-T02 a S01-T05 dependen de ella); no hay trabajo de S01 iniciado. Un solo orquestador raíz escribe tasks.json y PLAN.md. Las ramas `docs/g0-approval-evidence`, `docs/g0-lifecycle-evidence`, `docs/s00-t03-usage-poc`, `docs/s00-t05-subagents-worktrees-poc` y `docs/foundation-validation-backlog` conservan trabajo y worktrees: no archivarlos ni eliminarlos sin la limpieza segura. Pendiente de integración: la rama `docs/s00-feasibility-recovery` (evidencia S00, G0 condicionado y políticas de desarrollo) mediante PR con el check `planning-integrity`. Un sucesor recupera el contexto leyendo AGENTS.md, esta sección, tasks.json, `git worktree list` y la lista de agentes de Paseo, y confirma que no haya otro coordinador activo antes de escribir.
+
 ## S00 — Definition & Feasibility
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
 |---|---|---|---|---|---|
@@ -14,9 +20,9 @@ Ver DEVELOPMENT-WORKFLOW.md y TEST-STRATEGY.md. Los gates requieren evidencia y 
 | S00-T06 | Git y publicación de prueba | S00-T05 | Senior Developer | high | POC-09/10/15: integración, recuperación de conflictos, PR privado, checks por SHA, rechazos y capacidad efectiva de protecciones/auto-merge |
 | S00-T07 | Servicios y aprobación | S00-T02 | UI Developer | high | POC-11/17: servicio ligado a versión y aprobación de tarea/SHA por actor autenticado; operación manual si la UI carece de procedencia verificable |
 | S00-T08 | Persistencia, aislamiento y privacidad | S00-T04, S00-T05 | QA | high | POC-12/13/14/16: recuperar pendientes al reiniciar sin otorgar permisos, preservar el entorno al retirar y atribuir tráfico y estado exportado |
-| S00-T09 | ADR y gate G0 | S00-T02, S00-T03, S00-T06, S00-T07, S00-T08 | Reviewer | high | Revisión independiente de evidencia, viabilidad por capacidad y decisión explícita del propietario sobre versión, arquitectura y alcance |
+| S00-T09 | ADR y gate G0 | S00-T02, S00-T03, S00-T04, S00-T05 | Reviewer | high | Revisión independiente y aprobación condicionada de Foundation; validaciones del MVP completo siguen como prerequisitos de G9. |
 
-[Evidencia y propuesta para G0](../docs/evidence/G0-decision.md). S00-T05 confirmó la topología y la base exacta. La retirada de worktrees administrados sigue fallando. En el sandbox privado se observaron HTTP 409 por SHA obsoleto, 401 por escritura anónima y 422 por autoaprobación. Las protecciones devolvieron 403, auto-merge siguió deshabilitado y la cola quedó NOT RUN. El RPC de Paseo carece de procedencia humana verificable. Persistencia y atribución de red tienen evidencia parcial. Para abrir S01, el propietario debe aprobar un alcance y se deben registrar sus criterios de aceptación en el plan. [Propuesta local supervisada](../docs/adr/G0-supervised-scope.md)
+[G0 aprobado condicionalmente](../docs/adr/G0-supervised-scope.md) para S01 local supervisado en Windows y Paseo 0.17.4. S00-T06, S00-T07 y S00-T08 conservan sus bloqueos para el MVP completo y son prerequisitos de G9. Consultar el [dictamen](../docs/evidence/G0-decision.md) y la [matriz de validación](../docs/VALIDATION-BACKLOG.md).
 
 ## S01 — Foundation
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
@@ -26,7 +32,7 @@ Ver DEVELOPMENT-WORKFLOW.md y TEST-STRATEGY.md. Los gates requieren evidencia y 
 | S01-T03 | Persistencia y migraciones | S01-T01 | Senior Developer | high | Settings versionados, almacenamiento atómico, backup y recuperación ante corrupción probados |
 | S01-T04 | RPC y contratos core | S01-T01 | Developer | medium | Tipos/validación runtime, errores normalizados, mocks SDK; contratos aprobados |
 | S01-T05 | UI base e internacionalización | S01-T01 | UI Developer | low | Componentes nativos, EN/ES y temas; no traducciones faltantes |
-| S01-T06 | Gate G1 | S01-T02, S01-T03, S01-T04, S01-T05 | Reviewer | medium | Plugin instalable limpio, CI y documentación verificados |
+| S01-T06 | Gate G1 | S01-T02, S01-T03, S01-T04, S01-T05 | Reviewer | medium | Instalación aislada Windows/Paseo 0.17.4, CI y documentación verificados, Smart Review para cambios visuales y efectos avanzados inactivos. |
 
 ## S02 — Providers & Roles
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
@@ -102,7 +108,7 @@ Ver DEVELOPMENT-WORKFLOW.md y TEST-STRATEGY.md. Los gates requieren evidencia y 
 | S09-T03 | Privacidad y retención | S08-T05 | Developer | high | Redacción, expiración segura, export manual y zero telemetry verificado |
 | S09-T04 | Matriz real multiplataforma | S09-T01, S09-T02, S09-T03 | QA | high | Versiones/OS/proveedores con evidencia; desconocidos explícitos y mínimo soportado |
 | S09-T05 | Actualización y desinstalación | S09-T02, S09-T03 | Developer | high | Migraciones rollback y recursos ajenos intactos; clean install sin terceros |
-| S09-T06 | Gate G9 | S09-T04, S09-T05 | Reviewer | high | Revisión independiente, sin blockers críticos, aceptación de propietario |
+| S09-T06 | Gate G9 | S09-T04, S09-T05, S00-T06, S00-T07, S00-T08 | Reviewer | high | Revisión independiente, cierre de validaciones del MVP completo, compatibilidad y aceptación del propietario. |
 
 ## S10 — Public Release
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |

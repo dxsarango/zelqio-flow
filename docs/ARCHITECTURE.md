@@ -1,4 +1,4 @@
-# Architecture proposal (subject to G0)
+# Architecture — Foundation y evolución del MVP
 
 TypeScript, SDK oficial fijado por versión; UI React/componentes nativos según SDK. Plugin cliente para controles, onboarding y actividad; servidor en daemon para decisiones, estado y herramientas. Core puro sin dependencias de Paseo para test. Paseo adapter, Git adapter y GitHub adapter encapsulan efectos. No procesos de IA propios para routing.
 
@@ -27,9 +27,15 @@ DAG acíclico; reservar slots antes de crear worker, releases idempotentes; leas
 ## Seguridad de arquitectura
 Marca de metadata no es autenticación: verificar identidad real de caller y registro de sesión/rol en servidor. Herramientas propias autorizan cada llamada. No alterar instrucciones globales del usuario. Worktree no es sandbox. Definir capacidades verificadas por proveedor y degradación segura; ninguna promesa de aislamiento absoluto. Ver SECURITY.md.
 
-## Continuidad, aprobación y retirada propuestas para G0
+## Continuidad, aprobación y retirada
 
 - **Relevo del orquestador.** Ante agotamiento, detener nuevas asignaciones, registrar el cambio y reconciliar los intentos de la ejecución antes de transferir el lease a una nueva época. Los efectos rechazan una época antigua. Vincular cada sesión nativa a un intento estable incluso si Paseo desprende, archiva o reinicia la raíz. Reincorporar un proveedor al catálogo por una señal válida o confirmación explícita, sin reactivar la raíz anterior ni cambiar el dueño de trabajo en curso.
 - **Aprobación durable.** Guardar la solicitud antes de mostrarla y la decisión verificada antes del efecto. Al reiniciar, reconciliar por ID e invalidar la solicitud o decisión ante cambios de SHA, alcance o política. Un registro pendiente o una fuente sin actor verificable carece de permisos. Una alternativa externa debe aportar autenticación independiente del agente y evidencia vinculada a la misma revisión. Si falta, la ejecución autorizada se deja al propietario fuera del automatismo.
 - **Retirada segura.** Revalidar el Git común, refs, índice, archivos ignorados y sin seguimiento, tareas u operaciones activas y validaciones. Paseo 0.17.4 usa retirada forzada en worktrees administrados. Desactivar esa ruta y conservar los checkouts. La sonda de worktrees de propiedad externa separa archivado del registro y retirada sin fuerza por Git. Ampliar las pruebas antes de recomendarla para tareas normales. Si el aislamiento o la retirada segura no se pueden garantizar, preferir ejecución secuencial.
 - **Capacidades por destino.** Verificar protecciones, checks y SHA efectivo antes de efectos GitHub. Auto-merge y cola necesitan reglas verificadas y un mecanismo que conserve la autorización por candidato durante la espera. La falta de capacidad restringe el modo aunque la API acepte una escritura.
+
+## Habilitación por madurez y evidencia
+
+Foundation opera en Windows con Paseo 0.17.4, un escritor supervisado por unidad de ejecución y recuperación manual. Las operaciones sensibles se entregan al propietario. Advanced Orchestration incorpora adaptadores y controles de concurrencia, relevo, persistencia, limpieza y Smart Review conforme a los gates existentes. Complete MVP exige todos los requisitos de producto y los gates de distribución.
+
+El punto que produce cada efecto debe comprobar el nivel aprobado, compatibilidad real de plataforma y versión, evidencia vigente de la capacidad, autorización del proyecto y precondiciones del destino. Si falta una prueba, cambia el contexto o una fuente es inaccesible, mantener el efecto deshabilitado y exponer el motivo. Los controles de UI reflejan esa decisión. Un valor de configuración o una afirmación de sesión por sí sola carecen de autoridad. [Matriz de validación](VALIDATION-BACKLOG.md).
