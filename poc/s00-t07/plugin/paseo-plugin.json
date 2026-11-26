@@ -1,0 +1,6 @@
+{
+  "id": "zelqio-poc-t07",
+  "name": "Zelqio POC T07 (disposable)",
+  "description": "Disposable proof of concept for service lifecycle surfaces and SHA-bound UI approval. Not product code.",
+  "requirements": { "paseo": ">=0.17.4 <0.18.0" }
+}

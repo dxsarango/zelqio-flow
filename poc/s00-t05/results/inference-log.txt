@@ -1,0 +1,8 @@
+S00-T05 | Paseo 0.17.4 | OpenCode opencode/iceman-free (catalog labeled Iceman Free)
+1. Same-workspace child: Reply OK. Timeline returned OK.
+2. Cross-workspace child: one read-only bash echo OK, then Reply OK. Native permission denied manually.
+3. Cross-workspace child: retried read-only echo OK, then Reply OK. Model declined in plan mode.
+4. Plugin-created child: one read-only echo CANCEL-PROBE. Model declined in plan mode.
+5. Plugin-created child: retried the read-only echo OK prompt as a user. No permission surfaced.
+6. Plugin-created child: Reply OK. Cancelled with the bundled client while running.
+Claude 0. Codex 0. Six OpenCode Free sends, including the interrupted turn. No paid credits or automatic approvals.

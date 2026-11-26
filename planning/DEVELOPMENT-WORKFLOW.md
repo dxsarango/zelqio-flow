@@ -3,7 +3,39 @@
 El propietario desarrollará desde su Paseo actual, con Claude y Codex principales y OpenCode gratuito auxiliar. Esta configuración es exclusivamente del entorno de desarrollo personal, no una dependencia de Zelqio Flow ni un requisito para colaboradores. No publicar configuraciones privadas, rutas, memorias ni instrucciones globales. Engram/Context Mode/Observatory pueden ayudar al propietario, pero el producto y sus pruebas de aceptación no dependen de ellos.
 
 ## Operación
-Un orquestador raíz por lote de tareas dependientes; Claude o Codex según contexto/cuota disponible, sin reparto rígido. Senior para decisiones complejas, Developer para implementación, UI Developer para UI, QA Free para pruebas pequeñas independientes, Assistant Free para documentación delimitada, Reviewer de proveedor distinto al implementador cuando aporte valor. No crear todos los agentes por rutina. Mantener workers sin recursión. El orquestador actual puede ejecutar directamente si más eficiente. Si falla una cuota, preservar trabajo y pasar contexto mínimo al proveedor alternativo; no contratar APIs adicionales. No asumir que Codex puede orquestar hasta verificar configuración vigente; usar Claude como coordinador si aún no habilitado.
+Un orquestador raíz autorizado por lote. El repositorio y la planificación contienen lo necesario para continuar desde un contexto nuevo. El orquestador decide dentro del alcance aprobado, investiga alternativas con documentación oficial y pruebas, usa revisión independiente según el riesgo y registra decisiones arquitectónicas en ADR. Puede ajustar el plan con justificación técnica y trazabilidad, preservando el alcance funcional. Continúa con trabajo independiente mientras haya tareas bloqueadas y resuelve las instrucciones disponibles antes de escalar.
+
+Escalar al propietario cambios sustanciales de alcance, riesgos de seguridad o privacidad, costos adicionales, autorizaciones nuevas, operaciones irreversibles, validaciones humanas y gates obligatorios. Presentar en la sesión de Paseo el problema, las alternativas, sus riesgos, la recomendación sustentada y la autorización exacta que se necesita. La decisión pertenece al propietario.
+
+Esta política rige el entorno de desarrollo. Las restricciones verificadas y aprobadas del producto se definen en el PRD y el ADR de G0. El equipo puede trabajar con Claude, Codex y worktrees independientes mientras Foundation mantiene sus efectos locales y supervisados.
+
+## Proveedores y cuotas
+
+Claude y Codex son principales con igual prioridad. Elegir por especialización, complejidad, disponibilidad y continuidad. OpenCode Free es apoyo oportunista para trabajo acotado. Grok queda reservado a Agent Observatory. Usar perfiles de desarrollo según disponibilidad, mantener workers sin recursión y buscar revisión de otro proveedor cuando el riesgo lo justifique.
+
+Consultar cuota mediante mecanismos soportados cuando existan y distinguir datos desconocidos, vencidos, agotados y verificados. Los umbrales son orientativos y se aplican a la ventana relevante de cada proveedor con datos confiables. Con datos desconocidos o vencidos, usar evidencia operativa y el fallback documentado.
+
+| Cuota restante verificada | Acción |
+|---|---|
+| Más de 30 % | Operar normalmente. |
+| De 15 % a 30 % | Priorizar tareas acotadas. |
+| Desde 5 % y menos de 15 % | Preparar transferencia preventiva. |
+| Mayor de 0 % y menor de 5 % | Consolidar estado y ceder la coordinación. |
+| Agotada | Excluir temporalmente al proveedor de nuevas asignaciones. |
+| Restablecida | Reincorporar automáticamente a la elegibilidad si una señal soportada lo confirma. Aceptar confirmación explícita del propietario si falta esa señal. |
+
+Mantener el orquestador vigente mientras pueda continuar de forma eficiente. La reincorporación habilita tareas futuras y conserva las asignaciones en curso. El registro temporal de agotamiento sigue la política de la sesión de Paseo. Evitar reintentos repetidos o estimaciones sin evidencia.
+
+## Relevo de coordinación
+
+Ante agotamiento próximo, interrupción o límite de contexto, preparar un punto de recuperación antes de transferir:
+
+1. Reconciliar `planning/tasks.json` con Git, Paseo y CI. Registrar tareas, agentes activos, asignaciones, bloqueos, operaciones remotas y aprobaciones pendientes.
+2. Preservar cambios, ramas, commits, worktrees, evidencias y sesiones. Identificar trabajo aún sin commit, el SHA integrado o revisado y el destino previsto. Mantener a los workers independientes en curso.
+3. Guardar en Engram las decisiones duraderas y las referencias necesarias para recuperar la rama, los worktrees, la evidencia y el siguiente paso. Mantener el estado de ejecución en la planificación versionada y evitar copiar chats completos o secretos.
+4. Entregar una instrucción breve que permita recuperar el contexto sin la conversación anterior. Confirmar la autoridad del sucesor y asegurar que exista un solo orquestador con permiso de escribir planificación, integrar o publicar. Conservar el linaje y las sesiones anteriores.
+
+Usar transferencia automática únicamente si el entorno ofrece una operación soportada y verificada de cesión de autoridad. En Paseo, una sesión creada por el orquestador sigue en su árbol. Prepararla sin autorizar efectos mientras sea subagente. La separación del árbol requiere la acción del propietario. Tras esa acción, el sucesor confirma el punto de recuperación antes de coordinar. Mantener la transferencia manual mientras falte una operación segura.
 
 ## Paralelismo y Git del proyecto
 Cada tarea tiene ID, dependencia, salida, criterio y riesgo. Solo ejecutar cuando dependencias aceptadas. Propuesta: hasta 3 workers concurrentes como punto de partida ajustable, con un responsable de integración. Tareas que escriben archivos solapados se serializan o tienen contrato previo; usar worktrees nativos de Paseo para escrituras independientes. No implementar contra contratos todavía no aprobados. Una rama/PR por unidad lógica (puede agrupar tareas inseparables con trazabilidad), no un PR por cada subagente obligatoriamente. Conventional Commits, ramas `type/description`, sin secretos, sin atribuciones de IA en commits/PR/comentarios como preferencia del propietario para este proyecto. No imponer reglas Engram específicas. No fusionar sin verificar protecciones, SHA y CI; si no se pueden verificar, detener y pedir decisión, no saltar reglas.
@@ -16,3 +48,13 @@ ID + objetivo + dependencias aceptadas + archivos/contratos permitidos + non-goa
 
 ## Rondas y control
 Antes de cada lote: identificar ready tasks, contratos y archivos; reservar worktrees, asignar roles y límites. Después: recoger evidencia, revisar cross-provider según riesgo, integrar y ejecutar checks consolidados. Gates G0–G10 seriales como condición de salida, no impiden preparación documental independiente. No avanzar con blocker crítico. El plan puede refinarse mediante ADR/PR sin ocultar cambios de alcance.
+
+## Limpieza segura de worktrees
+
+El orquestador aplica esta política solo a Zelqio Flow después de completar, integrar y verificar una tarea. El checkout principal queda fuera de la limpieza de worktrees de tarea. En Paseo 0.17.4, el archivado nativo de un workspace administrado invoca internamente `git worktree remove --force`. El [hallazgo de S00-T05](../docs/evidence/S00-T05-subagents-worktrees.md#poc-08) documenta la pérdida de archivos que produjo en un fixture sucio. Conservar los worktrees de tarea en esa versión.
+
+1. Identificar el workspace de Paseo y verificar la ruta, la rama, el SHA, el Git común y la pertenencia a Zelqio Flow con `git worktree list --porcelain`. Confirmar que los commits están integrados en el destino autorizado y que el trabajo y las evidencias tienen referencias recuperables.
+2. Comprobar que el workspace no tiene agentes activos, trabajo en cola, terminales o servicios en uso, solicitudes de permiso, aprobaciones ni pruebas funcionales pendientes. El archivado de una sesión padre puede afectar a sus descendientes. Inspeccionar ese alcance antes de archivar sesiones.
+3. Inspeccionar el estado del índice y del checkout con `git status --porcelain=v1 --untracked-files=all --ignored=matching`. Verificar también que no haya conflictos ni una operación Git en curso. Conservar el workspace si hay trabajo incompleto, errores de cuota, cambios sin preservar, validaciones pendientes o un alcance que no se pueda comprobar.
+4. Repetir la comprobación de actividad, SHA y estado justo antes de archivar. Archivar un solo workspace a la vez con la operación nativa de Paseo que corresponda al ID verificado. Usarla cuando la versión instalada permita retirar el checkout sin eliminación forzada. Si no hay un mecanismo nativo seguro, conservar el workspace. No usar borrado manual, comandos destructivos ni opciones de fuerza.
+5. Verificar después que Paseo ya no lista el workspace como activo, que Git ya no lista el worktree, que la ruta exacta dejó de existir y que las referencias y evidencias siguen accesibles. Registrar el resultado y cualquier discrepancia. Si la retirada no se confirma, conservar el estado para revisión.

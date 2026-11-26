@@ -1,0 +1,6 @@
+{
+  "id": "zelqio-poc-g0-approval",
+  "name": "Zelqio POC G0 approval persistence (disposable)",
+  "description": "Disposable proof of concept: file-backed pending approval bound to task, project, action, SHA and policy. Not product code; carries no actor identity.",
+  "requirements": { "paseo": ">=0.17.4 <0.18.0" }
+}

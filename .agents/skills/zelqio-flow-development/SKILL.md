@@ -9,6 +9,8 @@ Fuente de verdad: archivos del repositorio. `planning/tasks.json` = estado de ej
 
 Si eres worker (briefing delegado): ejecuta solo tu tarea, reporta y no uses esta skill para delegar.
 
+Aplicar la autonomía, los umbrales de cuota y el relevo seguro de `planning/DEVELOPMENT-WORKFLOW.md`. Resolver trabajo autorizado con evidencia, y escalar desde Paseo únicamente los casos previstos. Preparar un punto de recuperación antes del relevo, preservar workers y sesiones, y mantener un solo coordinador autorizado.
+
 ## Ciclo
 
 1. **Leer**: `AGENTS.md`, `README.md`, `docs/PRD.md`, `planning/DEVELOPMENT-WORKFLOW.md`, `docs/GIT-POLICY.md`, `docs/SECURITY.md`, `planning/tasks.json`; el resto de `docs/` según la tarea. Consultar Engram (`zelqio-flow`) solo por lo necesario.
@@ -16,12 +18,13 @@ Si eres worker (briefing delegado): ejecuta solo tu tarea, reporta y no uses est
 3. **Reconciliar**: contrastar tasks.json con la evidencia. Corregir discrepancias (tarea `in_progress` sin rama/agente vivo, PR fusionado no registrado, etc.) y anotar la corrección. La evidencia real prevalece.
 4. **Clasificar** cada tarea: `done`, `in_progress`, `awaiting_validation`, `blocked`, `todo` elegible (todas sus dependencias `done` y la fase autorizada) o `todo` no elegible. Estados válidos: `todo`, `in_progress`, `awaiting_validation`, `blocked`, `done`.
 5. **Recuperar** trabajo incompleto antes de iniciar nuevo: revisar ramas/worktrees/agentes huérfanos, `git diff`, `get_agent_activity`; continuar desde el último estado verificable. Nunca borrar trabajo ajeno.
-6. **Seleccionar** el lote: tareas elegibles independientes (archivos no solapados), máx. 3 concurrentes salvo ajuste documentado. Gates solo en serie. Fase S(n+1) requiere gate aprobado; G0, G9, G10 requieren aprobación explícita del propietario.
+6. **Seleccionar** el lote: tareas elegibles independientes (archivos no solapados), máx. 3 concurrentes salvo ajuste documentado. Gates solo en serie. Fase S(n+1) requiere gate aprobado dentro del alcance registrado. G0 autoriza Foundation; G9 y G10 conservan las validaciones del MVP y requieren aprobación explícita del propietario.
 7. **Antes de iniciar cada tarea**: verificar dependencias, que nadie más la ejecute, alcance, criterios, archivos afectados, rol/proveedor, aislamiento. Marcar `in_progress` (owner, branch) y commitear ese estado junto con el trabajo, no por separado salvo que sea necesario.
 8. **Delegar** solo si aporta valor (tareas independientes, escritura en worktree propio, revisión cruzada según riesgo). Ejecutar directamente si es más barato que el briefing. Con herramientas Paseo, aplicar la política global de orquestación del entorno (perfiles, proveedores, cuotas, worktrees); sin ellas, trabajar directamente. Briefing: ID, objetivo, dependencias aceptadas, archivos permitidos, non-goals, aceptación, comandos de verificación, riesgo, formato de entrega. Los workers no delegan, no hacen push/merge.
 9. **Integrar y validar**: revisar el diff real; ejecutar las comprobaciones; integrar en serie; verificar el resultado consolidado. Nunca marcar `done` por el relato de un worker.
 10. **Registrar** en tasks.json: `status`, `owner`, `branch`, `pr`, `blockers`, `evidence` (lista de objetos: `{kind, command, result: PASS|FAIL|BLOCKED|NOT_RUN, sha, date, notes, limitations}`; local y CI separados, sin secretos ni rutas personales). Reflejar en PLAN.md si cambia algo visible. Guardar en Engram solo decisiones/aprendizajes durables.
-11. **Continuar** automáticamente con la siguiente tarea elegible.
+11. **Limpieza segura**: al cerrar una tarea, aplicar la política de `planning/DEVELOPMENT-WORKFLOW.md#limpieza-segura-de-worktrees`. Archivar workspaces solo tras verificar preservación, actividad y validaciones; excluir el checkout principal.
+12. **Continuar** automáticamente con la siguiente tarea elegible.
 
 ## Git y entrega (Smart Review)
 
