@@ -1060,7 +1060,7 @@
       ],
       "owner": "orchestrator",
       "branch": "feat/s03-t03-fallback-journal",
-      "pr": null,
+      "pr": 29,
       "blockers": []
     },
     {
@@ -1073,7 +1073,7 @@
       "role": "UI Developer",
       "risk": "low",
       "acceptance": "Cuotas reales con freshness y unknown, preferencias editables y razón de selección",
-      "status": "awaiting_validation",
+      "status": "done",
       "evidence": [
         {
           "kind": "local",
@@ -1092,16 +1092,24 @@
           "date": "2026-11-26",
           "notes": "Rendered the actual plugin with synthetic quota reports on a loopback daemon without agents or projects. Verified Light and Dark, expanding unavailable providers, and saving routing strategy.",
           "limitations": "Synthetic reports. Human acceptance of the dashboard is pending. The UI shows that automatic selection is disabled."
+        },
+        {
+          "kind": "review",
+          "command": "Deployed candidate, independent review and GitHub required checks",
+          "result": "PASS",
+          "sha": "1d010b3c3b34d301fa2357e49dd512e01a4c4492",
+          "date": "2026-11-26",
+          "notes": "126 tests, typecheck, lint, planning and all four required checks. Live isolated view withdrew an aged percentage without reload. Independent review confirmed cache expiry, reset and read-error behavior, and no new effects or permissions.",
+          "limitations": "Reviewed with synthetic quota reports. Integrated under the temporary deferred review policy. Owner review remains pending."
         }
       ],
       "owner": "orchestrator",
       "branch": "feat/s03-t04-resources-dashboard",
       "pr": 27,
-      "blockers": [
-        "Technical verification and independent review of the updated candidate."
-      ],
+      "blockers": [],
       "deferredReview": {
         "status": "pending",
+        "sha": "1d010b3c3b34d301fa2357e49dd512e01a4c4492",
         "scope": "Owner review of the resources dashboard, including hierarchy, provider disclosure, quota presentation and Light/Dark themes.",
         "humanApproval": false
       }
@@ -1116,11 +1124,21 @@
       ],
       "role": "QA",
       "risk": "medium",
-      "acceptance": "Pruebas deterministas de cuota/empate/concurrencia/funding y selección explicable Pruebas negativas para modelos de pago y de financiacion desconocida bajo una politica solo gratuita, incluidos predeterminados y fallback.",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "acceptance": "Pruebas deterministas de cuota, empate, concurrencia, financiación y selección explicable. Pruebas negativas para modelos de pago y de financiación desconocida bajo una política solo gratuita, incluidos predeterminados y fallback.",
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check; node tools/check-planning.mjs",
+          "result": "PASS",
+          "sha": "0edaaaa5859977203d7a7c70e66f30d64e394800",
+          "date": "2026-11-26",
+          "notes": "Integrated S03 tree with 126 tests. Quota freshness, funding rejection, stable ranking, exact exclusion reasons, and concurrent fallback and recovery are covered. Dashboard technical acceptance complete.",
+          "limitations": "Human visual review of S03-T04 is deferred. The gate accepts pure routing and local proposals only; it does not authorize live selection, spending, hooks or inter-process effects."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "docs/close-g3-deferred-review",
       "pr": null,
       "blockers": []
     },

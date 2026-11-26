@@ -68,6 +68,14 @@ Agrupar validaciones relacionadas en un solo lote cuando sea razonable. La aprob
 
 **Escalada.** Pedir intervención técnica solo ante una limitación real de permisos, acceso o interacción humana obligatoria, y explicarla.
 
+### Revisión diferida en Smart Review
+
+El propietario puede activarla para Zelqio Flow con una instrucción breve, por ejemplo, «Activa revisión diferida hasta el final de esta ejecución desatendida». Registrar la instrucción, el alcance y una caducidad inequívoca en el punto de recuperación. Termina al vencer ese período o cuando el propietario indique que regresó, lo que ocurra primero.
+
+Durante la ventana se pueden integrar cambios de interfaz o funcionalidad reversible con pruebas, revisión independiente, entorno de validación cuando aplique y checks obligatorios en el SHA exacto. Clasificar el resultado como **pendiente de revisión diferida**. Registrar el PR, el SHA, las pruebas, el entorno y qué debe comprobar el propietario. Agrupar las revisiones por flujo y conservar la evidencia y una vía de corrección.
+
+Completar una tarea o gate cuando todos los criterios técnicos se cumplan y la única revisión pendiente sea visual, estética o de experiencia. Mantener separadas la finalización técnica y la aprobación humana. La revisión diferida no concede permisos de seguridad, privacidad, publicación, gasto ni integridad de datos. Siguen vigentes las dependencias técnicas, las protecciones de GitHub y las aprobaciones explícitas de gates que las exijan. Las capacidades sin evidencia de seguridad permanecen deshabilitadas.
+
 ### Integración automática autorizada
 
 El propietario autoriza de forma permanente, solo en `dxsarango/zelqio-flow`, integrar un PR sin pedir aprobación individual cuando se cumplan todas estas condiciones: Smart Review lo clasifica como apto para integración automática; se satisfacen los criterios de aceptación; hay revisión independiente cuando corresponda; todos los checks obligatorios de `main` están en verde sobre el SHA a integrar; no hay conflictos ni validación humana pendiente; el PR se integra con `gh pr merge <n> --squash --match-head-commit <SHA verificado>` sin bypass administrativo ni desactivación de protecciones. Quedan fuera de esta autorización las validaciones visuales relevantes, los gates con aprobación explícita, los cambios de seguridad o arquitectura, los de protecciones del repositorio y cualquier otro repositorio.
