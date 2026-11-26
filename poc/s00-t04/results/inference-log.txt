@@ -1,0 +1,6 @@
+INFERENCE claude prompt#1 04:24:25Z
+INFERENCE claude prompt#2 04:25:11Z
+INFERENCE codex prompt#1 04:25:35Z
+INFERENCE codex prompt#2 04:26:14Z
+INFERENCE opencode(free) x8 (logged retrospectively, UTC 04:17-04:29; #8 = own-MCP check with injectIntoAgents=false): create_agent child of managed worker (initialPrompt "reply OK"); create_agent child of unmanaged agent (same); 2 prompts to a managed worker asking for zf_whoami / tool listing; 1 prompt asking for zf_own_whoami; 2 prompts asking for a shell echo (bash denied vs control).
+TOTAL: claude 2 (trivial tool-call / tool-listing), codex 2 (trivial tool-calls), opencode free 8. No paid API credits, no Auto Accept/bypass; 4 individual permission requests (POC tools only) allowed by hand, 2 denied.
