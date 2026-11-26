@@ -1024,7 +1024,7 @@
       ],
       "owner": "orchestrator",
       "branch": "feat/s03-t02-deterministic-router",
-      "pr": null,
+      "pr": 28,
       "blockers": []
     },
     {
@@ -1037,10 +1037,29 @@
       "role": "Developer",
       "risk": "high",
       "acceptance": "Reintento acotado, exclusión por agotamiento, preservación de trabajo y reincorporación verificable para nuevas tareas El fallback mantiene la restriccion de financiacion por modelo.",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check; node tools/check-planning.mjs",
+          "result": "PASS",
+          "sha": "14c9a8f14b6a26e6532a4ef857f2fc1d893e2f91",
+          "date": "2026-11-26",
+          "notes": "125 tests in 11 files. Covered one retry across concurrent callers, preserved funding and checkpoints, scope of quota exhaustion, re-entry after new evidence, and blocked corrupt or rolled-back state.",
+          "limitations": "Local proposals only. The process does not perform any external effects. Cross-process authority and execution reconciliation are prerequisites of S05."
+        },
+        {
+          "kind": "review",
+          "command": "Independent review of fallback journal",
+          "result": "PASS",
+          "sha": "14c9a8f14b6a26e6532a4ef857f2fc1d893e2f91",
+          "date": "2026-11-26",
+          "notes": "Verified corrections for current funding and spending authorization, exact checkpoint lineage, and provider-wide suspension based on verified scope.",
+          "limitations": "Static review on the exact code candidate."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s03-t03-fallback-journal",
       "pr": null,
       "blockers": []
     },
