@@ -1,0 +1,1098 @@
+{
+  "schemaVersion": 1,
+  "project": "Zelqio Flow",
+  "status": "planned",
+  "tasks": [
+    {
+      "id": "S00-T01",
+      "phase": "S00",
+      "title": "Baseline de producto y entorno",
+      "dependencies": [],
+      "role": "Orchestrator",
+      "risk": "medium",
+      "acceptance": "PRD y versiones fijadas; revisar alcance y preparar daemon/fixtures aislados; ningún proyecto real alterado",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S00-T02",
+      "phase": "S00",
+      "title": "Contrato del compositor y routing inicial",
+      "dependencies": [
+        "S00-T01"
+      ],
+      "role": "UI Developer",
+      "risk": "high",
+      "acceptance": "POC-01/02: control nativo, opt-in, metadata, proveedor correcto antes de inferencia y sesión normal intacta",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S00-T03",
+      "phase": "S00",
+      "title": "Catálogo y cuotas",
+      "dependencies": [
+        "S00-T01"
+      ],
+      "role": "Developer",
+      "risk": "medium",
+      "acceptance": "POC-03: captura saneada de API pública real, freshness, reset, unknown y compatibilidad 0.17.4",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S00-T04",
+      "phase": "S00",
+      "title": "Roles, herramientas y permisos",
+      "dependencies": [
+        "S00-T01"
+      ],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "POC-04/05/06: agente directo, caller identity, MCP on/off y matriz de restricciones reales",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S00-T05",
+      "phase": "S00",
+      "title": "Subagentes y worktrees",
+      "dependencies": [
+        "S00-T04"
+      ],
+      "role": "Developer",
+      "risk": "high",
+      "acceptance": "POC-07/08: relación padre-hijo visible, checkout separado y base exacta",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S00-T06",
+      "phase": "S00",
+      "title": "Git y publicación de prueba",
+      "dependencies": [
+        "S00-T05"
+      ],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "POC-09/10/15: dos ramas integradas, conflicto recuperado, PR sandbox, SHA y rechazo por reglas",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S00-T07",
+      "phase": "S00",
+      "title": "Servicios y aprobación",
+      "dependencies": [
+        "S00-T02"
+      ],
+      "role": "UI Developer",
+      "risk": "high",
+      "acceptance": "POC-11/17: servicio ligado a versión y actor de aprobación verificable; alternativa UI si chat no prueba actor",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S00-T08",
+      "phase": "S00",
+      "title": "Persistencia, aislamiento y privacidad",
+      "dependencies": [
+        "S00-T04",
+        "S00-T05"
+      ],
+      "role": "QA",
+      "risk": "high",
+      "acceptance": "POC-12/13/14/16: reinicio, desactivación, desinstalación, inspección de tráfico y estado saneado",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S00-T09",
+      "phase": "S00",
+      "title": "ADR y gate G0",
+      "dependencies": [
+        "S00-T02",
+        "S00-T03",
+        "S00-T06",
+        "S00-T07",
+        "S00-T08"
+      ],
+      "role": "Reviewer",
+      "risk": "high",
+      "acceptance": "Revisión independiente de evidencia y decisión de viabilidad; aprobación humana de versión y arquitectura",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S01-T01",
+      "phase": "S01",
+      "title": "Scaffold y manifest",
+      "dependencies": [
+        "S00-T09"
+      ],
+      "role": "Developer",
+      "risk": "medium",
+      "acceptance": "Plugin mínimo instala y carga cliente/servidor en versión validada; sin hooks invasivos",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S01-T02",
+      "phase": "S01",
+      "title": "CI y harness",
+      "dependencies": [
+        "S01-T01"
+      ],
+      "role": "QA",
+      "risk": "medium",
+      "acceptance": "Typecheck lint unit tests en matriz Windows/macOS/Linux; sin secretos o inferencia en CI",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S01-T03",
+      "phase": "S01",
+      "title": "Persistencia y migraciones",
+      "dependencies": [
+        "S01-T01"
+      ],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "Settings versionados, almacenamiento atómico, backup y recuperación ante corrupción probados",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S01-T04",
+      "phase": "S01",
+      "title": "RPC y contratos core",
+      "dependencies": [
+        "S01-T01"
+      ],
+      "role": "Developer",
+      "risk": "medium",
+      "acceptance": "Tipos/validación runtime, errores normalizados, mocks SDK; contratos aprobados",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S01-T05",
+      "phase": "S01",
+      "title": "UI base e internacionalización",
+      "dependencies": [
+        "S01-T01"
+      ],
+      "role": "UI Developer",
+      "risk": "low",
+      "acceptance": "Componentes nativos, EN/ES y temas; no traducciones faltantes",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S01-T06",
+      "phase": "S01",
+      "title": "Gate G1",
+      "dependencies": [
+        "S01-T02",
+        "S01-T03",
+        "S01-T04",
+        "S01-T05"
+      ],
+      "role": "Reviewer",
+      "risk": "medium",
+      "acceptance": "Plugin instalable limpio, CI y documentación verificados",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S02-T01",
+      "phase": "S02",
+      "title": "Provider catalog",
+      "dependencies": [
+        "S01-T06"
+      ],
+      "role": "Developer",
+      "risk": "medium",
+      "acceptance": "Detectar catálogo y estado con adapter; no hardcode de modelos; errores visibles",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S02-T02",
+      "phase": "S02",
+      "title": "Policy engine y autorizaciones",
+      "dependencies": [
+        "S01-T06"
+      ],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "Precedencia global/proyecto/sesión y deny, acciones remotas separadas, pruebas negativas",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S02-T03",
+      "phase": "S02",
+      "title": "Roles internos y personalizados",
+      "dependencies": [
+        "S02-T01",
+        "S02-T02"
+      ],
+      "role": "Developer",
+      "risk": "medium",
+      "acceptance": "Siete roles y candidatos editables; validación de permisos/capacidades; cero Agent Profiles",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S02-T04",
+      "phase": "S02",
+      "title": "Onboarding y settings",
+      "dependencies": [
+        "S02-T03"
+      ],
+      "role": "UI Developer",
+      "risk": "medium",
+      "acceptance": "Instalación limpia, uno o más proveedores, funding, estrategia, modo, Git y resumen",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S02-T05",
+      "phase": "S02",
+      "title": "Gate G2",
+      "dependencies": [
+        "S02-T04"
+      ],
+      "role": "Reviewer",
+      "risk": "medium",
+      "acceptance": "Flujo EN/ES validado con proveedor único y múltiples; permisos no elevados",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S03-T01",
+      "phase": "S03",
+      "title": "Usage adapter y caché",
+      "dependencies": [
+        "S02-T05"
+      ],
+      "role": "Developer",
+      "risk": "medium",
+      "acceptance": "Fresh/stale/unknown/exhausted/reset diferenciados; API soportada y backoff probado",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S03-T02",
+      "phase": "S03",
+      "title": "Router determinista",
+      "dependencies": [
+        "S03-T01"
+      ],
+      "role": "Senior Developer",
+      "risk": "medium",
+      "acceptance": "Elegibilidad y estrategias, empate y reservas, sin tokens adicionales ni sustitución de funding",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S03-T03",
+      "phase": "S03",
+      "title": "Fallback y registro local",
+      "dependencies": [
+        "S03-T02"
+      ],
+      "role": "Developer",
+      "risk": "high",
+      "acceptance": "Retry acotado, razones, preservación de estado y bloqueo cuando no hay candidato",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S03-T04",
+      "phase": "S03",
+      "title": "UI de recursos y disponibilidad",
+      "dependencies": [
+        "S03-T01"
+      ],
+      "role": "UI Developer",
+      "risk": "low",
+      "acceptance": "Cuotas reales con freshness y unknown, preferencias editables y razón de selección",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S03-T05",
+      "phase": "S03",
+      "title": "Gate G3",
+      "dependencies": [
+        "S03-T03",
+        "S03-T04"
+      ],
+      "role": "QA",
+      "risk": "medium",
+      "acceptance": "Pruebas deterministas de cuota/empate/concurrencia/funding y selección explicable",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S04-T01",
+      "phase": "S04",
+      "title": "Control nativo y metadata",
+      "dependencies": [
+        "S03-T05"
+      ],
+      "role": "UI Developer",
+      "risk": "high",
+      "acceptance": "New Agent/New Workspace, disabled/automatic y persistencia del opt-in; no chat separado",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S04-T02",
+      "phase": "S04",
+      "title": "Hook de creación y configuración",
+      "dependencies": [
+        "S04-T01"
+      ],
+      "role": "Developer",
+      "risk": "high",
+      "acceptance": "Proveedor/modelo/permiso antes de primer mensaje; respeta selección explícita y errores",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S04-T03",
+      "phase": "S04",
+      "title": "Identidad de sesiones gestionadas",
+      "dependencies": [
+        "S04-T02"
+      ],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "Registro autoritativo de raíz/worker y no intervención en sesiones ajenas",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S04-T04",
+      "phase": "S04",
+      "title": "Gate G4",
+      "dependencies": [
+        "S04-T03"
+      ],
+      "role": "QA",
+      "risk": "high",
+      "acceptance": "E2E mínimo de sesión nativa y opt-out, sin cambios globales ni perfiles",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S05-T01",
+      "phase": "S05",
+      "title": "DAG y runtime de tareas",
+      "dependencies": [
+        "S04-T04"
+      ],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "Dependencias acíclicas, estados, leases, idempotencia y límites de concurrencia",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S05-T02",
+      "phase": "S05",
+      "title": "Herramientas de orquestador",
+      "dependencies": [
+        "S05-T01"
+      ],
+      "role": "Developer",
+      "risk": "high",
+      "acceptance": "Delegar/consultar/cancelar/recolectar con caller identity y deny por rol",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S05-T03",
+      "phase": "S05",
+      "title": "Workers nativos y mensajes",
+      "dependencies": [
+        "S05-T02"
+      ],
+      "role": "Developer",
+      "risk": "high",
+      "acceptance": "Crear con rol/proveedor, parent-child, resultados y permisos visibles en Paseo",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S05-T04",
+      "phase": "S05",
+      "title": "Recuperación y handoff",
+      "dependencies": [
+        "S05-T03"
+      ],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "Reinicio y cuota agotada recuperan estado sin duplicar trabajo ni perder resultados",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S05-T05",
+      "phase": "S05",
+      "title": "Actividad local y estado",
+      "dependencies": [
+        "S05-T03"
+      ],
+      "role": "UI Developer",
+      "risk": "medium",
+      "acceptance": "Mostrar decisiones, tareas, bloqueos; sin copiar conversaciones ni dashboard redundante",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S05-T06",
+      "phase": "S05",
+      "title": "Gate G5",
+      "dependencies": [
+        "S05-T04",
+        "S05-T05"
+      ],
+      "role": "Reviewer",
+      "risk": "high",
+      "acceptance": "Delegación bajo demanda, cancelación, recursión negativa y reconciliación demostradas",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S06-T01",
+      "phase": "S06",
+      "title": "Preflight y workflows Git",
+      "dependencies": [
+        "S05-T06"
+      ],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "Repo/remotos/base/dirty/permissions; Git local, PR, fork, direct y no-Git diferenciados",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S06-T02",
+      "phase": "S06",
+      "title": "Ramas, worktrees y commits",
+      "dependencies": [
+        "S06-T01"
+      ],
+      "role": "Developer",
+      "risk": "high",
+      "acceptance": "Paseo worktrees, base SHA, nomenclatura configurable, staging seguro y preservación de cambios",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S06-T03",
+      "phase": "S06",
+      "title": "Integración y conflictos",
+      "dependencies": [
+        "S06-T02"
+      ],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "Lock común, CAS/revalidación, integración serial, journal y recuperación sin pérdida",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S06-T04",
+      "phase": "S06",
+      "title": "Adaptador GitHub",
+      "dependencies": [
+        "S06-T01"
+      ],
+      "role": "Developer",
+      "risk": "high",
+      "acceptance": "gh autenticado, destino explícito, repo/PR/push/checks/merge autorizados; sin tokens propios",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S06-T05",
+      "phase": "S06",
+      "title": "UI Git y evidencia",
+      "dependencies": [
+        "S06-T02",
+        "S06-T04"
+      ],
+      "role": "UI Developer",
+      "risk": "medium",
+      "acceptance": "Mostrar workflow, ramas, SHA, permisos y bloqueos; cambios de configuración confirmados",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S06-T06",
+      "phase": "S06",
+      "title": "Gate G6",
+      "dependencies": [
+        "S06-T03",
+        "S06-T05"
+      ],
+      "role": "Reviewer",
+      "risk": "high",
+      "acceptance": "Fixtures Git y sandbox remoto; pruebas negativas, conflictos y rechazo por rulesets",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S07-T01",
+      "phase": "S07",
+      "title": "Delivery gates y aprobación",
+      "dependencies": [
+        "S06-T06"
+      ],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "Actor/acción/SHA/política verificables; revalidar ante cambios, estado durable",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S07-T02",
+      "phase": "S07",
+      "title": "Review First y Auto Merge",
+      "dependencies": [
+        "S07-T01"
+      ],
+      "role": "Developer",
+      "risk": "high",
+      "acceptance": "Aprobación explícita o merge autorizado tras checks; no bypass, pending bloquea",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S07-T03",
+      "phase": "S07",
+      "title": "Clasificador Smart Review",
+      "dependencies": [
+        "S07-T01"
+      ],
+      "role": "Developer",
+      "risk": "high",
+      "acceptance": "Diff real e impacto, docs/UI/backend/riesgo/unknown; sin depender de prefijo",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S07-T04",
+      "phase": "S07",
+      "title": "Iteraciones Smart Review",
+      "dependencies": [
+        "S07-T03"
+      ],
+      "role": "UI Developer",
+      "risk": "high",
+      "acceptance": "Request changes y approve sobre misma rama/PR; invalidación SHA y estado de prueba",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S07-T05",
+      "phase": "S07",
+      "title": "Autopilot",
+      "dependencies": [
+        "S07-T01"
+      ],
+      "role": "Developer",
+      "risk": "high",
+      "acceptance": "Flujo resultado-first y mínimos bloqueos autorizados; no publicación o gasto implícito",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S07-T06",
+      "phase": "S07",
+      "title": "Selector y overrides de modo",
+      "dependencies": [
+        "S07-T02",
+        "S07-T04",
+        "S07-T05"
+      ],
+      "role": "UI Developer",
+      "risk": "medium",
+      "acceptance": "Global/proyecto/sesión visibles; políticas superiores prevalecen",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S07-T07",
+      "phase": "S07",
+      "title": "Gate G7",
+      "dependencies": [
+        "S07-T06"
+      ],
+      "role": "Reviewer",
+      "risk": "high",
+      "acceptance": "Cuatro modos con escenarios locales y PR; pruebas de aprobación obsoleta y restricciones",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S08-T01",
+      "phase": "S08",
+      "title": "Checks y evidencia",
+      "dependencies": [
+        "S07-T07"
+      ],
+      "role": "Developer",
+      "risk": "high",
+      "acceptance": "Plan proporcional, local vs CI, N/A/pending/fail; evidencia ligada a candidato",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S08-T02",
+      "phase": "S08",
+      "title": "Revisión independiente",
+      "dependencies": [
+        "S08-T01"
+      ],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "Selección cross-provider cuando viable; sin falsa independencia; bloqueos de riesgo",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S08-T03",
+      "phase": "S08",
+      "title": "Servicios y preview",
+      "dependencies": [
+        "S07-T07"
+      ],
+      "role": "Developer",
+      "risk": "high",
+      "acceptance": "Servicio nativo, puertos/health/version, host remoto y parada verificados",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S08-T04",
+      "phase": "S08",
+      "title": "Entrega y UX final",
+      "dependencies": [
+        "S08-T01",
+        "S08-T03"
+      ],
+      "role": "UI Developer",
+      "risk": "medium",
+      "acceptance": "Resultado funcional o bloqueo honesto, preview/PR/diff según modo",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S08-T05",
+      "phase": "S08",
+      "title": "Gate G8",
+      "dependencies": [
+        "S08-T02",
+        "S08-T04"
+      ],
+      "role": "QA",
+      "risk": "high",
+      "acceptance": "Escenarios end-to-end docs, UI iterativa, backend, landing local y CI fallido",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S09-T01",
+      "phase": "S09",
+      "title": "Auditoría de seguridad",
+      "dependencies": [
+        "S08-T05"
+      ],
+      "role": "Reviewer",
+      "risk": "high",
+      "acceptance": "Amenazas, symlink/junctions, inyección, permisos, rutas, secretos y recursión; hallazgos resueltos",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S09-T02",
+      "phase": "S09",
+      "title": "Fault injection y recuperación",
+      "dependencies": [
+        "S08-T05"
+      ],
+      "role": "QA",
+      "risk": "high",
+      "acceptance": "Crash/restart/timeouts/external edits; no duplicación ni pérdida; journal reconciliado",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S09-T03",
+      "phase": "S09",
+      "title": "Privacidad y retención",
+      "dependencies": [
+        "S08-T05"
+      ],
+      "role": "Developer",
+      "risk": "high",
+      "acceptance": "Redacción, expiración segura, export manual y zero telemetry verificado",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S09-T04",
+      "phase": "S09",
+      "title": "Matriz real multiplataforma",
+      "dependencies": [
+        "S09-T01",
+        "S09-T02",
+        "S09-T03"
+      ],
+      "role": "QA",
+      "risk": "high",
+      "acceptance": "Versiones/OS/proveedores con evidencia; desconocidos explícitos y mínimo soportado",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S09-T05",
+      "phase": "S09",
+      "title": "Actualización y desinstalación",
+      "dependencies": [
+        "S09-T02",
+        "S09-T03"
+      ],
+      "role": "Developer",
+      "risk": "high",
+      "acceptance": "Migraciones rollback y recursos ajenos intactos; clean install sin terceros",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S09-T06",
+      "phase": "S09",
+      "title": "Gate G9",
+      "dependencies": [
+        "S09-T04",
+        "S09-T05"
+      ],
+      "role": "Reviewer",
+      "risk": "high",
+      "acceptance": "Revisión independiente, sin blockers críticos, aceptación de propietario",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S10-T01",
+      "phase": "S10",
+      "title": "Documentación pública EN/ES",
+      "dependencies": [
+        "S09-T06"
+      ],
+      "role": "Assistant",
+      "risk": "low",
+      "acceptance": "Install, setup, modos, Git, permisos, troubleshooting, límites y uninstall",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S10-T02",
+      "phase": "S10",
+      "title": "Packaging y licencias",
+      "dependencies": [
+        "S09-T06"
+      ],
+      "role": "Developer",
+      "risk": "medium",
+      "acceptance": "Manifest, SemVer, LICENSE titular confirmado, avisos terceros, paquete sin datos privados",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S10-T03",
+      "phase": "S10",
+      "title": "Release candidate y validación",
+      "dependencies": [
+        "S10-T01",
+        "S10-T02"
+      ],
+      "role": "QA",
+      "risk": "high",
+      "acceptance": "Instalación desde tag/candidato limpio, upgrade/rollback, matriz y CI reales",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S10-T04",
+      "phase": "S10",
+      "title": "Gate G10 y publicación",
+      "dependencies": [
+        "S10-T03"
+      ],
+      "role": "Orchestrator",
+      "risk": "high",
+      "acceptance": "Aprobación explícita, requisitos actuales catálogo verificados, tag/release/publicación autorizados",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    }
+  ]
+}
