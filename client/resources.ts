@@ -2,6 +2,17 @@
 export const resources = {
   en: {
     title: "Zelqio Flow",
+    orchestration: {
+      title: "Orchestration",
+      control: "Orchestration · {{mode}}",
+      disabled: "Disabled",
+      automatic: "Automatic",
+      inactive: "This marks the draft. Automatic model selection is still disabled.",
+      saveFailed: "Could not update the draft.",
+      remember: "Remember this choice on this host",
+      rememberedAutomatic: "Saved preference: Automatic. Use the switch to apply it to this draft.",
+      rememberFailed: "Could not save the preference.",
+    },
     resources: {
       title: "Resources",
       selectionInactive: "Automatic model selection is disabled in this version.",
@@ -201,6 +212,17 @@ export const resources = {
   },
   es: {
     title: "Zelqio Flow",
+    orchestration: {
+      title: "Orquestación",
+      control: "Orquestación · {{mode}}",
+      disabled: "Desactivada",
+      automatic: "Automática",
+      inactive: "Esto marca el borrador. La selección automática de modelos sigue desactivada.",
+      saveFailed: "No se pudo actualizar el borrador.",
+      remember: "Recordar esta elección en este host",
+      rememberedAutomatic: "Preferencia guardada de modo automático. Usa el selector para aplicarla a este borrador.",
+      rememberFailed: "No se pudo guardar la preferencia.",
+    },
     resources: {
       title: "Recursos",
       selectionInactive: "La selección automática de modelos está desactivada en esta versión.",
