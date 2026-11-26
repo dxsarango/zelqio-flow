@@ -584,6 +584,15 @@
           "date": "2026-11-26",
           "notes": "typecheck, lint and tests passed on the three platforms, including filesystem behavior of atomic rename.",
           "limitations": "Independent review of this high-risk task is deferred to the G1 review."
+        },
+        {
+          "kind": "review",
+          "command": "focused read-only review of server/store.ts and test/store.test.ts by a free OpenCode model; findings verified by the orchestrator against the code",
+          "result": "PASS",
+          "sha": "69e7899",
+          "date": "2026-11-26",
+          "notes": "7 findings, all confirmed: save() before load() could overwrite newer-version data (high) or replace a valid backup with a corrupt main; two instances of one file could race on temp names; stale corrupt backup and unstable corrupt-copy pruning; weak failure assertion. Fixed with a first-use check, a per-file operation queue, unique temp names, backup only from a valid main, numeric pruning and tighter tests (34 tests, 7 new). The regex fix was caught by the new pruning test.",
+          "limitations": "Reviewer is a free model, not an independent primary provider; a Codex pass is optional once its quota returns. Stale temp files after a hard kill are not cleaned. Cross-process locking and power loss remain out of scope."
         }
       ],
       "owner": "orchestrator",
