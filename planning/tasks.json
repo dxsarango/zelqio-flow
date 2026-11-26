@@ -516,7 +516,7 @@
       ],
       "owner": "orchestrator",
       "branch": "feat/s01-t01-scaffold",
-      "pr": null,
+      "pr": 7,
       "blockers": []
     },
     {
@@ -551,8 +551,8 @@
         }
       ],
       "owner": "orchestrator",
-      "branch": "feat/s01-t02-ci",
-      "pr": 9,
+      "branch": "feat/s01-t02-t05-foundation",
+      "pr": 13,
       "blockers": []
     },
     {
@@ -587,8 +587,8 @@
         }
       ],
       "owner": "orchestrator",
-      "branch": "feat/s01-t03-persistence",
-      "pr": 12,
+      "branch": "feat/s01-t02-t05-foundation",
+      "pr": 13,
       "blockers": []
     },
     {
@@ -623,8 +623,8 @@
         }
       ],
       "owner": "orchestrator",
-      "branch": "feat/s01-t04-contracts",
-      "pr": null,
+      "branch": "feat/s01-t02-t05-foundation",
+      "pr": 13,
       "blockers": []
     },
     {
@@ -659,8 +659,8 @@
         }
       ],
       "owner": "orchestrator",
-      "branch": "feat/s01-t05-ui-i18n",
-      "pr": null,
+      "branch": "feat/s01-t02-t05-foundation",
+      "pr": 13,
       "blockers": []
     },
     {
