@@ -3,9 +3,8 @@ import { z } from "zod";
 import type { ProviderCatalogData } from "./providers";
 
 /**
- * Onboarding and settings. Foundation maturity: these values only record the user's intent; no routing,
- * delegation, Git action or merge reads them yet. Provider ids are opaque strings from the provider catalog and
- * are never enumerated here.
+ * Foundation settings record user preferences. Read-only advice can use them without treating them
+ * as authority for routing effects, delegation or Git operations. Provider ids are opaque catalog IDs.
  */
 export const PROVIDER_USES = ["primary", "auxiliary", "off"] as const;
 export const FUNDINGS = ["subscription", "free", "local", "consumption"] as const;

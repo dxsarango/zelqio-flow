@@ -48,7 +48,7 @@ La autorización temporal de revisión diferida terminó al regresar el propieta
 - Mantener estable el tamaño del compositor al activar Automática. Evaluar un menú contextual compacto para elegir el estado, explicar su alcance y recordar preferencias.
 - Reutilizar componentes nativos de Paseo y comprobar Light y Dark. Representar las cuotas según la procedencia verificada y dejar sin asociación las fuentes que no puedan vincularse con certeza a proveedores o modelos.
 
-**S04.** El SDK ofrece el hook de creación y recibe metadata modificable. Esta marca documenta intención y carece de autoridad por sí sola. S04-T02 debe comprobar que el proveedor, modelo, financiación y permisos autorizados estén vinculados a la solicitud exacta antes de habilitar ningún efecto.
+**S04.** S04-T01 quedó integrado con aprobación funcional y revisión visual integral pendiente. S04-T05 conserva la recomendación consultiva en el candidato local `9abda07`, con 137 tests y prueba del RPC en el daemon aislado. Publicación, CI y entrega están pendientes. S04-T06 prepara la selección supervisada y puede probar el compositor con fixtures antes de integrar la recomendación. La sonda de S04-T02 aplicó una selección sintética antes de abrir la sesión y preservó un modelo explícito. La selección automática espera autorización permanente verificable, financiación ligada al destino y evidencia de preservación del modelo en ambos flujos nativos. S04-T03 y G4 conservan sus dependencias de producción. [Evidencia del hook](../docs/evidence/S04-T02-creation-authority.md) · [ADR](../docs/adr/S04-routing-authority.md)
 
 **Relevo.** Un solo coordinador con permiso de escribir `tasks.json` y `PLAN.md`: el vigente se identifica por el agente raíz activo en Paseo y el registro de Engram (`coordination/lease`). Un sucesor sin historial lee `AGENTS.md`, esta sección, `tasks.json`, `git worktree list`, `gh pr list`, la lista de agentes de Paseo y `paseo usage ls`, confirma que no hay otro coordinador activo y entonces escribe. Procedimiento completo en [Relevo de coordinación](DEVELOPMENT-WORKFLOW.md#relevo-de-coordinación).
 
@@ -100,7 +100,9 @@ La autorización temporal de revisión diferida terminó al regresar el propieta
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
 |---|---|---|---|---|---|
 | S04-T01 | Control nativo y metadata | S03-T05 | UI Developer | high | New Agent/New Workspace, disabled/automatic y persistencia del opt-in; no chat separado |
-| S04-T02 | Hook de creación y configuración | S04-T01 | Developer | high | Proveedor/modelo/permiso antes de primer mensaje; respeta selección explícita y errores |
+| S04-T05 | Recomendación determinista de routing | S04-T01 | Developer | low | RPC de solo lectura sobre pares exactos, con financiación declarada y cuota sin vincular; excluye consumo |
+| S04-T06 | Selección supervisada en el compositor | S04-T05 | UI Developer | high | Aplicación visible al borrador nativo y envío separado; preserva modelo y modo en New Agent y New Workspace |
+| S04-T02 | Hook de creación y configuración | S04-T05, S04-T06 | Developer | high | Proveedor/modelo/permiso antes de primer mensaje; respeta selección explícita y errores |
 | S04-T03 | Identidad de sesiones gestionadas | S04-T02 | Senior Developer | high | Registro autoritativo de raíz/worker y no intervención en sesiones ajenas |
 | S04-T04 | Gate G4 | S04-T03 | QA | high | E2E mínimo de sesión nativa y opt-out, sin cambios globales ni perfiles |
 

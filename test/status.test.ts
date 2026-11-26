@@ -14,7 +14,7 @@ describe("status", () => {
   it("is served through the plugin entry as a successful envelope", async () => {
     const mock = createMockServer();
     contribute(mock.server);
-    expect(mock.methods()).toEqual(["zelqio.providers.list", "zelqio.roles.list", "zelqio.status", "zelqio.usage.list"]);
+    expect(mock.methods()).toEqual(["zelqio.providers.list", "zelqio.roles.list", "zelqio.routing.preview", "zelqio.status", "zelqio.usage.list"]);
     const result = await mock.call(statusRpc, {});
     expect(result).toEqual({ ok: true, data: getStatus() });
   });

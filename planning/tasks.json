@@ -1211,21 +1211,112 @@
       }
     },
     {
-      "id": "S04-T02",
+      "id": "S04-T05",
       "phase": "S04",
-      "title": "Hook de creación y configuración",
-      "dependencies": [
-        "S04-T01"
-      ],
+      "title": "Recomendación determinista de routing",
+      "dependencies": ["S04-T01"],
       "role": "Developer",
+      "risk": "low",
+      "acceptance": "RPC de solo lectura sobre pares exactos, con financiación declarada y cuota sin vincular; excluye consumo",
+      "status": "in_progress",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "9abda0717dc4c84d78a215c749403e0369a1ae47",
+          "date": "2026-11-26",
+          "notes": "Typecheck, lint and 137 tests, including strict advisory input, exact IDs, ambiguous catalog, fresh declarations and retry funding constraints.",
+          "limitations": "Windows local checks."
+        },
+        {
+          "kind": "poc",
+          "command": "Paseo 0.17.4 isolated daemon and poc/s04-t02/preview.mjs",
+          "result": "PASS",
+          "sha": "9abda0717dc4c84d78a215c749403e0369a1ae47",
+          "date": "2026-11-26",
+          "notes": "Real plugin RPC returned the advisory recommendation and excluded the consumption candidate. Reordering inputs preserved the result. Host settings revision and empty session list remained unchanged by the RPC.",
+          "limitations": "Windows isolated daemon, synthetic provider and declared financing only."
+        },
+        {
+          "kind": "ci",
+          "command": "Required checks on published PR head",
+          "result": "NOT_RUN",
+          "sha": "9abda0717dc4c84d78a215c749403e0369a1ae47",
+          "date": "2026-11-26",
+          "notes": "The candidate is preserved on a local branch.",
+          "limitations": "Publication and protected integration are pending."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s04-routing-recommendations",
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S04-T06",
+      "phase": "S04",
+      "title": "Selección supervisada en el compositor",
+      "dependencies": ["S04-T05"],
+      "role": "UI Developer",
       "risk": "high",
-      "acceptance": "Proveedor/modelo/permiso antes de primer mensaje; respeta selección explícita y errores",
+      "acceptance": "Aplicación visible al borrador nativo y envío separado; preserva modelo y modo en New Agent y New Workspace",
       "status": "todo",
       "evidence": [],
       "owner": null,
       "branch": null,
       "pr": null,
       "blockers": []
+    },
+    {
+      "id": "S04-T02",
+      "phase": "S04",
+      "title": "Hook de creación y configuración",
+      "dependencies": [
+        "S04-T05",
+        "S04-T06"
+      ],
+      "role": "Developer",
+      "risk": "high",
+      "acceptance": "Proveedor/modelo/permiso antes de primer mensaje; respeta selección explícita y errores",
+      "status": "blocked",
+      "evidence": [
+        {
+          "kind": "poc",
+          "command": "Paseo 0.17.4 isolated daemon and poc/s04-t02/driver.mjs",
+          "result": "PASS",
+          "sha": "9abda0717dc4c84d78a215c749403e0369a1ae47",
+          "date": "2026-11-26",
+          "notes": "The downstream guard saw the selected synthetic model for an omitted model and preserved both an explicit model and the mode. The higher-level SDK rejected provider-only input. Zero sessions.",
+          "limitations": "No effective billing, authorization channel, or native composer validation in this probe."
+        },
+        {
+          "kind": "poc",
+          "command": "Paseo 0.17.4 isolated daemon and poc/s04-t02/driver.mjs",
+          "result": "PASS",
+          "sha": "f4d9e531229010bd85e00d2be008d91e917372b0",
+          "date": "2026-11-26",
+          "notes": "Two SDK requests with and without draft intent rejected by the awaited pre-create hook. Zero agents and zero prompts.",
+          "limitations": "Synthetic catalog and probe only. SHA identifies the product baseline."
+        },
+        {
+          "kind": "contract",
+          "command": "Compare SDK hook types and observed fixture fields",
+          "result": "BLOCKED",
+          "sha": "f4d9e531229010bd85e00d2be008d91e917372b0",
+          "date": "2026-11-26",
+          "notes": "The hook exposes config, env and metadata, with paseo and signal in context. The catalog and quota projection do not establish verified financing per model.",
+          "limitations": "Paseo 0.17.4 on Windows. Production routing stays disabled."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s04-routing-recommendations",
+      "pr": null,
+      "blockers": [
+        "Verify a standing policy with trusted provenance, revocation, and effective project and host binding.",
+        "Verify exact-model billing and usable quota on the effective account or endpoint, including no paid fallback.",
+        "Verify the native flows preserve explicit model choice and effective permissions and options before an automatic change."
+      ]
     },
     {
       "id": "S04-T03",

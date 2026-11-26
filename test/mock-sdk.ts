@@ -11,13 +11,16 @@ type Registered = { contract: PluginRpcContract; handler: Handler };
  * (`callPluginRpc` is not public API); wire-level behaviour is covered by the isolated-daemon check.
  * Only `handle` and `registerSettings` are implemented; anything else a plugin touches must be added deliberately.
  */
-export function createMockServer(context: PluginHandlerContext = { paseo: {} as PluginHandlerContext["paseo"] }) {
+export function createMockServer(
+  context: PluginHandlerContext = { paseo: {} as PluginHandlerContext["paseo"] },
+  settings: (id: string) => unknown = () => ({ status: "invalid", revision: "0", error: "mock" }),
+) {
   const handlers = new Map<string, Registered>();
   const registeredSettings: string[] = [];
   const server = {
     registerSettings(definition: { id: string }) {
       registeredSettings.push(definition.id);
-      return { read: async () => ({ status: "invalid" as const, revision: "0", error: "mock" }), subscribe: () => () => {} };
+      return { read: async () => settings(definition.id), subscribe: () => () => {} };
     },
     handle(contract: PluginRpcContract, handler: Handler) {
       if (handlers.has(contract.name)) throw new Error(`duplicate handler: ${contract.name}`);

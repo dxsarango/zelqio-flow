@@ -68,6 +68,14 @@ describe("fallback journal", () => {
     expect(await new FallbackJournal(directory).recordFailure(failed, routing)).toEqual({ status: "blocked" });
   });
 
+  it.each([undefined, "subscription"] as const)("rechecks current funding for a retry candidate (%s)", async (funding) => {
+    const routing = request();
+    const models = new Map(routing.models);
+    models.set(spare.provider, new Map([[spare.model, { ...models.get(spare.provider)?.get(spare.model), permitted: true, funding }]]));
+    routing.models = models;
+    expect(await new FallbackJournal(directory).recordFailure(failed, routing)).toEqual({ status: "blocked" });
+  });
+
   it("honors the current funding restriction and requires explicit consumption for each decision", async () => {
     const journal = new FallbackJournal(directory);
     const paidFailure = { ...failed, target: paid, funding: "consumption", cause: "transient" } as const;
