@@ -148,9 +148,89 @@ describe("VersionedStore", () => {
         await expect(store.save({ name: "b", count: 2 })).rejects.toThrow(/injected/);
         const result = await make().load();
         expect(result.data).toEqual({ name: "a", count: 1 });
-        expect(["ok", "recovered_from_backup"]).toContain(result.status);
+        expect(result.status).toBe("ok");
         expect((await files()).filter((f) => f.includes("tmp"))).toEqual([]);
       });
     }
+  });
+});
+
+describe("VersionedStore review regressions", () => {
+  const make2 = (overrides: Record<string, unknown> = {}) =>
+    new VersionedStore({
+      dir,
+      name: "settings",
+      version: 2,
+      schema: v2,
+      defaults: () => ({ name: "default", count: 0 }),
+      ...overrides,
+    });
+
+  it("refuses to save over newer-version data even if load() was never called", async () => {
+    const newer = JSON.stringify({ schemaVersion: 3, data: { future: true } });
+    await writeFile(join(dir, "settings.json"), newer);
+    await expect(make2().save({ name: "x", count: 1 })).rejects.toMatchObject({ code: "disabled" });
+    expect(await readFile(join(dir, "settings.json"), "utf8")).toBe(newer);
+    expect(await files()).toEqual(["settings.json"]);
+  });
+
+  it("save() without load() restores from the backup instead of overwriting it with a corrupt main", async () => {
+    await make2().save({ name: "a", count: 1 });
+    await make2().save({ name: "b", count: 2 });
+    await writeFile(join(dir, "settings.json"), "{ truncated");
+    await make2({ now: () => 50 }).save({ name: "c", count: 3 });
+    expect((await make2().load()).data).toEqual({ name: "c", count: 3 });
+    expect(JSON.parse(await readFile(join(dir, "settings.json.bak"), "utf8")).data).toEqual({ name: "a", count: 1 });
+    expect(await readFile(join(dir, "settings.json.corrupt-50"), "utf8")).toBe("{ truncated");
+  });
+
+  it("does not replace the valid backup when main is corrupted after the store was checked", async () => {
+    const store = make2({ now: () => 60 });
+    await store.save({ name: "a", count: 1 });
+    await store.save({ name: "b", count: 2 });
+    await writeFile(join(dir, "settings.json"), "garbage");
+    await store.save({ name: "c", count: 3 });
+    expect(JSON.parse(await readFile(join(dir, "settings.json.bak"), "utf8")).data).toEqual({ name: "a", count: 1 });
+  });
+
+  it("serializes two instances of the same file and leaves a valid document", async () => {
+    const a = make2();
+    const b = make2();
+    await Promise.all([1, 2, 3, 4].flatMap((n) => [a.save({ name: `a${n}`, count: n }), b.save({ name: `b${n}`, count: n })]));
+    const result = await make2().load();
+    expect(result.status).toBe("ok");
+    expect((await files()).filter((f) => f.includes("tmp"))).toEqual([]);
+  });
+
+  it("preserves a corrupt backup too and then reports created consistently", async () => {
+    await writeFile(join(dir, "settings.json"), "bad");
+    await writeFile(join(dir, "settings.json.bak"), "also bad");
+    const first = await make2({ now: () => 5 }).load();
+    expect(first.status).toBe("reset_to_defaults");
+    expect(await files()).toEqual(["settings.json.corrupt-5", "settings.json.corrupt-5.bak"]);
+    expect((await make2().load()).status).toBe("created");
+  });
+
+  it("prunes corrupt copies by numeric timestamp and never reports a pruned name", async () => {
+    for (const t of [9, 10, 11]) {
+      await writeFile(join(dir, "settings.json"), "garbage");
+      await make2({ now: () => t, keepCorrupt: 2 }).load();
+    }
+    expect((await files()).filter((f) => f.includes("corrupt"))).toEqual(["settings.json.corrupt-10", "settings.json.corrupt-11"]);
+    await writeFile(join(dir, "settings.json"), "garbage");
+    const none = await make2({ now: () => 12, keepCorrupt: 0 }).load();
+    expect(none.preserved).toBeUndefined();
+    expect((await files()).filter((f) => f.includes("corrupt"))).toEqual([]);
+  });
+
+  it("does not overwrite an older corrupt copy that has the same name", async () => {
+    await writeFile(join(dir, "settings.json"), "first");
+    await make2({ now: () => 3 }).load();
+    await writeFile(join(dir, "settings.json"), "second");
+    await make2({ now: () => 3 }).load();
+    const copies = (await files()).filter((f) => f.includes("corrupt"));
+    expect(copies).toHaveLength(2);
+    const contents = await Promise.all(copies.map((f) => readFile(join(dir, f), "utf8")));
+    expect(contents.sort()).toEqual(["first", "second"]);
   });
 });

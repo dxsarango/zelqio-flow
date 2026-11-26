@@ -98,19 +98,24 @@ function parseEnvelope(text: string): Envelope | null {
   }
 }
 
+/** One operation queue per file in this process, so separate instances of the same store never interleave steps. */
+const queues = new Map<string, Promise<unknown>>();
+let unique = 0;
+
 /**
  * Versioned JSON document with atomic replace, a one-step backup and corruption recovery.
  *
- * Save order: write temp + flush -> copy current to backup (via temp + rename) -> rename temp over current.
- * A failure at any step leaves the previous document readable (main or backup).
- * Scope: one process. Cross-process locking and power loss during flush on every filesystem are NOT covered.
+ * Save order: (check/recover on first use) -> write temp + flush -> copy a VALID current to backup (via temp + rename)
+ * -> rename temp over current. A failure at any step leaves the previous document readable (main or backup).
+ * Scope: one process. Cross-process locking, power loss during flush and cleanup of temp files left by a hard kill
+ * are NOT covered (stale `.tmp-*` files are harmless and ignored).
  */
 export class VersionedStore<T> {
   private readonly fs: FsOps;
   private readonly now: () => number;
   private writable = true;
-  private queue: Promise<unknown> = Promise.resolve();
-  private counter = 0;
+  /** True once the file on disk was inspected by this instance (load or first save). */
+  private checked = false;
 
   constructor(private readonly options: StoreOptions<T>) {
     this.fs = options.fs ?? nodeFs;
@@ -121,10 +126,18 @@ export class VersionedStore<T> {
     return join(this.options.dir, `${this.options.name}.json${suffix}`);
   }
 
-  /** Serializes operations in this process so two saves never interleave their steps. */
   private enqueue<R>(task: () => Promise<R>): Promise<R> {
-    const run = this.queue.then(task, task);
-    this.queue = run.catch(() => undefined);
+    const key = this.path();
+    const tail = queues.get(key) ?? Promise.resolve();
+    const run = tail.then(task, task);
+    const settled = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    queues.set(key, settled);
+    void settled.then(() => {
+      if (queues.get(key) === settled) queues.delete(key);
+    });
     return run;
   }
 
@@ -155,6 +168,7 @@ export class VersionedStore<T> {
 
   private async loadNow(): Promise<LoadResult<T>> {
     await this.fs.mkdir(this.options.dir);
+    this.checked = true;
     this.writable = true;
     const mainText = await this.fs.readFile(this.path());
     const main = this.decode(mainText);
@@ -164,31 +178,38 @@ export class VersionedStore<T> {
     }
     if (main) return { data: main.data, status: main.migrated ? "migrated" : "ok" };
 
-    const backup = this.decode(await this.fs.readFile(this.path(".bak")));
-    let preserved: string | undefined;
-    if (mainText !== null) preserved = await this.preserveCorrupt();
-
+    const backupText = await this.fs.readFile(this.path(".bak"));
+    const backup = this.decode(backupText);
     if (backup === "newer") {
       this.writable = false;
-      return { data: this.options.defaults(), status: "unsupported_version", preserved };
+      return { data: this.options.defaults(), status: "unsupported_version" };
     }
+    let preserved: string | undefined;
+    if (mainText !== null) preserved = await this.preserveCorrupt("");
     if (backup) {
       await this.fs.copyFile(this.path(".bak"), this.path(".restore"));
       await this.fs.rename(this.path(".restore"), this.path());
       return { data: backup.data, status: "recovered_from_backup", preserved };
     }
-    if (mainText === null && backup === null) return { data: this.options.defaults(), status: "created" };
+    if (backupText !== null) preserved = (await this.preserveCorrupt(".bak")) ?? preserved;
+    if (mainText === null && backupText === null) return { data: this.options.defaults(), status: "created" };
     return { data: this.options.defaults(), status: "reset_to_defaults", preserved };
   }
 
-  private async preserveCorrupt(): Promise<string> {
-    const name = `${this.options.name}.json.corrupt-${this.now()}`;
-    await this.fs.rename(this.path(), join(this.options.dir, name));
+  /** Renames an unusable main (or backup) aside, keeping a bounded number of copies. Returns its new name if kept. */
+  private async preserveCorrupt(source: "" | ".bak"): Promise<string | undefined> {
     const prefix = `${this.options.name}.json.corrupt-`;
+    let name = `${prefix}${this.now()}${source}`;
+    if ((await this.fs.readFile(join(this.options.dir, name))) !== null) name = `${prefix}${this.now()}-${++unique}${source}`;
+    await this.fs.rename(this.path(source), join(this.options.dir, name));
+    const stamp = (file: string) => Number(file.slice(prefix.length).match(/^\d+/)?.[0] ?? 0);
+    const all = (await this.fs.readdir(this.options.dir))
+      .filter((f) => f.startsWith(prefix))
+      .sort((a, b) => stamp(a) - stamp(b) || a.localeCompare(b));
     const keep = this.options.keepCorrupt ?? 3;
-    const all = (await this.fs.readdir(this.options.dir)).filter((f) => f.startsWith(prefix)).sort();
-    for (const old of all.slice(0, Math.max(0, all.length - keep))) await this.fs.rm(join(this.options.dir, old));
-    return name;
+    const removed = all.slice(0, Math.max(0, all.length - keep));
+    for (const old of removed) await this.fs.rm(join(this.options.dir, old));
+    return removed.includes(name) ? undefined : name;
   }
 
   save(data: T): Promise<void> {
@@ -196,23 +217,37 @@ export class VersionedStore<T> {
   }
 
   private async saveNow(data: T): Promise<void> {
-    if (!this.writable) throw new ZelqioError("disabled", "Stored data was written by a newer version; saving is disabled.");
     const parsed = this.options.schema.safeParse(data);
     if (!parsed.success) throw new ZelqioError("invalid_input", "The data does not match the schema.");
+    // Never write before the file on disk was inspected: it may come from a newer version or be corrupt.
+    if (!this.checked) await this.loadNow();
+    if (!this.writable) throw new ZelqioError("disabled", "Stored data was written by a newer version; saving is disabled.");
     await this.fs.mkdir(this.options.dir);
-    const tmp = this.path(`.tmp-${this.now()}-${++this.counter}`);
+    const id = `${process.pid}-${++unique}-${this.now()}`;
+    const tmp = this.path(`.tmp-${id}`);
+    const bakTmp = this.path(`.bak.tmp-${id}`);
     const body = JSON.stringify({ schemaVersion: this.options.version, data: parsed.data }, null, 2);
     try {
       await this.fs.writeFileSynced(tmp, body);
-      if ((await this.fs.readFile(this.path())) !== null) {
-        const bakTmp = this.path(".bak.tmp");
-        await this.fs.copyFile(this.path(), bakTmp);
-        await this.fs.rename(bakTmp, this.path(".bak"));
+      const currentText = await this.fs.readFile(this.path());
+      if (currentText !== null) {
+        const current = this.decode(currentText);
+        if (current === "newer") {
+          this.writable = false;
+          throw new ZelqioError("disabled", "Stored data was written by a newer version; saving is disabled.");
+        }
+        if (current) {
+          await this.fs.copyFile(this.path(), bakTmp);
+          await this.fs.rename(bakTmp, this.path(".bak"));
+        } else {
+          // The current file became unusable after it was checked: keep it aside and leave the valid backup alone.
+          await this.preserveCorrupt("");
+        }
       }
       await this.fs.rename(tmp, this.path());
     } catch (error) {
       await this.fs.rm(tmp).catch(() => undefined);
-      await this.fs.rm(this.path(".bak.tmp")).catch(() => undefined);
+      await this.fs.rm(bakTmp).catch(() => undefined);
       throw error;
     }
   }
