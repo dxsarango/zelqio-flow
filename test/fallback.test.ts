@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -15,6 +15,9 @@ const free = { provider: "free-main", model: "model" };
 const spare = { provider: "free-spare", model: "model" };
 const paid = { provider: "paid", model: "model" };
 const failed = { run: "run-1", checkpoint: "checkpoint-sha", target: free, attempt: 0, funding: "free", cause: "quota_exhausted", observedAt: 100 } as const;
+const followUp = {
+  ...failed, checkpoint: "new-checkpoint-sha", originCheckpoint: failed.checkpoint, attempt: 1, target: spare, observedAt: 120,
+} as const;
 
 function request(): RoutingRequest {
   const provider = (id: string) => ({
@@ -54,14 +57,24 @@ describe("fallback journal", () => {
     expect([first, second]).toContainEqual({ status: "retry", target: spare, checkpoint: failed.checkpoint, attempt: 1 });
     expect([first, second]).toContainEqual({ status: "already_recorded" });
     const journal = new FallbackJournal(directory);
-    await expect(journal.recordFailure({ ...failed, attempt: 1, target: paid }, request())).rejects.toMatchObject({ code: "invalid_input" });
-    expect(await journal.recordFailure({ ...failed, attempt: 1, target: spare, observedAt: 120 }, request())).toEqual({ status: "blocked" });
+    await expect(journal.recordFailure({ ...followUp, target: paid }, request())).rejects.toMatchObject({ code: "invalid_input" });
+    await expect(journal.recordFailure({ ...followUp, originCheckpoint: "different" }, request())).rejects.toMatchObject({ code: "invalid_input" });
+    expect(await journal.recordFailure(followUp, request())).toEqual({ status: "blocked" });
   });
 
   it("blocks if the only alternative would switch to consumption", async () => {
     const routing = request();
     routing.settings.providers[spare.provider] = { use: "off", funding: "free" };
     expect(await new FallbackJournal(directory).recordFailure(failed, routing)).toEqual({ status: "blocked" });
+  });
+
+  it("honors the current funding restriction and requires explicit consumption for each decision", async () => {
+    const journal = new FallbackJournal(directory);
+    const paidFailure = { ...failed, target: paid, funding: "consumption", cause: "transient" } as const;
+    expect(await journal.recordFailure(paidFailure, { ...request(), requestedFunding: "free" })).toEqual({ status: "blocked" });
+    expect(await journal.recordFailure({ ...paidFailure, run: "implicit" }, request())).toEqual({ status: "blocked" });
+    const explicit = await journal.recordFailure({ ...paidFailure, run: "explicit" }, { ...request(), requestedFunding: "consumption" });
+    expect(explicit).toMatchObject({ status: "retry", target: paid });
   });
 
   it("keeps an exhausted target suspended across restart until newer positive evidence arrives", async () => {
@@ -81,6 +94,23 @@ describe("fallback journal", () => {
     expect((await restarted.plan(current)).selected).toEqual(free);
   });
 
+  it("suspends other models on the provider when the verified exhaustion is provider-wide", async () => {
+    const current = request();
+    const entry = current.catalog.providers.find(({ id }) => id === free.provider)!;
+    entry.models.push({ ...entry.models[0]!, id: "other" });
+    const maps = new Map(current.models);
+    const models = new Map(maps.get(free.provider));
+    const facts = models.get(free.model)!;
+    models.set("other", facts);
+    maps.set(free.provider, models);
+    current.models = maps;
+    const journal = new FallbackJournal(directory);
+    expect(await journal.recordFailure({ ...failed, quotaScope: "provider" }, current)).toMatchObject({ status: "retry", target: spare });
+    expect((await journal.plan(current)).selected).toEqual(spare);
+    models.set("other", { ...facts, quota: { status: "fresh", remainingPct: 66, observedAt: 110 } });
+    expect((await journal.plan(current)).selected).toEqual({ provider: free.provider, model: "other" });
+  });
+
   it("does not retry a denied attempt or accept a conflicting replay", async () => {
     const journal = new FallbackJournal(directory);
     expect(await journal.recordFailure({ ...failed, cause: "denied" }, request())).toEqual({ status: "blocked" });
@@ -91,11 +121,13 @@ describe("fallback journal", () => {
   it("blocks on corrupt state without silently replaying from a stale backup", async () => {
     const journal = new FallbackJournal(directory);
     await journal.recordFailure(failed, request());
-    await journal.recordFailure({ ...failed, attempt: 1, target: spare, observedAt: 120 }, request());
+    await journal.recordFailure(followUp, request());
     const file = join(directory, "routing-decisions.json");
     await writeFile(file, "{ damaged");
     await expect(new FallbackJournal(directory).recordFailure(failed, request())).rejects.toMatchObject({ code: "disabled" });
     await expect(new FallbackJournal(directory).plan(request())).rejects.toMatchObject({ code: "disabled" });
     expect(await readFile(file, "utf8")).toBe("{ damaged");
+    await rename(file, join(directory, "damaged-reference"));
+    await expect(new FallbackJournal(directory).recordFailure(failed, request())).rejects.toMatchObject({ code: "disabled" });
   });
 });
