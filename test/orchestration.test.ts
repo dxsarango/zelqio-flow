@@ -18,5 +18,7 @@ describe("draft orchestration intent", () => {
     expect(draftOrchestration({ [key]: { version: 2, mode: "automatic" } })).toBe("disabled");
     expect(draftOrchestration({ [key]: { version: 1, mode: "automatic", allowSpend: true } })).toBe("disabled");
     expect(draftOrchestration(Object.create(orchestrationMetadataPatch("automatic")))).toBe("disabled");
+    expect(draftOrchestration({ [key]: Object.create({ version: 1, mode: "automatic" }) })).toBe("disabled");
+    expect(draftOrchestration({ [key]: Object.assign(Object.create({ mode: "automatic" }), { version: 1 }) })).toBe("disabled");
   });
 });

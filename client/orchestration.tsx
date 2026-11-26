@@ -40,6 +40,7 @@ export function DraftOrchestrationControl({ theme }: PluginComposerItemProps) {
         accessibilityLabel={t("orchestration.title")}
         accessibilityHint={t("orchestration.inactive")}
         accessibilityState={{ checked: automatic, disabled: saving }}
+        aria-checked={automatic}
         disabled={saving}
         onPress={() => void toggle()}
         style={({ pressed }) => ({
