@@ -7,13 +7,27 @@ Foundation corresponde a S01 y G1. Advanced Orchestration corresponde a S02–S0
 
 ## Punto de recuperación
 
-Verificado el 2026-11-26. G0 aprobado condicionalmente y G1 cerrado; S01 completa (T01–T07 done). S02: T01–T03 done; T04 en curso; T05 (G2) y S03 en adelante sin iniciar. No hay PRs abiertos. Los checks obligatorios de `main` son `planning-integrity` y `check (ubuntu-latest|windows-latest|macos-latest)`.
+Verificado el 2026-11-26. G0 aprobado condicionalmente y G1 cerrado. S01 y S02 completas. El [PR #24](https://github.com/dxsarango/zelqio-flow/pull/24) integró S02-T04 en `8afd8f4`. G2 cumplió sus criterios y el registro de cierre habilita S03 al integrarse. S00-T06–T08 conservan sus bloqueos.
 
-**S02-T04 (onboarding y ajustes).** Delegada a un UI Developer en su worktree `s02-t04` (rama `feat/s02-t04-onboarding`, sobre `main` en e648553, sin push ni PR). El worker informa cuando termina; si no hay informe, recuperar desde `git log`/`git diff` de ese worktree y de `get_agent_activity`. El orquestador revisa el diff, ejecuta `npm run check`, verifica el flujo en un daemon aislado en EN y ES con un proveedor y con varios, integra desde una rama **nueva** sobre `origin/main` (cherry-pick, sin force-push) y registra evidencia en `tasks.json`. Después prepara la validación del propietario de G2 (enlace, SHA exacto y qué comprobar; ver flujo de validación) y continúa con las tareas independientes.
+**S02-T04 (onboarding y ajustes).** El worktree del worker conserva los commits `fbf0125` y `6771ff7`. El árbol de `8afd8f4` coincide con `542b1747691c10044ce80f815740368360d81c57`, verificado en [Paseo aislado](http://127.0.0.1:16875/). Pasaron tipos, lint, 105 tests en 8 archivos e integridad de la planificación en Windows local. GitHub confirmó los cuatro checks obligatorios en el SHA aprobado. La verificación EN/ES con uno y varios proveedores y la revisión de permisos de G2 constan en `tasks.json`.
 
 **Reglas que se aplicaron y siguen vigentes.** No apilar PRs: tras cada squash crear la rama desde `origin/main`. Integrar automáticamente solo lo que cumple la autorización permanente (checks verdes sobre el SHA exacto, `--squash --match-head-commit`). Cada tarea de riesgo alto lleva revisión independiente de otro proveedor cuando está disponible. Worktrees conservados, no archivar ni eliminar: `g0-approval`, `g0-lifecycle`, `s00-t03`, `s00-t05`, `foundation-validation-backlog` y `s02-t04`.
 
-**Pendiente del propietario.** Validar G2 cuando se le entregue. Opcional: instalar la regla de permisos de `gh pr merge` descrita en el flujo. Cualquier ampliación de alcance, protección de repositorio o autorización nueva sigue siendo suya.
+**Aprobación del propietario.** Funcionalidad de S02-T04 aprobada para `542b1747691c10044ce80f815740368360d81c57`. El diseño visual definitivo queda pendiente. El [PR #24](https://github.com/dxsarango/zelqio-flow/pull/24) usa ese SHA. G2 verifica el flujo EN/ES con uno y varios proveedores y que el asistente mantenga los permisos existentes. Smart Review conserva sus condiciones vigentes.
+
+### Revisión posterior de onboarding y ajustes
+
+- Agrupar proveedores disponibles y no disponibles. Ocultar por defecto los no disponibles y los detalles técnicos de errores.
+- Mejorar la jerarquía visual, el aprovechamiento del espacio y el indicador de progreso. Eliminar información redundante entre pasos.
+- Explicar las estrategias y modos de trabajo, y permitir editar secciones desde el resumen.
+- Unificar los accesos permanentes a Zelqio Flow y su configuración inicial. Convertir el diagnóstico en un dashboard funcional.
+- Mantener coherencia con la interfaz nativa de Paseo y verificar los temas Light y Dark.
+
+La revisión de recursos de S03-T04 recoge la organización de proveedores y el diagnóstico de disponibilidad. S08-T04 recoge la revisión integrada de navegación, onboarding y temas. La aprobación visual se hará sobre el candidato de esa revisión.
+
+**Condición funcional de la selección de modelos.** S03-T02 y G3 deben verificar que una política de financiación solo gratuita excluye modelos de pago y modelos cuya financiación sea desconocida, incluso al aplicar un modelo predeterminado o un fallback de S03-T03. La elección en S02-T04 solo guarda la preferencia del proveedor. El candidato aprobado no selecciona modelos ni inicia sesiones, y el estado del plugin mantiene los efectos deshabilitados. La capacidad de selección queda condicionada a evidencia del tipo de financiación por modelo y a pruebas negativas sin consumo de pago.
+
+**Trabajo independiente.** Las investigaciones y pruebas preparatorias pueden avanzar con contratos estables, fixtures propios y sin depender del resultado que espera validación. La implementación, integración y habilitación de capacidades conservan las dependencias y gates aplicables. S03-T02 y S03-T04 comparten el contrato de S03-T01. Una vez integrado ese contrato, la revisión de la interfaz de recursos puede continuar en paralelo con el routing si sus archivos son independientes.
 
 **Relevo.** Un solo coordinador con permiso de escribir `tasks.json` y `PLAN.md`: el vigente se identifica por el agente raíz activo en Paseo y el registro de Engram (`coordination/lease`). Un sucesor sin historial lee `AGENTS.md`, esta sección, `tasks.json`, `git worktree list`, `gh pr list`, la lista de agentes de Paseo y `paseo usage ls`, confirma que no hay otro coordinador activo y entonces escribe. Procedimiento completo en [Relevo de coordinación](DEVELOPMENT-WORKFLOW.md#relevo-de-coordinación).
 
