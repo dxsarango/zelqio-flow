@@ -1001,8 +1001,27 @@
       "role": "Senior Developer",
       "risk": "medium",
       "acceptance": "Elegibilidad y estrategias, empate y reservas, sin tokens adicionales ni sustitución de funding Los proveedores solo gratuitos admiten exclusivamente modelos con gratuidad verificada, incluso al resolver un modelo predeterminado.",
-      "status": "in_progress",
-      "evidence": [],
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "review",
+          "command": "Independent review of router and funding restrictions",
+          "result": "PASS",
+          "sha": "51e7f0acb3445952723b2e1fdfb4af461a7b8f27",
+          "date": "2026-11-26",
+          "notes": "Confirmed fixes for explicit consumption, preserved funding, fresh quota priority and true reset re-entry. The residual duplicate catalog identity case was fixed and covered by a negative test.",
+          "limitations": "Pure router only. S03-T03 must preserve funding and suspension state between attempts. Host integration must bind evidence and policy to the exact target."
+        },
+        {
+          "kind": "local",
+          "command": "npm run check; node tools/check-planning.mjs",
+          "result": "PASS",
+          "sha": "97986e10732ff6cd89431ed90603e626a6eb616f",
+          "date": "2026-11-26",
+          "notes": "118 tests in 10 files, typecheck, lint and planning integrity. No sessions launched, no paid model calls, no policy grants or effects enabled.",
+          "limitations": "Synthetic facts. The installed Paseo catalog lacks a uniform model funding field, so unknown funding remains ineligible."
+        }
+      ],
       "owner": "orchestrator",
       "branch": "feat/s03-t02-deterministic-router",
       "pr": null,
@@ -1035,12 +1054,33 @@
       "role": "UI Developer",
       "risk": "low",
       "acceptance": "Cuotas reales con freshness y unknown, preferencias editables y razón de selección",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
-      "pr": null,
-      "blockers": []
+      "status": "awaiting_validation",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check; node tools/check-planning.mjs",
+          "result": "PASS",
+          "sha": "98d17cbd089b75aea4826b7f802b6bbf73fa822b",
+          "date": "2026-11-26",
+          "notes": "109 tests in 9 files, typecheck, lint and planning integrity.",
+          "limitations": "Windows local checks."
+        },
+        {
+          "kind": "local",
+          "command": "Isolated Paseo 0.17.4 and Chrome",
+          "result": "PASS",
+          "sha": "98d17cbd089b75aea4826b7f802b6bbf73fa822b",
+          "date": "2026-11-26",
+          "notes": "Rendered the actual plugin with synthetic quota reports on a loopback daemon without agents or projects. Verified Light and Dark, expanding unavailable providers, and saving routing strategy.",
+          "limitations": "Synthetic reports. Human acceptance of the dashboard is pending. The UI shows that automatic selection is disabled."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s03-t04-resources-dashboard",
+      "pr": 27,
+      "blockers": [
+        "Owner review of the resources dashboard on the exact candidate SHA."
+      ]
     },
     {
       "id": "S03-T05",
