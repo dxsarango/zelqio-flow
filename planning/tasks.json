@@ -493,8 +493,27 @@
       "role": "Developer",
       "risk": "medium",
       "acceptance": "Plugin mínimo instala y carga cliente/servidor en versión validada; sin hooks invasivos",
-      "status": "in_progress",
-      "evidence": [],
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm install; npm run typecheck",
+          "result": "PASS",
+          "sha": "cabf065",
+          "date": "2026-11-26",
+          "notes": "Plugin sources (index.client.tsx, index.server.ts, client/, server/, shared/) typecheck against @getpaseo/plugin 0.17.4 with exact SDK pin and committed lockfile.",
+          "limitations": "CI matrix is S01-T02; no unit tests yet."
+        },
+        {
+          "kind": "poc",
+          "command": "isolated daemon (own home, loopback port, relay off): paseo plugin install <repo>; plugin ls; headless Chrome on the app web build",
+          "result": "PASS",
+          "sha": "cabf065",
+          "date": "2026-11-26",
+          "notes": "Server: plugin status running, method zelqio.status registered, no lifecycle hooks. Client: sidebar item and screen rendered; the screen displayed the RPC response (v0.0.0, foundation, effects off). Regular daemon untouched and still listening; temporary home, browser profile and processes removed.",
+          "limitations": "Client verified in the web build of the installed app, not the desktop shell. Only Windows with Paseo 0.17.4. Plugin trust prompt accepted by the CLI for a local path."
+        }
+      ],
       "owner": "orchestrator",
       "branch": "feat/s01-t01-scaffold",
       "pr": null,
