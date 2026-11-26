@@ -1,6 +1,6 @@
 import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import { useTranslation } from "@getpaseo/plugin/client";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import type { CatalogProvider, ProviderCatalogData } from "../shared/providers";
 import {
@@ -152,10 +152,15 @@ export function OnboardingScreen({ theme, layout }: PluginScreenProps) {
   const [step, setStep] = useState(0);
   const [confirmed, setConfirmed] = useState<Elevated[]>([]);
   const [done, setDone] = useState(false);
+  const scroller = useRef<ScrollView>(null);
   const revision = store.status === "ready" ? store.revision : null;
   const c = theme.colors;
   const text = { color: c.foreground };
   const muted = { color: c.foregroundMuted };
+
+  useEffect(() => {
+    scroller.current?.scrollTo({ y: 0, animated: false });
+  }, [step]);
 
   // Start from what is stored (a returning user reviewing setup); a fresh install starts from the defaults.
   useEffect(() => {
@@ -170,7 +175,7 @@ export function OnboardingScreen({ theme, layout }: PluginScreenProps) {
     patch({ providers: { ...draft.providers, [id]: { ...(draft.providers[id] ?? { use: "off" as const, funding: "subscription" as const }), ...change } } });
 
   const frame = (body: ReactNode) => (
-    <ScrollView style={{ flex: 1, backgroundColor: c.surface0 }} contentContainerStyle={{ padding: layout.compact ? 16 : 24, maxWidth: 720 }}>
+    <ScrollView ref={scroller} style={{ flex: 1, backgroundColor: c.surface0 }} contentContainerStyle={{ padding: layout.compact ? 16 : 24, maxWidth: 720 }}>
       <Text accessibilityRole="header" style={{ ...text, fontSize: 20, fontWeight: "600" }}>
         {t("setup.title")}
       </Text>
