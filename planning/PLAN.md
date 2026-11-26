@@ -1,5 +1,5 @@
 # Plan detallado — Zelqio Flow
-63 tareas en 11 fases. Todas pendientes; dependencias verificadas estructuralmente. Roles son capacidades sugeridas, no asignaciones rígidas. Las fases S01–S10 dependen del gate previo; se puede preparar documentación independiente sin iniciar implementación bloqueada. Los criterios se amplían en PRD, POC y políticas. No estimaciones temporales sin calibración de S00.
+63 tareas en 11 fases. El estado operativo vive en tasks.json (esta tabla no lo duplica); dependencias verificadas por `tools/check-planning.mjs`. Roles son capacidades sugeridas, no asignaciones rígidas. Las fases S01–S10 dependen del gate previo; se puede preparar documentación independiente sin iniciar implementación bloqueada. Los criterios se amplían en PRD, POC y políticas. No estimaciones temporales sin calibración de S00.
 ## Reglas de ejecución
 Ver DEVELOPMENT-WORKFLOW.md y TEST-STRATEGY.md. Los gates requieren evidencia y aprobación según riesgo; G0, G9, G10 explícita del propietario. Un lote contiene solo tareas listas e independientes, con integración serial. No usar el plugin en construcción como dependencia del desarrollo.
 
