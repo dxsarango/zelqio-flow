@@ -15,7 +15,8 @@ export interface RoutingModelFacts {
   permitted: boolean;
   spendPermitted?: boolean;
   quality?: number;
-  quota?: { status: UsageStatus; remainingPct: number | null };
+  quota?: { status: UsageStatus; remainingPct: number | null; observedAt?: number };
+  suspendedSince?: number;
   reservePct?: number;
   lastSelectedAt?: number;
 }
@@ -27,12 +28,14 @@ export interface RoutingRequest {
   capability: Capability;
   models: ReadonlyMap<string, ReadonlyMap<string, RoutingModelFacts>>;
   continuity?: RoutingTarget;
+  /** An explicit funding choice or the original funding on a retry. Omission never permits consumption. */
+  requestedFunding?: Funding;
   allowUnknownQuota?: boolean;
 }
 
 type Exclusion =
   | "provider_unavailable" | "provider_off" | "model_unselectable" | "outside_role"
-  | "not_permitted" | "funding_unknown" | "funding_mismatch" | "spend_not_authorized"
+  | "not_permitted" | "funding_unknown" | "funding_mismatch" | "explicit_consumption_required" | "spend_not_authorized"
   | "quota_exhausted" | "quota_reset_unconfirmed" | "quota_unknown" | "quota_reserved";
 
 interface RankedTarget {
@@ -63,20 +66,24 @@ function prioritization(strategy: ZelqioSettings["strategy"], signals: {
   }
 }
 
+function compareIds(a: RoutingTarget, b: RoutingTarget): number {
+  if (a.provider !== b.provider) return a.provider < b.provider ? -1 : 1;
+  if (a.model !== b.model) return a.model < b.model ? -1 : 1;
+  return 0;
+}
+
 function compareTargets(a: RankedTarget, b: RankedTarget): number {
   for (const [index, value] of a.score.entries()) {
     const other = b.score[index] ?? Infinity;
     if (value < other) return -1;
     if (value > other) return 1;
   }
-  if (a.target.provider !== b.target.provider) return a.target.provider < b.target.provider ? -1 : 1;
-  if (a.target.model !== b.target.model) return a.target.model < b.target.model ? -1 : 1;
-  return 0;
+  return compareIds(a.target, b.target);
 }
 
 /** Evaluates and ranks concrete targets without launching agents, choosing a provider-side default or spending. */
 export function route(request: RoutingRequest): RoutingDecision {
-  const { catalog, settings, role, capability, models, continuity, allowUnknownQuota = false } = request;
+  const { catalog, settings, role, capability, models, continuity, requestedFunding, allowUnknownQuota = false } = request;
   const ranked: RankedTarget[] = [];
   const excluded: RoutingDecision["excluded"] = [];
   const supportsTask = role.capabilities.includes(capability);
@@ -97,18 +104,24 @@ export function route(request: RoutingRequest): RoutingDecision {
       const facts = models.get(provider.id)?.get(model.id);
       if (facts?.permitted !== true) { exclude("not_permitted"); continue; }
       if (facts.funding === undefined) { exclude("funding_unknown"); continue; }
-      if (facts.funding !== setting.funding) { exclude("funding_mismatch"); continue; }
-      if (facts.funding === "consumption" && (!settings.consumptionOptIn || facts.spendPermitted !== true)) {
-        exclude("spend_not_authorized");
-        continue;
+      if (facts.funding !== setting.funding || (requestedFunding !== undefined && facts.funding !== requestedFunding)) {
+        exclude("funding_mismatch"); continue;
+      }
+      if (facts.funding === "consumption") {
+        if (requestedFunding !== "consumption") { exclude("explicit_consumption_required"); continue; }
+        if (!settings.consumptionOptIn || facts.spendPermitted !== true) { exclude("spend_not_authorized"); continue; }
       }
 
       const reserve = facts.reservePct ?? 0;
       const remaining = facts.quota?.remainingPct;
       const fresh = facts.quota?.status === "fresh" && validPercent(remaining);
-      if (facts.quota?.status === "reset") { exclude("quota_reset_unconfirmed"); continue; }
-      if (facts.quota?.status === "exhausted" || remaining === 0) { exclude("quota_exhausted"); continue; }
-      if (!fresh && (!allowUnknownQuota || reserve > 0)) { exclude("quota_unknown"); continue; }
+      const observedAt = facts.quota?.observedAt;
+      const newObservation = observedAt !== undefined && Number.isFinite(observedAt) && observedAt > (facts.suspendedSince ?? -Infinity);
+      if (facts.quota?.status === "reset" || (facts.suspendedSince !== undefined && !(fresh && newObservation && remaining > 0))) {
+        exclude("quota_reset_unconfirmed"); continue;
+      }
+      if (facts.quota?.status === "exhausted" || (fresh && remaining === 0)) { exclude("quota_exhausted"); continue; }
+      if (!fresh && (!allowUnknownQuota || reserve > 0 || remaining === 0)) { exclude("quota_unknown"); continue; }
       if (!validPercent(reserve) || (fresh && remaining <= reserve)) { exclude("quota_reserved"); continue; }
 
       const score = prioritization(settings.strategy, {
@@ -122,6 +135,7 @@ export function route(request: RoutingRequest): RoutingDecision {
       ranked.push({
         target,
         score: [
+          fresh ? 0 : 1,
           setting.use === "primary" ? 0 : 1,
           ...score,
           facts.lastSelectedAt !== undefined && Number.isFinite(facts.lastSelectedAt) ? facts.lastSelectedAt : -Infinity,
@@ -132,5 +146,5 @@ export function route(request: RoutingRequest): RoutingDecision {
   }
 
   const ordered = ranked.sort(compareTargets).map(({ target }) => target);
-  return { selected: ordered[0] ?? null, ranked: ordered, excluded, strategy: settings.strategy };
+  return { selected: ordered[0] ?? null, ranked: ordered, excluded: excluded.sort((a, b) => compareIds(a.target, b.target)), strategy: settings.strategy };
 }
