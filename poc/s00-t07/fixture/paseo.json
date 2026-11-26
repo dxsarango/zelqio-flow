@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "preview": { "type": "service", "command": "node serve.cjs", "port": 16781 },
+    "build": { "command": "node -e \"console.log('built');process.exit(3)\"" }
+  }
+}

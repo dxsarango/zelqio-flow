@@ -16,6 +16,8 @@ Ver DEVELOPMENT-WORKFLOW.md y TEST-STRATEGY.md. Los gates requieren evidencia y 
 | S00-T08 | Persistencia, aislamiento y privacidad | S00-T04, S00-T05 | QA | high | POC-12/13/14/16: reinicio, desactivación, desinstalación, inspección de tráfico y estado saneado |
 | S00-T09 | ADR y gate G0 | S00-T02, S00-T03, S00-T06, S00-T07, S00-T08 | Reviewer | high | Revisión independiente de evidencia y decisión de viabilidad; aprobación humana de versión y arquitectura |
 
+Evidencia para G0: [subagentes y worktrees](../docs/evidence/S00-T05-subagents-worktrees.md), [integración Git](../docs/evidence/S00-T06-git-publication.md), [servicios y aprobación](../docs/evidence/S00-T07-services-approval.md) y [persistencia, aislamiento y privacidad](../docs/evidence/S00-T08-persistence-isolation-privacy.md). El archivado de worktrees con cambios y la identidad del aprobador requieren una decisión explícita de viabilidad. El PR de prueba requiere un sandbox de GitHub autorizado. G0 sigue pendiente de revisión y aprobación del propietario.
+
 ## S01 — Foundation
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
 |---|---|---|---|---|---|

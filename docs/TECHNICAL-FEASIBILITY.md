@@ -1,6 +1,6 @@
 # S00 — Technical feasibility / decision gate
 
-Baseline de investigación: se han observado mecanismos en Ensemble v0.6.5 (SDK 0.16.0) y documentación pública de Paseo, pero no se han ejecutado pruebas locales de Zelqio Flow. Paseo 0.17.4 es la instalación de referencia declarada; versión mínima final por determinar. No asumir que APIs documentadas en versiones nuevas existen en 0.17.4.
+Baseline de investigación: se han observado mecanismos en Ensemble v0.6.5 (SDK 0.16.0) y documentación pública de Paseo. Paseo 0.17.4 es la referencia de las pruebas locales. La versión mínima se decide en G0. Las APIs documentadas en versiones nuevas requieren verificación en 0.17.4.
 
 Referencias para verificar y fijar por tag/SHA: https://paseo.sh/ ; https://github.com/DueGin/paseo-ensemble (MIT, ver LICENSE); https://cli.github.com/manual/gh_pr_merge ; https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request ; https://git-scm.com/docs/git-worktree . Ensemble demuestra patrones de compositor, metadatos, creación y hooks; no demuestra aislamiento de worktrees, cuotas ni seguridad integral. No copiar código sin conservar avisos de licencia.
 
@@ -28,4 +28,4 @@ Daemon separado con home, puertos y directorios independientes; fixture git loca
 | 17 | Aprobación humana inequívoca desde chat/UI, autenticidad y SHA; contenido de repo no puede autorizar | Si chat no distingue autor, usar acción UI explícita |
 
 ## Gate G0
-Matriz PASS / FAIL / BLOCKED / NOT RUN con evidencia. No declarar PASS sin prueba. Antes de iniciar S01, aprobar ADR de versión mínima, superficie UI, modelo de permisos, topología de worktrees, almacenamiento y alternativas. Si alguna capacidad crítica falla, presentar alcance ajustado y decisión al propietario; no modificar Paseo para forzarla. POC desechable; reutilizar código solo tras revisión. Validación actual: todas las pruebas propias NOT RUN.
+Matriz PASS / FAIL / BLOCKED / NOT RUN con evidencia. No declarar PASS sin prueba. Antes de iniciar S01, aprobar ADR de versión mínima, superficie UI, modelo de permisos, topología de worktrees, almacenamiento y alternativas. Si alguna capacidad crítica falla, presentar el alcance ajustado y la decisión al propietario. POC desechable; reutilizar código solo tras revisión. Consultar los resultados por tarea en [tasks.json](../planning/tasks.json) y los informes reproducibles en [evidence](evidence/).

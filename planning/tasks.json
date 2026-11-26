@@ -24,7 +24,7 @@
       ],
       "owner": "orchestrator",
       "branch": "docs/s00-t01-baseline",
-      "pr": null,
+      "pr": 2,
       "blockers": []
     },
     {
@@ -51,7 +51,7 @@
       ],
       "owner": "worker:claude-ui-developer (verified by orchestrator)",
       "branch": "docs/s00-t02-composer-poc",
-      "pr": null,
+      "pr": 4,
       "blockers": []
     },
     {
@@ -78,7 +78,7 @@
       ],
       "owner": "worker:codex-developer (verified by orchestrator)",
       "branch": "docs/s00-t03-usage-poc",
-      "pr": null,
+      "pr": 3,
       "blockers": []
     },
     {
@@ -105,7 +105,7 @@
       ],
       "owner": "worker:claude-senior-developer (verified by orchestrator)",
       "branch": "docs/s00-t04-roles-tools-poc",
-      "pr": null,
+      "pr": 5,
       "blockers": []
     },
     {
@@ -118,10 +118,28 @@
       "role": "Developer",
       "risk": "high",
       "acceptance": "POC-07/08: relación padre-hijo visible, checkout separado y base exacta",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "poc",
+          "path": "docs/evidence/S00-T05-subagents-worktrees.md",
+          "artifacts": "poc/s00-t05/",
+          "result": "PASS",
+          "date": "2026-11-25",
+          "notes": "POC-07: visible native parent-child relationship across workspaces; result, cancellation and manual denial verified. POC-08: exact base SHA, independent checkouts and common Git dir verified.",
+          "limitations": "OpenCode Free on Windows/Paseo 0.17.4; positive permission approval and other providers NOT RUN."
+        },
+        {
+          "kind": "poc",
+          "path": "docs/evidence/S00-T05-subagents-worktrees.md",
+          "result": "FAIL",
+          "date": "2026-11-25",
+          "notes": "POC-08 teardown: native archive removed tracked edits and an untracked file from a disposable dirty worktree.",
+          "limitations": "Release use of parallel writable worktrees requires a safe lifecycle decision at G0. Local Git and lifecycle POCs can proceed in fixtures."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "docs/s00-feasibility-recovery",
       "pr": null,
       "blockers": []
     },
@@ -135,12 +153,45 @@
       "role": "Senior Developer",
       "risk": "high",
       "acceptance": "POC-09/10/15: dos ramas integradas, conflicto recuperado, PR sandbox, SHA y rechazo por reglas",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "blocked",
+      "evidence": [
+        {
+          "kind": "poc",
+          "path": "docs/evidence/S00-T06-git-publication.md",
+          "check": "POC-09",
+          "command": "node poc/s00-t06/local-git.mjs",
+          "result": "PASS",
+          "date": "2026-11-25",
+          "notes": "Integrated two exact-base branches and verified both outputs on the consolidated fixture.",
+          "limitations": "Local Git worktrees on Windows."
+        },
+        {
+          "kind": "poc",
+          "path": "docs/evidence/S00-T06-git-publication.md",
+          "check": "POC-10",
+          "command": "node poc/s00-t06/local-git.mjs",
+          "result": "PASS",
+          "date": "2026-11-25",
+          "notes": "A new Git process recovered merge state; abort and resolution preserved the branches; reattempt did not move HEAD.",
+          "limitations": "Git process recovery only. No Paseo active turn or product journal exercised."
+        },
+        {
+          "kind": "poc",
+          "path": "docs/evidence/S00-T06-git-publication.md",
+          "check": "POC-15",
+          "command": null,
+          "result": "BLOCKED",
+          "date": "2026-11-26",
+          "notes": "A disposable GitHub repository is required for PR, CI, SHA and rejection tests.",
+          "limitations": "The Zelqio Flow repository was inspected read-only for protection settings."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "docs/s00-feasibility-recovery",
       "pr": null,
-      "blockers": []
+      "blockers": [
+        "Identify and authorize a disposable GitHub repository for the POC-15 write operations."
+      ]
     },
     {
       "id": "S00-T07",
@@ -152,12 +203,35 @@
       "role": "UI Developer",
       "risk": "high",
       "acceptance": "POC-11/17: servicio ligado a versión y actor de aprobación verificable; alternativa UI si chat no prueba actor",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "blocked",
+      "evidence": [
+        {
+          "kind": "poc",
+          "path": "docs/evidence/S00-T07-services-approval.md",
+          "check": "POC-11",
+          "command": "rpc.mjs scripts/start/stop; /health direct and via proxy; TCP forward",
+          "result": "PASS",
+          "date": "2026-11-25",
+          "notes": "Isolated Paseo 0.17.4 service reached healthy, returned exact fixture SHA over both URLs and stopped. The same server through a different loopback port returned the original proxy URL.",
+          "limitations": "Bundled daemon client and simulated tunnel only. Plugin SDK launch and real remote host NOT RUN."
+        },
+        {
+          "kind": "poc",
+          "path": "docs/evidence/S00-T07-services-approval.md",
+          "check": "POC-17",
+          "command": "Recovered T07 daemon log and isolated runtime traces",
+          "result": "FAIL",
+          "date": "2026-11-25",
+          "notes": "Panel bound action to exact SHA and rejected stale requests. UI and generic client shared the same handler context, which exposed no authentic human actor.",
+          "limitations": "No trusted chat approval path or external review mechanism verified."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "docs/s00-feasibility-recovery",
       "pr": null,
-      "blockers": []
+      "blockers": [
+        "An approval channel with an independently verifiable actor and SHA is required before accepting POC-17."
+      ]
     },
     {
       "id": "S00-T08",
@@ -170,12 +244,60 @@
       "role": "QA",
       "risk": "high",
       "acceptance": "POC-12/13/14/16: reinicio, desactivación, desinstalación, inspección de tráfico y estado saneado",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "blocked",
+      "evidence": [
+        {
+          "kind": "poc",
+          "path": "docs/evidence/S00-T08-persistence-isolation-privacy.md",
+          "artifacts": "poc/s00-t08/",
+          "check": "POC-12",
+          "command": "poc/s00-t08/run.ps1 -Install <paseo-install> -Scratch <sandbox>",
+          "result": "FAIL",
+          "date": "2026-11-26",
+          "notes": "Stop/start gave a new daemon PID. The workspace service stopped and the in-memory pending approval was lost.",
+          "limitations": "Agent turns and native pending permissions were not exercised."
+        },
+        {
+          "kind": "poc",
+          "path": "docs/evidence/S00-T08-persistence-isolation-privacy.md",
+          "artifacts": "poc/s00-t08/",
+          "check": "POC-13",
+          "command": "poc/s00-t08/run.ps1 -Install <paseo-install> -Scratch <sandbox>",
+          "result": "PASS",
+          "date": "2026-11-26",
+          "notes": "Independent plugin and native workspace service remained available across removal of the test plugin.",
+          "limitations": "No new provider turn. OpenCode was unavailable for a new control agent; reused the unmanaged session evidence from S00-T02."
+        },
+        {
+          "kind": "poc",
+          "path": "docs/evidence/S00-T08-persistence-isolation-privacy.md",
+          "artifacts": "poc/s00-t08/",
+          "check": "POC-14",
+          "command": "poc/s00-t08/run.ps1 -Install <paseo-install> -Scratch <sandbox>",
+          "result": "PASS",
+          "date": "2026-11-26",
+          "notes": "Disable/remove made plugin RPCs unavailable while preserving the control plugin, service, branch, and untracked file.",
+          "limitations": "Fixture scope only. Native profiles and memory stores were not exercised."
+        },
+        {
+          "kind": "poc",
+          "path": "docs/evidence/S00-T08-persistence-isolation-privacy.md",
+          "artifacts": "poc/s00-t08/",
+          "check": "POC-16",
+          "command": "poc/s00-t08/run.ps1 -Install <paseo-install> -Scratch <sandbox>; Get-NetTCPConnection -OwningProcess <listenerPid>",
+          "result": "BLOCKED",
+          "date": "2026-11-26",
+          "notes": "Listener PID differed from the recorded PID. One established non-loopback TCP connection was observed on the listener process and left unattributed.",
+          "limitations": "Spot sample only. Native Paseo/provider traffic was not distinguished from plugin traffic; sanitized export unverified."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "docs/s00-feasibility-recovery",
       "pr": null,
-      "blockers": []
+      "blockers": [
+        "A durable approval and operation state/reconciliation mechanism has not been verified through a daemon restart.",
+        "Attribute the observed connection, expand traffic coverage, and verify a sanitized export for POC-16."
+      ]
     },
     {
       "id": "S00-T09",
