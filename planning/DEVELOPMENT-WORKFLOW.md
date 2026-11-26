@@ -41,7 +41,28 @@ Usar transferencia automática únicamente si el entorno ofrece una operación s
 Cada tarea tiene ID, dependencia, salida, criterio y riesgo. Solo ejecutar cuando dependencias aceptadas. Propuesta: hasta 3 workers concurrentes como punto de partida ajustable, con un responsable de integración. Tareas que escriben archivos solapados se serializan o tienen contrato previo; usar worktrees nativos de Paseo para escrituras independientes. No implementar contra contratos todavía no aprobados. Una rama/PR por unidad lógica (puede agrupar tareas inseparables con trazabilidad), no un PR por cada subagente obligatoriamente. Conventional Commits, ramas `type/description`, sin secretos, sin atribuciones de IA en commits/PR/comentarios como preferencia del propietario para este proyecto. No imponer reglas Engram específicas. No fusionar sin verificar protecciones, SHA y CI; si no se pueden verificar, detener y pedir decisión, no saltar reglas.
 
 ## Modo del propietario para desarrollo
-Smart Review propuesto: docs y cambios verificables automáticamente se integran solo si autorización y protecciones lo permiten; cambios visuales/funcionales se mantienen en el mismo PR y workspace hasta que el propietario pruebe y apruebe SHA concreto. Cambios de seguridad/arquitectura y gates requieren aprobación explícita. No habilitar Auto Merge por inferencia. POC en daemon aislado, sin tocar instalación habitual ni proyectos reales. Tests reales que consumen cuotas se ejecutan con aprobación de alcance; no duplicar pruebas innecesariamente.
+Smart Review: docs y cambios verificables automáticamente se integran solo si autorización y protecciones lo permiten. Cambios de seguridad/arquitectura y gates requieren aprobación explícita. No habilitar Auto Merge por inferencia. POC en daemon aislado, sin tocar instalación habitual ni proyectos reales. Tests reales que consumen cuotas se ejecutan con aprobación de alcance; no duplicar pruebas innecesariamente.
+
+### Validación visual y funcional del propietario
+
+El propietario valida el resultado visual y funcional del producto. El orquestador prepara y mantiene el entorno de validación y no pide al propietario comandos Git, npm, Paseo CLI ni preparación de entornos.
+
+**Cuándo se pide.** Distinguir tres clases de cambio:
+- *Scaffolding técnico e interfaces provisionales* (estructura, contratos, pantallas de estado o marcadores sin valor de producto): sin validación individual. Basta la verificación técnica (typecheck, tests, evidencia de carga) y la integración normal con los checks requeridos.
+- *Funcionalidad visual o interactiva relevante para el producto*: requiere validación humana.
+- *Seguridad, arquitectura y gates*: aprobación explícita según las reglas existentes.
+
+Agrupar validaciones relacionadas en un solo lote cuando sea razonable. La aprobación queda asociada al SHA exacto que se probó, o al SHA de integración del lote. Un cambio material posterior la invalida. Una aprobación nunca habilita dependencias aún no aprobadas.
+
+**Preparación (a cargo del orquestador).** Crear un worktree dedicado fuera del checkout principal en el SHA exacto, instalar dependencias, compilar o verificar tipos, y levantar un daemon de Paseo aislado (home propio, solo loopback, relay desactivado, puertos de un rango reservado a validación) con el plugin instalado desde ese worktree. Servir la app web con `tools/serve-app.mjs`, que preconecta el navegador al daemon aislado, y comprobar de extremo a extremo que el enlace abre una interfaz funcional. No modificar el daemon habitual ni usar proyectos reales, credenciales o prompts a proveedores.
+
+**Entrega.** Informar el enlace directo, el SHA exacto, las funcionalidades a comprobar y cómo aprobar o pedir cambios. Mantener el entorno activo mientras la aprobación esté pendiente. Si el propietario pide correcciones, aplicarlas en la misma rama/PR, actualizar el entorno al nuevo SHA y repetir la entrega.
+
+**Cierre.** Tras la decisión, detener procesos, daemon, servidor y navegador propios, eliminar el home y el worktree de validación con las comprobaciones de la limpieza segura, y verificar que el daemon habitual sigue intacto.
+
+**Continuidad.** Mientras la aprobación está pendiente, continuar con tareas independientes que puedan ejecutarse de forma segura, sin integrar dependencias no aprobadas ni bloquear la fase completa.
+
+**Escalada.** Pedir intervención técnica solo ante una limitación real de permisos, acceso o interacción humana obligatoria, y explicarla.
 
 ## Brief por tarea
 ID + objetivo + dependencias aceptadas + archivos/contratos permitidos + non-goals + aceptación + comandos de verificación + riesgo/permiso + entrega. Worker reporta cambios, commits/SHA, checks realmente ejecutados, limitaciones y blockers. Orquestador revisa, integra secuencialmente y actualiza tasks.json con evidencia. No marcar Done por relato del worker sin verificación. Mismo chat si contexto relevante; nuevo chat para tarea independiente, handoff con estado. Modelo/razonamiento según complejidad (Medium normal, High complejo), verificar modelos disponibles. No fijar modelos en instrucciones públicas.
