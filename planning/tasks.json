@@ -618,10 +618,29 @@
       "role": "UI Developer",
       "risk": "low",
       "acceptance": "Componentes nativos, EN/ES y temas; no traducciones faltantes",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check (typecheck, lint, vitest)",
+          "result": "PASS",
+          "sha": "e87a524",
+          "date": "2026-11-26",
+          "notes": "12 tests including EN/ES key parity, placeholder parity and no empty strings.",
+          "limitations": "Parity is checked on the resource files; there is no locale beyond EN and ES."
+        },
+        {
+          "kind": "poc",
+          "command": "isolated daemon + headless Chrome on the app web build; app language system then es",
+          "result": "PASS",
+          "sha": "e87a524",
+          "date": "2026-11-26",
+          "notes": "Status screen rendered with native components and SDK translations: English (Version 0.0.0 / Foundation / Effects disabled) and Spanish (Versión 0.0.0 / Foundation / Efectos desactivados); no raw keys shown. Sidebar title uses an SDK message.",
+          "limitations": "Theme variants (light/dark) were not captured; colors come from the host theme tokens. Web build only, Windows, Paseo 0.17.4."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s01-t05-ui-i18n",
       "pr": null,
       "blockers": []
     },
