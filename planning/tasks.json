@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "project": "Zelqio Flow",
-  "status": "planned",
+  "status": "in_progress",
   "tasks": [
     {
       "id": "S00-T01",
@@ -11,10 +11,19 @@
       "role": "Orchestrator",
       "risk": "medium",
       "acceptance": "PRD y versiones fijadas; revisar alcance y preparar daemon/fixtures aislados; ningún proyecto real alterado",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "doc",
+          "path": "docs/evidence/S00-T01-baseline.md",
+          "result": "PASS",
+          "date": "2026-11-25",
+          "notes": "Versions pinned; isolated daemon (own home/port) started and checked; fixtures created; no real project touched.",
+          "limitations": "No provider inference; credential sharing with regular home not verified."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "docs/s00-t01-baseline",
       "pr": null,
       "blockers": []
     },
