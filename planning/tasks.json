@@ -582,10 +582,29 @@
       "role": "Developer",
       "risk": "medium",
       "acceptance": "Tipos/validación runtime, errores normalizados, mocks SDK; contratos aprobados",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check (typecheck, lint, vitest)",
+          "result": "PASS",
+          "sha": "c9490b9",
+          "date": "2026-11-26",
+          "notes": "9 tests: envelope success, ZelqioError normalization with retry hint, internal errors hide paths and messages, input contract rejection before the handler, duplicate registration rejected, unwrapResult, ZodError to invalid_input.",
+          "limitations": "The test double validates with the contract Zod schemas; the SDK callPluginRpc is not public API, so wire behaviour is covered by the daemon check."
+        },
+        {
+          "kind": "poc",
+          "command": "isolated daemon (own home, loopback port, relay off): plugin install from the working tree; headless Chrome on the web app",
+          "result": "PASS",
+          "sha": "c9490b9",
+          "date": "2026-11-26",
+          "notes": "The status screen rendered the unwrapped envelope (v0.0.0, foundation, effects off) through the real daemon and client.",
+          "limitations": "Web build of the app on Windows with Paseo 0.17.4 only. Error envelopes on the wire are covered by unit tests, not by the daemon check."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s01-t04-contracts",
       "pr": null,
       "blockers": []
     },
