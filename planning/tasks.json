@@ -1307,7 +1307,7 @@
       "role": "Senior Developer",
       "risk": "high",
       "acceptance": "Separa declaración, política y observación; verifica coincidencia y vigencia con adaptadores simulados sin habilitar efectos",
-      "status": "in_progress",
+      "status": "done",
       "evidence": [
         {
           "kind": "local",
@@ -1339,7 +1339,7 @@
       ],
       "owner": "orchestrator",
       "branch": "feat/s04-supervised-selection",
-      "pr": null,
+      "pr": 34,
       "blockers": []
     },
     {
@@ -1398,7 +1398,8 @@
       "phase": "S04",
       "title": "Identidad de sesiones gestionadas",
       "dependencies": [
-        "S04-T02"
+        "S04-T02",
+        "S04-T08"
       ],
       "role": "Senior Developer",
       "risk": "high",
@@ -1435,7 +1436,7 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Grafo puro y orden determinista; detecta ciclos, IDs repetidos y dependencias ausentes y propone tareas dentro de los slots",
-      "status": "in_progress",
+      "status": "done",
       "evidence": [
         {
           "kind": "local",
@@ -1458,7 +1459,7 @@
       ],
       "owner": "orchestrator",
       "branch": "feat/s04-supervised-selection",
-      "pr": null,
+      "pr": 34,
       "blockers": []
     },
     {
@@ -1467,7 +1468,8 @@
       "title": "DAG y runtime de tareas",
       "dependencies": [
         "S04-T04",
-        "S05-T07"
+        "S05-T07",
+        "S05-T09"
       ],
       "role": "Senior Developer",
       "risk": "high",
@@ -1521,7 +1523,7 @@
       "role": "Senior Developer",
       "risk": "high",
       "acceptance": "Clasifica sesión y progreso, conserva época, checkpoint y backoff en un diario local; verifica reanudación sin efectos",
-      "status": "in_progress",
+      "status": "done",
       "evidence": [
         {
           "kind": "local",
@@ -1544,7 +1546,7 @@
       ],
       "owner": "orchestrator",
       "branch": "feat/s04-supervised-selection",
-      "pr": null,
+      "pr": 34,
       "blockers": []
     },
     {
@@ -1570,7 +1572,8 @@
       "phase": "S05",
       "title": "Actividad local y estado",
       "dependencies": [
-        "S05-T03"
+        "S05-T03",
+        "S05-T10"
       ],
       "role": "UI Developer",
       "risk": "medium",
@@ -1608,7 +1611,7 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Contrasta identidad, SHA y estado local con fixtures; sin comandos Git ni permisos de escritura",
-      "status": "in_progress",
+      "status": "done",
       "evidence": [
         {
           "kind": "local",
@@ -1622,7 +1625,7 @@
       ],
       "owner": "orchestrator",
       "branch": "feat/s04-supervised-selection",
-      "pr": null,
+      "pr": 34,
       "blockers": []
     },
     {
@@ -1648,7 +1651,8 @@
       "phase": "S06",
       "title": "Ramas, worktrees y commits",
       "dependencies": [
-        "S06-T01"
+        "S06-T01",
+        "S06-T09"
       ],
       "role": "Developer",
       "risk": "high",
@@ -1668,7 +1672,7 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Clasifica refs y conserva intenciones pendientes al reabrir; sin ejecutar Git ni autorizar reintentos",
-      "status": "in_progress",
+      "status": "done",
       "evidence": [
         {
           "kind": "local",
@@ -1682,7 +1686,7 @@
       ],
       "owner": "orchestrator",
       "branch": "feat/s04-supervised-selection",
-      "pr": null,
+      "pr": 34,
       "blockers": []
     },
     {
@@ -1708,7 +1712,8 @@
       "phase": "S06",
       "title": "Adaptador GitHub",
       "dependencies": [
-        "S06-T01"
+        "S06-T01",
+        "S06-T10"
       ],
       "role": "Developer",
       "risk": "high",
@@ -1761,7 +1766,8 @@
       "phase": "S07",
       "title": "Delivery gates y aprobación",
       "dependencies": [
-        "S06-T06"
+        "S06-T06",
+        "S07-T09"
       ],
       "role": "Senior Developer",
       "risk": "high",
@@ -1778,7 +1784,8 @@
       "phase": "S07",
       "title": "Review First y Auto Merge",
       "dependencies": [
-        "S07-T01"
+        "S07-T01",
+        "S07-T08"
       ],
       "role": "Developer",
       "risk": "high",
@@ -1795,7 +1802,8 @@
       "phase": "S07",
       "title": "Clasificador Smart Review",
       "dependencies": [
-        "S07-T01"
+        "S07-T01",
+        "S07-T08"
       ],
       "role": "Developer",
       "risk": "high",
@@ -1829,7 +1837,8 @@
       "phase": "S07",
       "title": "Autopilot",
       "dependencies": [
-        "S07-T01"
+        "S07-T01",
+        "S07-T08"
       ],
       "role": "Developer",
       "risk": "high",
@@ -1882,7 +1891,8 @@
       "phase": "S08",
       "title": "Checks y evidencia",
       "dependencies": [
-        "S07-T07"
+        "S07-T07",
+        "S08-T08"
       ],
       "role": "Developer",
       "risk": "high",
@@ -1916,7 +1926,8 @@
       "phase": "S08",
       "title": "Servicios y preview",
       "dependencies": [
-        "S07-T07"
+        "S07-T07",
+        "S08-T08"
       ],
       "role": "Developer",
       "risk": "high",
@@ -1951,7 +1962,8 @@
       "phase": "S08",
       "title": "Power Management",
       "dependencies": [
-        "S08-T03"
+        "S08-T03",
+        "S08-T07"
       ],
       "role": "Senior Developer",
       "risk": "high",
@@ -1987,7 +1999,8 @@
       "phase": "S09",
       "title": "Auditoría de seguridad",
       "dependencies": [
-        "S08-T05"
+        "S08-T05",
+        "S09-T08"
       ],
       "role": "Reviewer",
       "risk": "high",
@@ -2004,7 +2017,8 @@
       "phase": "S09",
       "title": "Fault injection y recuperación",
       "dependencies": [
-        "S08-T05"
+        "S08-T05",
+        "S09-T08"
       ],
       "role": "QA",
       "risk": "high",
@@ -2021,7 +2035,8 @@
       "phase": "S09",
       "title": "Privacidad y retención",
       "dependencies": [
-        "S08-T05"
+        "S08-T05",
+        "S09-T07"
       ],
       "role": "Developer",
       "risk": "high",
@@ -2058,7 +2073,8 @@
       "title": "Actualización y desinstalación",
       "dependencies": [
         "S09-T02",
-        "S09-T03"
+        "S09-T03",
+        "S09-T07"
       ],
       "role": "Developer",
       "risk": "high",
@@ -2096,7 +2112,8 @@
       "phase": "S10",
       "title": "Documentación pública EN/ES",
       "dependencies": [
-        "S09-T06"
+        "S09-T06",
+        "S09-T09"
       ],
       "role": "Assistant",
       "risk": "low",
@@ -2153,6 +2170,215 @@
       "role": "Orchestrator",
       "risk": "high",
       "acceptance": "Aprobación explícita, requisitos actuales catálogo verificados, tag/release/publicación autorizados",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S04-T08",
+      "phase": "S04",
+      "title": "Contratos de ciclo de vida de agentes",
+      "dependencies": [
+        "S01-T04"
+      ],
+      "role": "Developer",
+      "risk": "medium",
+      "acceptance": "Distingue identidad gestionada, intento, estado y permisos mediante snapshots sintéticos",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S05-T09",
+      "phase": "S05",
+      "title": "Reserva y conciliación de intentos",
+      "dependencies": [
+        "S01-T03",
+        "S05-T07",
+        "S05-T08"
+      ],
+      "role": "Developer",
+      "risk": "medium",
+      "acceptance": "Reserva slots e intentos idempotentes en fixtures locales; conserva ambigüedad tras reinicio",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S05-T10",
+      "phase": "S05",
+      "title": "Proyección local de actividad y cuota",
+      "dependencies": [
+        "S03-T01",
+        "S01-T04"
+      ],
+      "role": "Developer",
+      "risk": "low",
+      "acceptance": "Proyecta actividad, frescura, bloqueos y reingreso sin conversaciones ni inferencia",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S06-T09",
+      "phase": "S06",
+      "title": "Preparación para retirada de worktrees",
+      "dependencies": [
+        "S06-T07"
+      ],
+      "role": "Developer",
+      "risk": "low",
+      "acceptance": "Evalúa un snapshot de retirada y bloquea si faltan pruebas de propiedad, limpieza o alcance",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S06-T10",
+      "phase": "S06",
+      "title": "Evaluación de checks exactos de GitHub",
+      "dependencies": [
+        "S06-T07"
+      ],
+      "role": "Developer",
+      "risk": "low",
+      "acceptance": "Contrasta checks de fixtures con SHA, app, resultado y reglas exigidas",
+      "status": "in_progress",
+      "evidence": [],
+      "owner": "orchestrator",
+      "branch": "feat/parallel-implementation",
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S07-T08",
+      "phase": "S07",
+      "title": "Decisiones de entrega y revisión diferida",
+      "dependencies": [
+        "S01-T04"
+      ],
+      "role": "Developer",
+      "risk": "low",
+      "acceptance": "Simula los cuatro modos con decisiones tipadas, restricciones y caducidad; sin publicación",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S07-T09",
+      "phase": "S07",
+      "title": "Solicitudes de aprobación persistidas",
+      "dependencies": [
+        "S01-T03"
+      ],
+      "role": "Developer",
+      "risk": "medium",
+      "acceptance": "Fixture vincula solicitud, alcance, SHA y política; reinicio, rechazo e invalidación",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S08-T07",
+      "phase": "S08",
+      "title": "Política de energía con adaptador simulado",
+      "dependencies": [
+        "S01-T04",
+        "S05-T08"
+      ],
+      "role": "Developer",
+      "risk": "low",
+      "acceptance": "Propone adquisición y liberación temporal, y suspensión solo con autorización y ausencia verificada de trabajo protegido",
+      "status": "in_progress",
+      "evidence": [],
+      "owner": "orchestrator",
+      "branch": "feat/parallel-implementation",
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S08-T08",
+      "phase": "S08",
+      "title": "Modelo local de evidencia y preview",
+      "dependencies": [
+        "S01-T04"
+      ],
+      "role": "Developer",
+      "risk": "low",
+      "acceptance": "Proyecta evidencia y salud de preview ligadas al SHA sin iniciar servicios",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S09-T07",
+      "phase": "S09",
+      "title": "Exportación mínima y retención simulada",
+      "dependencies": [
+        "S01-T03"
+      ],
+      "role": "Developer",
+      "risk": "low",
+      "acceptance": "Exporta campos permitidos desde fixtures y protege referencias activas al evaluar retención",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S09-T08",
+      "phase": "S09",
+      "title": "Regresión y fallos de componentes puros",
+      "dependencies": [
+        "S05-T08",
+        "S06-T08"
+      ],
+      "role": "Developer",
+      "risk": "low",
+      "acceptance": "Ejercita reinicio, colisión, datos obsoletos y fallos en fixtures sin efectos ni credenciales",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S09-T09",
+      "phase": "S09",
+      "title": "Cobertura EN/ES y accesibilidad de contratos",
+      "dependencies": [
+        "S01-T05"
+      ],
+      "role": "Developer",
+      "risk": "low",
+      "acceptance": "Comprueba cobertura de claves y variables en ambos idiomas para estados del producto",
       "status": "todo",
       "evidence": [],
       "owner": null,
