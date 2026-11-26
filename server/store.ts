@@ -1,5 +1,5 @@
 import { copyFile, mkdir, open, readFile, readdir, rename, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import type { ZodType } from "zod";
 import { ZelqioError } from "../shared/errors";
 
@@ -62,7 +62,7 @@ export interface StoreOptions<T> {
   migrations?: Migration[];
   fs?: FsOps;
   now?: () => number;
-  /** How many preserved corrupt copies to keep (the oldest are removed). */
+  /** How many preserved corrupt copies to keep, at least 1 (the oldest are removed). */
   keepCorrupt?: number;
 }
 
@@ -127,7 +127,8 @@ export class VersionedStore<T> {
   }
 
   private enqueue<R>(task: () => Promise<R>): Promise<R> {
-    const key = this.path();
+    // Case-insensitive key: on Windows and macOS two spellings of a directory name the same physical file.
+    const key = resolve(this.path()).toLowerCase();
     const tail = queues.get(key) ?? Promise.resolve();
     const run = tail.then(task, task);
     const settled = run.then(
@@ -151,7 +152,7 @@ export class VersionedStore<T> {
     try {
       while (version < this.options.version) {
         const step = this.options.migrations?.find((m) => m.from === version);
-        if (!step) return null;
+        if (!step) return "newer"; // no safe path to the current version: treat like newer data and leave it untouched
         data = step.migrate(data);
         version += 1;
       }
@@ -206,10 +207,34 @@ export class VersionedStore<T> {
     const all = (await this.fs.readdir(this.options.dir))
       .filter((f) => f.startsWith(prefix))
       .sort((a, b) => stamp(a) - stamp(b) || a.localeCompare(b));
-    const keep = this.options.keepCorrupt ?? 3;
+    const keep = Math.max(1, this.options.keepCorrupt ?? 3); // never delete the copy just preserved
     const removed = all.slice(0, Math.max(0, all.length - keep));
     for (const old of removed) await this.fs.rm(join(this.options.dir, old));
     return removed.includes(name) ? undefined : name;
+  }
+
+  /**
+   * Removes leftover temp files from a hard kill. OFFLINE ONLY: the caller must guarantee that no process is writing
+   * this file and none will start meanwhile (`quiescent: true`). Age and process ids cannot prove a writer is dead,
+   * so nothing is removed automatically. Only regular files with this store's exact temp names are touched.
+   */
+  cleanTemps(options: { quiescent: true }): Promise<string[]> {
+    if (options.quiescent !== true) return Promise.reject(new ZelqioError("invalid_input", "Cleanup requires exclusive access."));
+    return this.enqueue(async () => {
+      const stem = `${this.options.name}.json`;
+      const pattern = new RegExp(`^${stem.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.(tmp|bak\\.tmp)-\\d+-\\d+-\\d+$`);
+      const removed: string[] = [];
+      for (const file of await this.fs.readdir(this.options.dir)) {
+        if (!pattern.test(file)) continue;
+        try {
+          await this.fs.rm(join(this.options.dir, file)); // non-recursive: a directory with this name is left alone
+          removed.push(file);
+        } catch {
+          // Not removable (directory, in use): leave it.
+        }
+      }
+      return removed.sort();
+    });
   }
 
   save(data: T): Promise<void> {
@@ -237,8 +262,11 @@ export class VersionedStore<T> {
           throw new ZelqioError("disabled", "Stored data was written by a newer version; saving is disabled.");
         }
         if (current) {
-          await this.fs.copyFile(this.path(), bakTmp);
-          await this.fs.rename(bakTmp, this.path(".bak"));
+          // Never rotate over a backup this version cannot read: it may hold the only copy of newer data.
+          if (this.decode(await this.fs.readFile(this.path(".bak"))) !== "newer") {
+            await this.fs.copyFile(this.path(), bakTmp);
+            await this.fs.rename(bakTmp, this.path(".bak"));
+          }
         } else {
           // The current file became unusable after it was checked: keep it aside and leave the valid backup alone.
           await this.preserveCorrupt("");

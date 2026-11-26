@@ -15,7 +15,7 @@ describe("deny by default", () => {
   });
 
   it("denies an unknown action even if a rule names it", () => {
-    expect(decide({ global: [allow("workspace.read")] }, "rm.everything")).toMatchObject({ effect: "deny", reason: "unknown_action" });
+    expect(decide({ global: [allow("rm.everything")] }, "rm.everything")).toMatchObject({ effect: "deny", reason: "unknown_action" });
   });
 
   it("fails closed on a malformed policy instead of throwing", () => {
@@ -161,5 +161,18 @@ describe("validateLayers", () => {
   it("rejects unknown actions and bad shapes", () => {
     expect(validateLayers({ project: [{ effect: "allow", action: "nope" }] }).ok).toBe(false);
     expect(validateLayers("policy").ok).toBe(false);
+  });
+});
+
+describe("strict policy shape (S01-T07 review)", () => {
+  it("fails closed when a scope key is misspelled instead of dropping its deny", () => {
+    const layers = { global: [allow("git.commit")], sesion: [deny("git.commit")] } as never;
+    expect(evaluate(layers, { action: "git.commit" })).toMatchObject({ effect: "deny", reason: "invalid_policy" });
+    expect(validateLayers(layers).ok).toBe(false);
+  });
+
+  it("fails closed on unknown keys inside a rule or a request", () => {
+    expect(evaluate({ global: [{ ...allow("git.commit"), expires: "never" }] } as never, { action: "git.commit" })).toMatchObject({ reason: "invalid_policy" });
+    expect(evaluate({ global: [allow("git.commit")] }, { action: "git.commit", extra: 1 } as never)).toMatchObject({ effect: "deny", reason: "unknown_action" });
   });
 });
