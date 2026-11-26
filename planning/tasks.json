@@ -1219,7 +1219,35 @@
       "risk": "low",
       "acceptance": "RPC de solo lectura sobre pares exactos, con financiación declarada y cuota sin vincular; excluye consumo",
       "status": "in_progress",
-      "evidence": [],
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "9abda0717dc4c84d78a215c749403e0369a1ae47",
+          "date": "2026-11-26",
+          "notes": "Typecheck, lint and 137 tests, including strict advisory input, exact IDs, ambiguous catalog, fresh declarations and retry funding constraints.",
+          "limitations": "Windows local checks."
+        },
+        {
+          "kind": "poc",
+          "command": "Paseo 0.17.4 isolated daemon and poc/s04-t02/preview.mjs",
+          "result": "PASS",
+          "sha": "9abda0717dc4c84d78a215c749403e0369a1ae47",
+          "date": "2026-11-26",
+          "notes": "Real plugin RPC returned the advisory recommendation and excluded the consumption candidate. Reordering inputs preserved the result. Host settings revision and empty session list remained unchanged by the RPC.",
+          "limitations": "Windows isolated daemon, synthetic provider and declared financing only."
+        },
+        {
+          "kind": "ci",
+          "command": "Required checks on published PR head",
+          "result": "NOT_RUN",
+          "sha": "9abda0717dc4c84d78a215c749403e0369a1ae47",
+          "date": "2026-11-26",
+          "notes": "The candidate is preserved on a local branch.",
+          "limitations": "Publication and protected integration are pending."
+        }
+      ],
       "owner": "orchestrator",
       "branch": "feat/s04-routing-recommendations",
       "pr": null,
@@ -1253,6 +1281,15 @@
       "acceptance": "Proveedor/modelo/permiso antes de primer mensaje; respeta selección explícita y errores",
       "status": "blocked",
       "evidence": [
+        {
+          "kind": "poc",
+          "command": "Paseo 0.17.4 isolated daemon and poc/s04-t02/driver.mjs",
+          "result": "PASS",
+          "sha": "9abda0717dc4c84d78a215c749403e0369a1ae47",
+          "date": "2026-11-26",
+          "notes": "The downstream guard saw the selected synthetic model for an omitted model and preserved both an explicit model and the mode. The higher-level SDK rejected provider-only input. Zero sessions.",
+          "limitations": "No effective billing, authorization channel, or native composer validation in this probe."
+        },
         {
           "kind": "poc",
           "command": "Paseo 0.17.4 isolated daemon and poc/s04-t02/driver.mjs",
