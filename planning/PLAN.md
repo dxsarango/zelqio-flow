@@ -33,10 +33,15 @@ La revisión de recursos de S03-T04 recoge la organización de proveedores y el 
 
 **Revisiones del propietario pendientes.**
 
+La autorización temporal de revisión diferida terminó al regresar el propietario. El dashboard integrado conserva su revisión pendiente y las nuevas interfaces siguen la validación ordinaria.
+
 | Flujo | SHA | Qué revisar |
 |---|---|---|
 | S02-T04, onboarding y ajustes | `542b1747691c10044ce80f815740368360d81c57` | Diseño visual definitivo y mejoras de la lista anterior. La funcionalidad de este SHA tiene aprobación humana. |
 | S03-T04, dashboard de recursos | `1d010b3c3b34d301fa2357e49dd512e01a4c4492` | Jerarquía, proveedores plegados, cuotas actuales y caducadas, guardado de estrategia, EN/ES, Light/Dark y tamaños compacto y amplio. Se integró con revisión diferida pendiente. |
+| S04-T01, compositor nativo | `4002d3e8b973c322fb70880ff461cb66c90031b7` | Cambiar el selector en New Agent y New Workspace, recordar Automática, recargar y comprobar que el borrador sigue desactivado hasta aplicar la preferencia. [PR #31](https://github.com/dxsarango/zelqio-flow/pull/31) |
+
+**S04.** S04-T02 depende de la validación e integración de S04-T01. El SDK ofrece el hook de creación y recibe metadata modificable. Esta marca documenta intención y carece de autoridad por sí sola. La preparación del hook debe comprobar que el proveedor, modelo, financiación y permisos autorizados estén vinculados a la solicitud exacta antes de habilitar ningún efecto.
 
 **Relevo.** Un solo coordinador con permiso de escribir `tasks.json` y `PLAN.md`: el vigente se identifica por el agente raíz activo en Paseo y el registro de Engram (`coordination/lease`). Un sucesor sin historial lee `AGENTS.md`, esta sección, `tasks.json`, `git worktree list`, `gh pr list`, la lista de agentes de Paseo y `paseo usage ls`, confirma que no hay otro coordinador activo y entonces escribe. Procedimiento completo en [Relevo de coordinación](DEVELOPMENT-WORKFLOW.md#relevo-de-coordinación).
 

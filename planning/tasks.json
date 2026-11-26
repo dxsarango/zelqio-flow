@@ -1152,12 +1152,42 @@
       "role": "UI Developer",
       "risk": "high",
       "acceptance": "New Agent/New Workspace, disabled/automatic y persistencia del opt-in; no chat separado",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
-      "pr": null,
-      "blockers": []
+      "status": "awaiting_validation",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check; node tools/check-planning.mjs",
+          "result": "PASS",
+          "sha": "4002d3e8b973c322fb70880ff461cb66c90031b7",
+          "date": "2026-11-26",
+          "notes": "129 tests, typecheck, lint and planning integrity.",
+          "limitations": "Windows local checks."
+        },
+        {
+          "kind": "local",
+          "command": "Isolated Paseo 0.17.4 native web composers",
+          "result": "PASS",
+          "sha": "4002d3e8b973c322fb70880ff461cb66c90031b7",
+          "date": "2026-11-26",
+          "notes": "Verified New Workspace and New Agent switching from disabled to automatic. Reload kept the explicitly saved host preference while the draft started disabled. Explicitly applying it restored the draft marker. Switching off and remembering that choice cleared the saved automatic preference. No agents started.",
+          "limitations": "Catalog-only fixture and Chrome. Owner visual and functional validation pending."
+        },
+        {
+          "kind": "review",
+          "command": "Independent review of native intent and host preference",
+          "result": "PASS",
+          "sha": "4002d3e8b973c322fb70880ff461cb66c90031b7",
+          "date": "2026-11-26",
+          "notes": "Verified strict own marker fields, CAS, disabled default and no implicit metadata, spend or session effects.",
+          "limitations": "Static code review on the exact candidate."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/s04-t01-native-opt-in",
+      "pr": 31,
+      "blockers": [
+        "Owner visual and functional review of the exact native composer candidate."
+      ]
     },
     {
       "id": "S04-T02",
