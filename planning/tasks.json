@@ -493,10 +493,10 @@
       "role": "Developer",
       "risk": "medium",
       "acceptance": "Plugin mínimo instala y carga cliente/servidor en versión validada; sin hooks invasivos",
-      "status": "todo",
+      "status": "in_progress",
       "evidence": [],
-      "owner": null,
-      "branch": null,
+      "owner": "orchestrator",
+      "branch": "feat/s01-t01-scaffold",
       "pr": null,
       "blockers": []
     },

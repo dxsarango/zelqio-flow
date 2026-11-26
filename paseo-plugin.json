@@ -1,0 +1,8 @@
+{
+  "id": "zelqio-flow",
+  "name": "Zelqio Flow",
+  "description": "Intelligent routing and multi-agent orchestration for Paseo. Foundation scaffold: no effects are enabled.",
+  "requirements": {
+    "paseo": ">=0.17.4 <0.18.0"
+  }
+}
