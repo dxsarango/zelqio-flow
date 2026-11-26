@@ -48,7 +48,7 @@ La autorización temporal de revisión diferida terminó al regresar el propieta
 - Mantener estable el tamaño del compositor al activar Automática. Evaluar un menú contextual compacto para elegir el estado, explicar su alcance y recordar preferencias.
 - Reutilizar componentes nativos de Paseo y comprobar Light y Dark. Representar las cuotas según la procedencia verificada y dejar sin asociación las fuentes que no puedan vincularse con certeza a proveedores o modelos.
 
-**S04.** El SDK ofrece el hook de creación y recibe metadata modificable. Esta marca documenta intención y carece de autoridad por sí sola. S04-T02 debe comprobar que el proveedor, modelo, financiación y permisos autorizados estén vinculados a la solicitud exacta antes de habilitar ningún efecto.
+**S04.** S04-T01 quedó integrado con aprobación funcional y revisión visual integral pendiente. S04-T02 verificó el hook previo a sesión en un daemon aislado. Queda bloqueada la selección automática porque el SDK 0.17.4 entrega la marca del borrador sin identidad verificable del actor y faltan datos de financiación ligados al modelo. S04-T03 y G4 conservan sus dependencias. [Evidencia del hook](../docs/evidence/S04-T02-creation-authority.md)
 
 **Relevo.** Un solo coordinador con permiso de escribir `tasks.json` y `PLAN.md`: el vigente se identifica por el agente raíz activo en Paseo y el registro de Engram (`coordination/lease`). Un sucesor sin historial lee `AGENTS.md`, esta sección, `tasks.json`, `git worktree list`, `gh pr list`, la lista de agentes de Paseo y `paseo usage ls`, confirma que no hay otro coordinador activo y entonces escribe. Procedimiento completo en [Relevo de coordinación](DEVELOPMENT-WORKFLOW.md#relevo-de-coordinación).
 

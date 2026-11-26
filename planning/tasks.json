@@ -1220,12 +1220,33 @@
       "role": "Developer",
       "risk": "high",
       "acceptance": "Proveedor/modelo/permiso antes de primer mensaje; respeta selección explícita y errores",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "blocked",
+      "evidence": [
+        {
+          "kind": "poc",
+          "command": "Paseo 0.17.4 isolated daemon and poc/s04-t02/driver.mjs",
+          "result": "PASS",
+          "sha": "f4d9e531229010bd85e00d2be008d91e917372b0",
+          "date": "2026-11-26",
+          "notes": "Two SDK requests with and without draft intent rejected by the awaited pre-create hook. Zero agents and zero prompts.",
+          "limitations": "Synthetic catalog and probe only. SHA identifies the product baseline."
+        },
+        {
+          "kind": "contract",
+          "command": "Compare SDK hook types and observed fixture fields",
+          "result": "BLOCKED",
+          "sha": "f4d9e531229010bd85e00d2be008d91e917372b0",
+          "date": "2026-11-26",
+          "notes": "The hook exposes config, env and metadata, with paseo and signal in context. The catalog and quota projection do not establish verified financing per model.",
+          "limitations": "Paseo 0.17.4 on Windows. Production routing stays disabled."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "docs/s04-t02-creation-evidence",
       "pr": null,
-      "blockers": []
+      "blockers": [
+        "Prove verified request authority and financing and permissions bound to the exact provider and model before enabling automatic routing."
+      ]
     },
     {
       "id": "S04-T03",

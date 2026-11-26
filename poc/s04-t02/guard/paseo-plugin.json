@@ -1,0 +1,4 @@
+{
+  "id": "zelqio-probe-s04-t02",
+  "requirements": { "paseo": ">=0.17.4 <0.18.0" }
+}
