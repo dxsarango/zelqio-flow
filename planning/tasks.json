@@ -2206,10 +2206,10 @@
       "role": "Developer",
       "risk": "medium",
       "acceptance": "Reserva slots e intentos idempotentes en fixtures locales; conserva ambigüedad tras reinicio",
-      "status": "todo",
+      "status": "in_progress",
       "evidence": [],
-      "owner": null,
-      "branch": null,
+      "owner": "orchestrator",
+      "branch": "feat/s05-t09-attempt-journal",
       "pr": null,
       "blockers": []
     },
