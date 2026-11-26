@@ -33,7 +33,7 @@ G0 aprobado condicionalmente (2026-11-26). Siguiente paso: S01-T01 (S01-T02 a S0
 | S01-T04 | RPC y contratos core | S01-T01 | Developer | medium | Tipos/validación runtime, errores normalizados, mocks SDK; contratos aprobados |
 | S01-T05 | UI base e internacionalización | S01-T01 | UI Developer | low | Componentes nativos, EN/ES y temas; no traducciones faltantes |
 | S01-T06 | Gate G1 | S01-T02, S01-T03, S01-T04, S01-T05 | Reviewer | medium | Instalación aislada Windows/Paseo 0.17.4, CI y documentación verificados, Smart Review para cambios visuales y efectos avanzados inactivos. |
-| S01-T07 | Revisión independiente de persistencia y limpieza de temporales | S01-T03 | Reviewer | medium | Revisión independiente por Codex de server/store.ts y test/store.test.ts cuando su cuota esté disponible; hallazgos corregidos o registrados. Decidir y probar la limpieza segura de temporales .tmp-* y .bak.tmp-* tras cierres abruptos. No bloquea G1 ni tareas independientes. |
+| S01-T07 | Revisión independiente de persistencia y limpieza de temporales | S01-T03 | Reviewer | medium | Revisión independiente por Codex de server/store.ts, server/policy.ts y sus tests cuando su cuota esté disponible; hallazgos corregidos o registrados. Decidir y probar la limpieza segura de temporales .tmp-* y .bak.tmp-* tras cierres abruptos. No bloquea G1 ni tareas independientes. |
 
 ## S02 — Providers & Roles
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
