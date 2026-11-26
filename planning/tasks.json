@@ -988,7 +988,7 @@
       ],
       "owner": "orchestrator",
       "branch": "feat/s03-t01-usage-adapter",
-      "pr": null,
+      "pr": 26,
       "blockers": []
     },
     {
@@ -1001,10 +1001,10 @@
       "role": "Senior Developer",
       "risk": "medium",
       "acceptance": "Elegibilidad y estrategias, empate y reservas, sin tokens adicionales ni sustitución de funding Los proveedores solo gratuitos admiten exclusivamente modelos con gratuidad verificada, incluso al resolver un modelo predeterminado.",
-      "status": "todo",
+      "status": "in_progress",
       "evidence": [],
-      "owner": null,
-      "branch": null,
+      "owner": "orchestrator",
+      "branch": "feat/s03-t02-deterministic-router",
       "pr": null,
       "blockers": []
     },
