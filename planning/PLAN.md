@@ -16,7 +16,7 @@ Ver DEVELOPMENT-WORKFLOW.md y TEST-STRATEGY.md. Los gates requieren evidencia y 
 | S00-T08 | Persistencia, aislamiento y privacidad | S00-T04, S00-T05 | QA | high | POC-12/13/14/16: recuperar pendientes al reiniciar sin otorgar permisos, preservar el entorno al retirar y atribuir tráfico y estado exportado |
 | S00-T09 | ADR y gate G0 | S00-T02, S00-T03, S00-T06, S00-T07, S00-T08 | Reviewer | high | Revisión independiente de evidencia, viabilidad por capacidad y decisión explícita del propietario sobre versión, arquitectura y alcance |
 
-[Evidencia y propuesta para G0](../docs/evidence/G0-decision.md). El sandbox privado confirmó PR, CI y rechazos por SHA y actor, con protecciones y auto-merge indisponibles. El RPC de Paseo carece de procedencia humana verificable. Persistencia y atribución de red tienen evidencia parcial. El propietario debe decidir el alcance viable antes de abrir S01.
+[Evidencia y propuesta para G0](../docs/evidence/G0-decision.md). S00-T05 confirmó la topología y la base exacta. La retirada de worktrees administrados sigue fallando. En el sandbox privado se observaron HTTP 409 por SHA obsoleto, 401 por escritura anónima y 422 por autoaprobación. Las protecciones devolvieron 403, auto-merge siguió deshabilitado y la cola quedó NOT RUN. El RPC de Paseo carece de procedencia humana verificable. Persistencia y atribución de red tienen evidencia parcial. Para abrir S01, el propietario debe aprobar un alcance y se deben registrar sus criterios de aceptación en el plan. [Propuesta local supervisada](../docs/adr/G0-supervised-scope.md)
 
 ## S01 — Foundation
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |

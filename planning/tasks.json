@@ -422,15 +422,36 @@
           "result": "BLOCKED",
           "command": "Review S00 runtime, GitHub and local evidence",
           "date": "2026-11-26",
-          "notes": "Supervised local core conditionally viable. Full automation remains blocked; independent review and owner scope decision are required.",
+          "notes": "The full MVP has unresolved G0 blockers. A separate local-only supervised scope is proposed and unapproved.",
           "limitations": "G0 remains unapproved. S01 is outside scope."
+        },
+        {
+          "kind": "review",
+          "path": "docs/evidence/G0-decision.md",
+          "check": "Independent review of G0",
+          "result": "PASS",
+          "sha": "1a5576a20047a4a1edce95cb4bb4c4345c472192",
+          "date": "2026-11-26",
+          "command": "node tools/check-planning.mjs; git diff --check; local synthetic tests and Node syntax",
+          "notes": "Review completed. No-go for full G0; conditional viability for explicitly owner-approved local-only development with one supervised writer, manual reconciliation and manual sensitive actions.",
+          "limitations": "Review completion is not gate approval. Remaining capabilities require validation."
+        },
+        {
+          "kind": "proposal",
+          "path": "docs/adr/G0-supervised-scope.md",
+          "check": "Scoped G0 decision",
+          "result": "BLOCKED",
+          "date": "2026-11-26",
+          "notes": "Local evidence and manual handoff. No product GitHub operations, automatic succession, live archival or automatic cleanup in the proposed scope.",
+          "limitations": "Requires explicit owner approval and updated scoped acceptance before S01."
         }
       ],
       "owner": "orchestrator",
       "branch": "docs/s00-feasibility-recovery",
       "pr": null,
       "blockers": [
-        "S00-T06, S00-T07 and S00-T08 remain incomplete for full automation. Owner approval is required for a narrower G0 scope, or the blockers must be resolved."
+        "S00-T06, S00-T07 and S00-T08 block the full scope. Keep their requirements open.",
+        "To open S01 for supervised local scope, the owner must explicitly approve the scope ADR and update scoped acceptance/dependencies."
       ]
     },
     {

@@ -21,10 +21,16 @@ Fecha 2026-11-26. Entorno principal de prueba Windows y Paseo 0.17.4. El alcance
 ## Propuesta para el propietario
 
 - **Base:** 0.17.4 en Windows como referencia comprobada para S00. Fijar superficies soportadas. Añadir pruebas por versión y plataforma antes de ampliar compatibilidad.
-- **Modo inicial acotado:** coordinación local supervisada, checkout conservado, un escritor cuando el aislamiento o ciclo de vida no estén validados y PRs con evidencia donde estén autorizados. Si una acción exige aprobación que el plugin no puede autenticar, entregar la evidencia y dejar la acción final al propietario.
+- **Modo inicial acotado:** coordinación local supervisada, un escritor, checkouts conservados, herramientas de workers restringidas a capacidades verificadas y pausa para conciliación manual ante interrupción. La entrega se limita a evidencia local y traspaso al propietario. Mantener deshabilitadas las operaciones GitHub del plugin, la sucesión automática, el archivado activo y la limpieza automática. [Propuesta de alcance y aceptación](../adr/G0-supervised-scope.md)
 - **Automatización condicionada:** identidad verificable de agentes, permisos por capacidad, journal recuperable y protecciones reales por repositorio. La aprobación autenticada y ligada al candidato, el cierre seguro del checkout y la ausencia de tráfico propio necesitan evidencia antes de habilitar las operaciones correspondientes.
 
-**Decisión propuesta:** el núcleo local y supervisado tiene viabilidad técnica condicionada. El alcance completo de automatización del MVP sigue bloqueado. El propietario debe decidir si acepta una fase inicial acotada o mantiene bloqueado G0 hasta resolver los requisitos críticos. La aprobación de arquitectura, alcance y arranque de S01 corresponde al propietario.
+**Decisión propuesta:** el núcleo local y supervisado tiene viabilidad técnica condicionada para desarrollar la fase acotada. La entrega requiere pruebas de privacidad y retirada sobre los componentes habilitados y su estado persistido. El alcance completo de automatización del MVP sigue bloqueado. Para abrir S01 hacen falta la aprobación explícita del propietario y los criterios del plan ajustados al alcance que apruebe.
+
+## Revisión independiente
+
+La revisión de `1a5576a20047a4a1edce95cb4bb4c4345c472192` recomendó **no aprobar G0 para todo el MVP** y admitió viabilidad condicionada para desarrollo local supervisado. Detectó dos problemas de alcance: el borrador permitía PRs y no delimitaba autoridad de workers ni reconciliación ante pérdida de la raíz. La propuesta final limita la entrega a evidencia local, restringe workers y exige pausa y recuperación manual ante interrupción. También se acotaron las afirmaciones de persistencia al fixture y se aclaró el estado de cola y retirada administrada.
+
+La revisión ejecutó la comprobación de las 63 tareas, verificaciones de diff y sintaxis, la prueba GitHub sintética local y el fixture de exportación. Las validaciones de GitHub alojado y daemon se evaluaron sobre la evidencia registrada.
 
 ## Candidato de publicación
 

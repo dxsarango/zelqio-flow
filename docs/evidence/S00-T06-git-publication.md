@@ -21,7 +21,8 @@ Se creó el sandbox privado autorizado, con identidad administrativa verificada.
 | Rechazo de candidato obsoleto | PASS | `PUT /pulls/1/merge` con el primer `sha` tras el segundo push devolvió HTTP 409. Se verificaron el PR abierto, `mergedAt=null` y la base en el SHA inicial. |
 | Escritura sin autorización y autoaprobación | PASS | `POST /issues` sin autenticación devolvió HTTP 401. El autor del PR intentó `POST /pulls/1/reviews` con `event=APPROVE` y GitHub devolvió HTTP 422 por autoaprobación. Esto ejercita la denegación, no una aprobación positiva de un actor distinto. |
 | Protecciones y reglas aplicables | BLOCKED | `PUT /branches/main/protection` y `GET /rules/branches/main` devolvieron HTTP 403, con mensaje que exige GitHub Pro o un repositorio público. `GET /branches/main` confirmó `protected=false`. |
-| Auto-merge y cola | BLOCKED | `PATCH /repos/<sandbox>` con `allow_auto_merge=true` devolvió `false` y la verificación posterior volvió a devolver `false`. El PR mantuvo `autoMergeRequest=null`. La visibilidad siguió siendo privada. |
+| Auto-merge | BLOCKED | `PATCH /repos/<sandbox>` con `allow_auto_merge=true` devolvió `false` y la verificación posterior volvió a devolver `false`. El PR mantuvo `autoMergeRequest=null`. La visibilidad siguió siendo privada. |
+| Cola de merge | NOT RUN | La fixture carecía de protecciones efectivas. No se configuró ni se ingresó en una cola. |
 | Rechazo de push/merge por una regla activa | NOT RUN | El plan del sandbox impide aplicar la regla. Se conservó el PR abierto y no se ejecutó un merge con el candidato correcto sin protecciones. |
 
 Un check verde y una capacidad de escritura sirven para preparar un PR. Los requisitos de la política de entrega siguen condicionados a reglas verificables en cada destino. El sandbox permanece privado. [GitHub Docs sobre protecciones de rama](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches).

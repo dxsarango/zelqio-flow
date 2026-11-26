@@ -7,7 +7,7 @@ Paseo 0.17.4 en Windows (Electron-Node v24.20.0 incluido en la instalación). Ex
 
 **Persistencia e identidad son propiedades distintas.** C2 puede aprobar la primera sin resolver la segunda.
 
-Estado: C1 completo (FAIL de identidad en la superficie examinada). C2 completó 29 comprobaciones iniciales y 31 de 31 en la ejecución consolidada, con dos workspaces y sus SHA independientes.
+Estado: C1 completo (FAIL de identidad en la superficie examinada). C2 completó 29 comprobaciones iniciales y 31 de 31 en la ejecución consolidada, con dos workspaces y sus SHA independientes. El resultado cubre las transiciones y fallos concretos del fixture.
 
 ## C1 — Procedencia del actor
 
@@ -85,6 +85,6 @@ Reproducción: `powershell -File poc/s00-t08/approval-restart/run.ps1 -Install <
 
 ## Implicaciones para G0
 
-1. La persistencia de aprobaciones pendientes con vínculo a tarea, proyecto, acción, SHA y política es **viable** y falla cerrada con el diseño probado. Aun así, el diseño es de plugin, no un almacén de confianza.
+1. La sonda verificó recuperación de solicitudes pendientes tras un reinicio ordenado, invalidación con los cambios de SHA y política probados y rechazo de las entradas malformadas incluidas en el ensayo. Aún falta un campo de destino de operación independiente del workspace y la integridad requerida para un almacén autorizante.
 2. La aprobación **de un humano real** no es verificable con RPC de plugin en 0.17.4. Hasta que exista una frontera con identidad separada, una aprobación persistida no debe disparar por sí sola ninguna acción de efectos remotos o destructivos (deny by default); la base conservadora es manual-only con verificación del SHA actual en el momento de actuar.
 3. El estado `consumed` y el sello protegen contra reutilización accidental, no contra un cliente con credencial del daemon que decida por sí mismo.

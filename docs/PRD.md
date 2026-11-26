@@ -29,5 +29,7 @@ NFR-01: No fork, parche de app.asar, API privada ni dependencia obligatoria de o
 ## Alcance MVP
 Todos los FR anteriores; GitHub como primer adaptador remoto; Claude, Codex y OpenCode como matriz inicial, no lista rígida. Default propuesto: Review First + Balanced; autorización de publicación denegada hasta configurar. No crear perfiles, importar perfiles ni modificar perfiles nativos. No obligar a crear repositorios remotos. No dependencia ni integración específica inicial con Engram, Memorise, Quick Chat, Context Mode, Observatory, Playbooks o Ensemble. Compatibilidad de coexistencia sin administrar esos plugins. No memoria semántica propia, chat paralelo, editor, motor de agentes, cliente Git completo, SaaS, despliegue automático de producción ni soporte específico GitLab/Bitbucket en MVP.
 
+Una fase inicial local supervisada se plantea como alcance separado sujeto a aprobación de G0. Incluye un escritor, comprobaciones locales y entrega manual al propietario. La propuesta mantiene deshabilitadas la sucesión automática, las operaciones GitHub del plugin y la limpieza automática. [Alcance propuesto y aceptación](adr/G0-supervised-scope.md)
+
 ## Éxito
 Instalar sobre Paseo limpio, configurar, iniciar sesión nativa, seleccionar automáticamente proveedor, delegar solo cuando aporta valor, recuperar resultados, integrar cambios verificables y entregar según modo. Usuario puede desactivar el plugin y seguir usando Paseo. Bloqueo explícito si permisos, capacidades o evidencias no bastan.
