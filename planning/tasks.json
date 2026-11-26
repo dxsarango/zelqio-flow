@@ -54,10 +54,20 @@
       "role": "Developer",
       "risk": "medium",
       "acceptance": "POC-03: captura saneada de API pública real, freshness, reset, unknown y compatibilidad 0.17.4",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "poc",
+          "path": "docs/evidence/S00-T03-catalog-usage.md",
+          "artifacts": "poc/s00-t03/",
+          "result": "PASS",
+          "date": "2026-11-25",
+          "notes": "POC-03: providers.snapshot()/listUsage() and CLI usage ls verified on Paseo 0.17.4 in an isolated daemon with an empty profile and a synthetic usage source (0, 100, null, absent, resetsAt, no_quota preserved). Empty profile => unknown for every provider.",
+          "limitations": "Real authenticated account quotas NOT RUN (credentials deliberately excluded; needs owner approval of scope); usage inspect of an existing report BLOCKED by a port collision with another POC; other Paseo versions NOT RUN."
+        }
+      ],
+      "owner": "worker:codex-developer (verified by orchestrator)",
+      "branch": "docs/s00-t03-usage-poc",
       "pr": null,
       "blockers": []
     },

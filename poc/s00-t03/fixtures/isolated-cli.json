@@ -1,0 +1,729 @@
+[
+  {
+    "name": "configure listen",
+    "timestamp": "2026-11-26T04:12:49.632Z",
+    "exit": 0,
+    "output": {
+      "action": "saved",
+      "applied": false,
+      "message": "Saved; not applied to a running daemon",
+      "nextCommand": "paseo daemon start --home \"<path>\""
+    }
+  },
+  {
+    "name": "disable relay",
+    "timestamp": "2026-11-26T04:12:50.460Z",
+    "exit": 0,
+    "output": {
+      "action": "saved",
+      "applied": false,
+      "message": "Saved; not applied to a running daemon",
+      "nextCommand": "paseo daemon start --home \"<path>\""
+    }
+  },
+  {
+    "name": "start",
+    "timestamp": "2026-11-26T04:12:56.053Z",
+    "exit": 0,
+    "output": "Started: PID <redacted>, listening on 127.0.0.1:16773\nLogs: <sandbox>\\daemon.log"
+  },
+  {
+    "name": "provider ls",
+    "timestamp": "2026-11-26T04:12:56.598Z",
+    "exit": 0,
+    "output": [
+      {
+        "provider": "claude",
+        "label": "Claude",
+        "status": "loading",
+        "enabled": "Enabled",
+        "defaultMode": "auto",
+        "modes": ""
+      },
+      {
+        "provider": "codex",
+        "label": "Codex",
+        "status": "loading",
+        "enabled": "Enabled",
+        "defaultMode": "auto-review",
+        "modes": ""
+      },
+      {
+        "provider": "copilot",
+        "label": "Copilot",
+        "status": "loading",
+        "enabled": "Enabled",
+        "defaultMode": "http<path>",
+        "modes": ""
+      },
+      {
+        "provider": "opencode",
+        "label": "OpenCode",
+        "status": "loading",
+        "enabled": "Enabled",
+        "defaultMode": "default",
+        "modes": ""
+      },
+      {
+        "provider": "pi",
+        "label": "Pi",
+        "status": "loading",
+        "enabled": "Enabled",
+        "defaultMode": "default",
+        "modes": ""
+      },
+      {
+        "provider": "omp",
+        "label": "Oh My Pi",
+        "status": "unavailable",
+        "enabled": "Disabled",
+        "defaultMode": "full",
+        "modes": ""
+      },
+      {
+        "provider": "antigravity",
+        "label": "Antigravity",
+        "status": "loading",
+        "enabled": "Enabled",
+        "defaultMode": "default",
+        "modes": ""
+      },
+      {
+        "provider": "muse",
+        "label": "Muse Code",
+        "status": "loading",
+        "enabled": "Enabled",
+        "defaultMode": "default",
+        "modes": ""
+      }
+    ]
+  },
+  {
+    "name": "models claude",
+    "timestamp": "2026-11-26T04:12:57.162Z",
+    "exit": 1,
+    "output": "",
+    "error": "{\n  \"error\": {\n    \"code\": \"PROVIDER_ERROR\",\n    \"message\": \"Failed to fetch models for claude: Provider claude is not available\"\n  }\n}"
+  },
+  {
+    "name": "models codex",
+    "timestamp": "2026-11-26T04:12:57.795Z",
+    "exit": 1,
+    "output": "",
+    "error": "{\n  \"error\": {\n    \"code\": \"PROVIDER_ERROR\",\n    \"message\": \"Failed to fetch models for codex: Provider codex is not available\"\n  }\n}"
+  },
+  {
+    "name": "models opencode",
+    "timestamp": "2026-11-26T04:12:58.443Z",
+    "exit": 1,
+    "output": "",
+    "error": "{\n  \"error\": {\n    \"code\": \"PROVIDER_ERROR\",\n    \"message\": \"Failed to fetch models for opencode: Provider opencode is not available\"\n  }\n}"
+  },
+  {
+    "name": "models s00-t03-unknown",
+    "timestamp": "2026-11-26T04:12:59.159Z",
+    "exit": 1,
+    "output": "",
+    "error": "{\n  \"error\": {\n    \"code\": \"PROVIDER_ERROR\",\n    \"message\": \"Failed to fetch models for s00-t03-unknown: Unknown provider: s00-t03-unknown\"\n  }\n}"
+  },
+  {
+    "name": "usage ls",
+    "timestamp": "2026-11-26T04:12:59.796Z",
+    "exit": 0,
+    "output": []
+  },
+  {
+    "name": "usage ls refresh",
+    "timestamp": "2026-11-26T04:13:00.382Z",
+    "exit": 0,
+    "output": []
+  },
+  {
+    "name": "plugin ls",
+    "timestamp": "2026-11-26T04:13:00.973Z",
+    "exit": 0,
+    "output": []
+  },
+  {
+    "name": "sdk",
+    "timestamp": "2026-11-26T04:13:01.551Z",
+    "exit": 0,
+    "output": {
+      "snapshot": {
+        "generatedAt": "2026-11-26T04:13:01.346Z",
+        "entries": [
+          {
+            "provider": "claude",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "builtin",
+            "label": "Claude",
+            "description": "Anthropic's multi-tool assistant with MCP support, streaming, and deep reasoning",
+            "docsUrl": "http<path>",
+            "defaultModeId": "auto"
+          },
+          {
+            "provider": "codex",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "builtin",
+            "label": "Codex",
+            "description": "OpenAI's Codex workspace agent with sandbox controls and optional network access",
+            "docsUrl": "http<path>",
+            "defaultModeId": "auto-review"
+          },
+          {
+            "provider": "copilot",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "builtin",
+            "label": "Copilot",
+            "description": "GitHub Copilot via Agent Client Protocol with dynamic modes and session support",
+            "docsUrl": "http<path>",
+            "defaultModeId": "http<path>"
+          },
+          {
+            "provider": "opencode",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "builtin",
+            "label": "OpenCode",
+            "description": "Open-source coding assistant with multi-provider model support",
+            "docsUrl": "http<path>",
+            "defaultModeId": null
+          },
+          {
+            "provider": "pi",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "builtin",
+            "label": "Pi",
+            "description": "Minimal terminal-based coding agent with multi-provider LLM support",
+            "docsUrl": "http<path>",
+            "defaultModeId": null
+          },
+          {
+            "provider": "omp",
+            "status": "unavailable",
+            "enabled": false,
+            "source": "builtin",
+            "label": "Oh My Pi",
+            "description": "Multi-provider coding agent with native approvals, host tools, and subagents",
+            "docsUrl": "http<path>",
+            "defaultModeId": "full"
+          },
+          {
+            "provider": "antigravity",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "custom",
+            "label": "Antigravity",
+            "description": "Antigravity CLI on your host",
+            "iconSvg": "<redacted>",
+            "docsUrl": "http<path>",
+            "defaultModeId": null
+          },
+          {
+            "provider": "muse",
+            "status": "error",
+            "enabled": true,
+            "source": "custom",
+            "label": "Muse Code",
+            "description": "Plugin provider Muse Code",
+            "iconSvg": "<redacted>",
+            "docsUrl": "http<path>",
+            "defaultModeId": null,
+            "error": "muse not found on PATH"
+          }
+        ],
+        "snapshotHash": "1Yo-KkUAdUz1Un6iTon_XUddFzQB08z4lpvOy1iDBes",
+        "fetchedAt": {},
+        "compactSnapshot": {
+          "entries": [
+            {
+              "provider": "claude",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "builtin",
+              "label": "Claude",
+              "description": "Anthropic's multi-tool assistant with MCP support, streaming, and deep reasoning",
+              "docsUrl": "http<path>",
+              "defaultModeId": "auto"
+            },
+            {
+              "provider": "codex",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "builtin",
+              "label": "Codex",
+              "description": "OpenAI's Codex workspace agent with sandbox controls and optional network access",
+              "docsUrl": "http<path>",
+              "defaultModeId": "auto-review"
+            },
+            {
+              "provider": "copilot",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "builtin",
+              "label": "Copilot",
+              "description": "GitHub Copilot via Agent Client Protocol with dynamic modes and session support",
+              "docsUrl": "http<path>",
+              "defaultModeId": "http<path>"
+            },
+            {
+              "provider": "opencode",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "builtin",
+              "label": "OpenCode",
+              "description": "Open-source coding assistant with multi-provider model support",
+              "docsUrl": "http<path>",
+              "defaultModeId": null
+            },
+            {
+              "provider": "pi",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "builtin",
+              "label": "Pi",
+              "description": "Minimal terminal-based coding agent with multi-provider LLM support",
+              "docsUrl": "http<path>",
+              "defaultModeId": null
+            },
+            {
+              "provider": "omp",
+              "status": "unavailable",
+              "enabled": false,
+              "source": "builtin",
+              "label": "Oh My Pi",
+              "description": "Multi-provider coding agent with native approvals, host tools, and subagents",
+              "docsUrl": "http<path>",
+              "defaultModeId": "full"
+            },
+            {
+              "provider": "antigravity",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "custom",
+              "label": "Antigravity",
+              "description": "Antigravity CLI on your host",
+              "iconSvg": "<redacted>",
+              "docsUrl": "http<path>",
+              "defaultModeId": null
+            },
+            {
+              "provider": "muse",
+              "status": "error",
+              "enabled": true,
+              "source": "custom",
+              "label": "Muse Code",
+              "description": "Plugin provider Muse Code",
+              "iconSvg": "<redacted>",
+              "docsUrl": "http<path>",
+              "defaultModeId": null,
+              "error": "muse not found on PATH"
+            }
+          ],
+          "thinkingSets": []
+        },
+        "requestId": "<redacted>"
+      },
+      "ready": {
+        "generatedAt": "2026-11-26T04:13:01.357Z",
+        "entries": [
+          {
+            "provider": "claude",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "builtin",
+            "label": "Claude",
+            "description": "Anthropic's multi-tool assistant with MCP support, streaming, and deep reasoning",
+            "docsUrl": "http<path>",
+            "defaultModeId": "auto"
+          },
+          {
+            "provider": "codex",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "builtin",
+            "label": "Codex",
+            "description": "OpenAI's Codex workspace agent with sandbox controls and optional network access",
+            "docsUrl": "http<path>",
+            "defaultModeId": "auto-review"
+          },
+          {
+            "provider": "copilot",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "builtin",
+            "label": "Copilot",
+            "description": "GitHub Copilot via Agent Client Protocol with dynamic modes and session support",
+            "docsUrl": "http<path>",
+            "defaultModeId": "http<path>"
+          },
+          {
+            "provider": "opencode",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "builtin",
+            "label": "OpenCode",
+            "description": "Open-source coding assistant with multi-provider model support",
+            "docsUrl": "http<path>",
+            "defaultModeId": null
+          },
+          {
+            "provider": "pi",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "builtin",
+            "label": "Pi",
+            "description": "Minimal terminal-based coding agent with multi-provider LLM support",
+            "docsUrl": "http<path>",
+            "defaultModeId": null
+          },
+          {
+            "provider": "omp",
+            "status": "unavailable",
+            "enabled": false,
+            "source": "builtin",
+            "label": "Oh My Pi",
+            "description": "Multi-provider coding agent with native approvals, host tools, and subagents",
+            "docsUrl": "http<path>",
+            "defaultModeId": "full"
+          },
+          {
+            "provider": "antigravity",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "custom",
+            "label": "Antigravity",
+            "description": "Antigravity CLI on your host",
+            "iconSvg": "<redacted>",
+            "docsUrl": "http<path>",
+            "defaultModeId": null
+          },
+          {
+            "provider": "muse",
+            "status": "error",
+            "enabled": true,
+            "source": "custom",
+            "label": "Muse Code",
+            "description": "Plugin provider Muse Code",
+            "iconSvg": "<redacted>",
+            "docsUrl": "http<path>",
+            "defaultModeId": null,
+            "error": "muse not found on PATH"
+          }
+        ],
+        "snapshotHash": "1Yo-KkUAdUz1Un6iTon_XUddFzQB08z4lpvOy1iDBes",
+        "fetchedAt": {},
+        "compactSnapshot": {
+          "entries": [
+            {
+              "provider": "claude",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "builtin",
+              "label": "Claude",
+              "description": "Anthropic's multi-tool assistant with MCP support, streaming, and deep reasoning",
+              "docsUrl": "http<path>",
+              "defaultModeId": "auto"
+            },
+            {
+              "provider": "codex",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "builtin",
+              "label": "Codex",
+              "description": "OpenAI's Codex workspace agent with sandbox controls and optional network access",
+              "docsUrl": "http<path>",
+              "defaultModeId": "auto-review"
+            },
+            {
+              "provider": "copilot",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "builtin",
+              "label": "Copilot",
+              "description": "GitHub Copilot via Agent Client Protocol with dynamic modes and session support",
+              "docsUrl": "http<path>",
+              "defaultModeId": "http<path>"
+            },
+            {
+              "provider": "opencode",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "builtin",
+              "label": "OpenCode",
+              "description": "Open-source coding assistant with multi-provider model support",
+              "docsUrl": "http<path>",
+              "defaultModeId": null
+            },
+            {
+              "provider": "pi",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "builtin",
+              "label": "Pi",
+              "description": "Minimal terminal-based coding agent with multi-provider LLM support",
+              "docsUrl": "http<path>",
+              "defaultModeId": null
+            },
+            {
+              "provider": "omp",
+              "status": "unavailable",
+              "enabled": false,
+              "source": "builtin",
+              "label": "Oh My Pi",
+              "description": "Multi-provider coding agent with native approvals, host tools, and subagents",
+              "docsUrl": "http<path>",
+              "defaultModeId": "full"
+            },
+            {
+              "provider": "antigravity",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "custom",
+              "label": "Antigravity",
+              "description": "Antigravity CLI on your host",
+              "iconSvg": "<redacted>",
+              "docsUrl": "http<path>",
+              "defaultModeId": null
+            },
+            {
+              "provider": "muse",
+              "status": "error",
+              "enabled": true,
+              "source": "custom",
+              "label": "Muse Code",
+              "description": "Plugin provider Muse Code",
+              "iconSvg": "<redacted>",
+              "docsUrl": "http<path>",
+              "defaultModeId": null,
+              "error": "muse not found on PATH"
+            }
+          ],
+          "thinkingSets": []
+        },
+        "requestId": "<redacted>"
+      },
+      "conditionalSnapshot": {
+        "generatedAt": "2026-11-26T04:13:01.359Z",
+        "entries": [
+          {
+            "provider": "claude",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "builtin",
+            "label": "Claude",
+            "description": "Anthropic's multi-tool assistant with MCP support, streaming, and deep reasoning",
+            "docsUrl": "http<path>",
+            "defaultModeId": "auto"
+          },
+          {
+            "provider": "codex",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "builtin",
+            "label": "Codex",
+            "description": "OpenAI's Codex workspace agent with sandbox controls and optional network access",
+            "docsUrl": "http<path>",
+            "defaultModeId": "auto-review"
+          },
+          {
+            "provider": "copilot",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "builtin",
+            "label": "Copilot",
+            "description": "GitHub Copilot via Agent Client Protocol with dynamic modes and session support",
+            "docsUrl": "http<path>",
+            "defaultModeId": "http<path>"
+          },
+          {
+            "provider": "opencode",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "builtin",
+            "label": "OpenCode",
+            "description": "Open-source coding assistant with multi-provider model support",
+            "docsUrl": "http<path>",
+            "defaultModeId": null
+          },
+          {
+            "provider": "pi",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "builtin",
+            "label": "Pi",
+            "description": "Minimal terminal-based coding agent with multi-provider LLM support",
+            "docsUrl": "http<path>",
+            "defaultModeId": null
+          },
+          {
+            "provider": "omp",
+            "status": "unavailable",
+            "enabled": false,
+            "source": "builtin",
+            "label": "Oh My Pi",
+            "description": "Multi-provider coding agent with native approvals, host tools, and subagents",
+            "docsUrl": "http<path>",
+            "defaultModeId": "full"
+          },
+          {
+            "provider": "antigravity",
+            "status": "unavailable",
+            "enabled": true,
+            "source": "custom",
+            "label": "Antigravity",
+            "description": "Antigravity CLI on your host",
+            "iconSvg": "<redacted>",
+            "docsUrl": "http<path>",
+            "defaultModeId": null
+          },
+          {
+            "provider": "muse",
+            "status": "error",
+            "enabled": true,
+            "source": "custom",
+            "label": "Muse Code",
+            "description": "Plugin provider Muse Code",
+            "iconSvg": "<redacted>",
+            "docsUrl": "http<path>",
+            "defaultModeId": null,
+            "error": "muse not found on PATH"
+          }
+        ],
+        "snapshotHash": "1Yo-KkUAdUz1Un6iTon_XUddFzQB08z4lpvOy1iDBes",
+        "fetchedAt": {},
+        "compactSnapshot": {
+          "entries": [
+            {
+              "provider": "claude",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "builtin",
+              "label": "Claude",
+              "description": "Anthropic's multi-tool assistant with MCP support, streaming, and deep reasoning",
+              "docsUrl": "http<path>",
+              "defaultModeId": "auto"
+            },
+            {
+              "provider": "codex",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "builtin",
+              "label": "Codex",
+              "description": "OpenAI's Codex workspace agent with sandbox controls and optional network access",
+              "docsUrl": "http<path>",
+              "defaultModeId": "auto-review"
+            },
+            {
+              "provider": "copilot",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "builtin",
+              "label": "Copilot",
+              "description": "GitHub Copilot via Agent Client Protocol with dynamic modes and session support",
+              "docsUrl": "http<path>",
+              "defaultModeId": "http<path>"
+            },
+            {
+              "provider": "opencode",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "builtin",
+              "label": "OpenCode",
+              "description": "Open-source coding assistant with multi-provider model support",
+              "docsUrl": "http<path>",
+              "defaultModeId": null
+            },
+            {
+              "provider": "pi",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "builtin",
+              "label": "Pi",
+              "description": "Minimal terminal-based coding agent with multi-provider LLM support",
+              "docsUrl": "http<path>",
+              "defaultModeId": null
+            },
+            {
+              "provider": "omp",
+              "status": "unavailable",
+              "enabled": false,
+              "source": "builtin",
+              "label": "Oh My Pi",
+              "description": "Multi-provider coding agent with native approvals, host tools, and subagents",
+              "docsUrl": "http<path>",
+              "defaultModeId": "full"
+            },
+            {
+              "provider": "antigravity",
+              "status": "unavailable",
+              "enabled": true,
+              "source": "custom",
+              "label": "Antigravity",
+              "description": "Antigravity CLI on your host",
+              "iconSvg": "<redacted>",
+              "docsUrl": "http<path>",
+              "defaultModeId": null
+            },
+            {
+              "provider": "muse",
+              "status": "error",
+              "enabled": true,
+              "source": "custom",
+              "label": "Muse Code",
+              "description": "Plugin provider Muse Code",
+              "iconSvg": "<redacted>",
+              "docsUrl": "http<path>",
+              "defaultModeId": null,
+              "error": "muse not found on PATH"
+            }
+          ],
+          "thinkingSets": []
+        },
+        "requestId": "<redacted>"
+      },
+      "claudeDiagnostic": {
+        "provider": "claude",
+        "diagnostic": "Claude Code\n  Command source: default\n  Configured command: claude\n  Daemon PATH: <path>\n  Daemon shell: <path>\n  PATH matches: none\n  where.exe claude: Command failed: where.exe claude\nINFO: Could not find files for the given pattern(s).\nexit code: 1\nstderr: INFO: Could not find files for the given pattern(s).\n  powershell Get-Command -All claude: spawn powershell.exe ENOENT\nexit code: ENOENT\n  Binary: claude\n  Resolved path: not found\n  Version: unknown\n  Models: —\n  Status: Unavailable",
+        "requestId": "<redacted>"
+      },
+      "codexDiagnostic": {
+        "provider": "codex",
+        "diagnostic": "Codex\n  Command source: default\n  Configured command: codex\n  Daemon PATH: <path>\n  Daemon shell: <path>\n  PATH matches: none\n  where.exe codex: Command failed: where.exe codex\nINFO: Could not find files for the given pattern(s).\nexit code: 1\nstderr: INFO: Could not find files for the given pattern(s).\n  powershell Get-Command -All codex: spawn powershell.exe ENOENT\nexit code: ENOENT\n  Binary: codex\n  Resolved path: not found\n  Version: unknown\n  Models: —\n  Status: Unavailable",
+        "requestId": "<redacted>"
+      },
+      "opencodeDiagnostic": {
+        "provider": "opencode",
+        "diagnostic": "OpenCode\n  Command source: default\n  Configured command: opencode\n  Daemon PATH: <path>\n  Daemon shell: <path>\n  PATH matches: none\n  where.exe opencode: Command failed: where.exe opencode\nINFO: Could not find files for the given pattern(s).\nexit code: 1\nstderr: INFO: Could not find files for the given pattern(s).\n  powershell Get-Command -All opencode: spawn powershell.exe ENOENT\nexit code: ENOENT\n  Binary: opencode\n  Resolved path: not found\n  Version: unknown\n  Auth: Not checked\n  Models: —\n  Status: Unavailable",
+        "requestId": "<redacted>"
+      },
+      "usage": {
+        "requestId": "<redacted>",
+        "fetchedAt": "2026-11-26T04:13:01.515Z",
+        "providers": []
+      },
+      "usageAgain": {
+        "requestId": "<redacted>",
+        "fetchedAt": "2026-11-26T04:13:01.523Z",
+        "providers": []
+      }
+    }
+  },
+  {
+    "name": "usage inspect unknown",
+    "timestamp": "2026-11-26T04:13:02.179Z",
+    "exit": 1,
+    "output": "",
+    "error": "{\n  \"error\": {\n    \"code\": \"REPORT_NOT_FOUND\",\n    \"message\": \"Unknown usage report: s00-t03-unknown\"\n  }\n}"
+  },
+  {
+    "name": "stop",
+    "timestamp": "2026-11-26T04:13:02.879Z",
+    "exit": 0,
+    "output": "stopped: <sandbox>"
+  }
+]

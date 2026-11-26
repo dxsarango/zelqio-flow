@@ -1,0 +1,44 @@
+﻿[
+  {
+    "name": "configure listen",
+    "timestamp": "2026-11-26T04:11:52.014Z",
+    "exit": 0,
+    "output": {
+      "action": "saved",
+      "applied": false,
+      "message": "Saved; not applied to a running daemon",
+      "nextCommand": "paseo daemon start --home \"<path>\""
+    }
+  },
+  {
+    "name": "disable relay",
+    "timestamp": "2026-11-26T04:11:52.553Z",
+    "exit": 0,
+    "output": {
+      "action": "saved",
+      "applied": false,
+      "message": "Saved; not applied to a running daemon",
+      "nextCommand": "paseo daemon start --home \"<path>\""
+    }
+  },
+  {
+    "name": "start",
+    "timestamp": "2026-11-26T04:11:56.956Z",
+    "exit": 0,
+    "output": "Started: PID <redacted>, listening on 127.0.0.1:16773\nLogs: <sandbox>\\daemon.log"
+  },
+  {
+    "name": "provider ls",
+    "timestamp": "2026-11-26T04:11:57.477Z",
+    "exit": 1,
+    "output": "",
+    "error": "{\n  \"error\": {\n    \"code\": \"TARGET_AMBIGUOUS\",\n    \"message\": \"Choose either --home or --host, not both.\"\n  }\n}"
+  },
+  {
+    "name": "stop",
+    "timestamp": "2026-11-26T04:11:58.151Z",
+    "exit": 0,
+    "output": "stopped: <sandbox>"
+  }
+]
+
