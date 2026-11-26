@@ -133,6 +133,17 @@ describe("deterministic routing", () => {
     expect(route(input).excluded.every(({ reason }) => reason === "not_permitted")).toBe(true);
   });
 
+  it("rejects ambiguous catalog entries and produces the same trace when they are reordered", () => {
+    const input = request();
+    const duplicate = { ...provider("mixed", "free"), enabled: false };
+    input.catalog.providers.push(duplicate);
+    const first = route(input);
+    expect(first.selected).toBeNull();
+    expect(first.excluded.every(({ reason }) => reason === "ambiguous_catalog")).toBe(true);
+    input.catalog.providers.reverse();
+    expect(route(input)).toEqual(first);
+  });
+
   it("applies strategy order and stable ties without comparing raw cross-provider quotas", () => {
     const input = request({
       catalog: { providers: [provider("b", "model"), provider("a", "model")], generatedAt: "2026-11-26" },

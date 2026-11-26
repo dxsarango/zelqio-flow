@@ -34,7 +34,7 @@ export interface RoutingRequest {
 }
 
 type Exclusion =
-  | "provider_unavailable" | "provider_off" | "model_unselectable" | "outside_role"
+  | "ambiguous_catalog" | "provider_unavailable" | "provider_off" | "model_unselectable" | "outside_role"
   | "not_permitted" | "funding_unknown" | "funding_mismatch" | "explicit_consumption_required" | "spend_not_authorized"
   | "quota_exhausted" | "quota_reset_unconfirmed" | "quota_unknown" | "quota_reserved";
 
@@ -87,6 +87,12 @@ export function route(request: RoutingRequest): RoutingDecision {
   const ranked: RankedTarget[] = [];
   const excluded: RoutingDecision["excluded"] = [];
   const supportsTask = role.capabilities.includes(capability);
+  const knownProviders = new Set<string>();
+  const ambiguousProviders = new Set<string>();
+  for (const { id } of catalog.providers) {
+    if (knownProviders.has(id)) ambiguousProviders.add(id);
+    knownProviders.add(id);
+  }
 
   for (const provider of catalog.providers) {
     const setting = Object.hasOwn(settings.providers, provider.id) ? settings.providers[provider.id] : undefined;
@@ -96,6 +102,7 @@ export function route(request: RoutingRequest): RoutingDecision {
       const preference = role.candidates.findIndex((entry) =>
         entry.provider === provider.id && (entry.model === undefined || entry.model === model.id)
       );
+      if (ambiguousProviders.has(provider.id)) { exclude("ambiguous_catalog"); continue; }
       if (!provider.enabled || provider.status !== "ready") { exclude("provider_unavailable"); continue; }
       if (!setting || setting.use === "off") { exclude("provider_off"); continue; }
       if (!model.selectable) { exclude("model_unselectable"); continue; }
