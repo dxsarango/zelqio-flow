@@ -106,7 +106,7 @@ La autorización temporal de revisión diferida terminó al regresar el propieta
 | S04-T06 | Selección supervisada en el compositor | S04-T05 | UI Developer | high | Aplicación visible al borrador nativo y envío separado; preserva modelo y modo en New Agent y New Workspace |
 | S04-T07 | Contrato de financiación por ruta | S01-T04, S03-T03 | Senior Developer | high | Separa declaración, política y observación; verifica coincidencia y vigencia con adaptadores simulados sin habilitar efectos |
 | S04-T02 | Hook de creación y configuración | S04-T05, S04-T06, S04-T07 | Developer | high | Proveedor/modelo/permiso antes de primer mensaje; respeta selección explícita y errores |
-| S04-T03 | Identidad de sesiones gestionadas | S04-T02 | Senior Developer | high | Registro autoritativo de raíz/worker y no intervención en sesiones ajenas |
+| S04-T03 | Identidad de sesiones gestionadas | S04-T02, S04-T08 | Senior Developer | high | Registro autoritativo de raíz/worker y no intervención en sesiones ajenas |
 | S04-T04 | Gate G4 | S04-T03 | QA | high | E2E mínimo de sesión nativa y opt-out, sin cambios globales ni perfiles |
 
 ## S05 — Agent Orchestration
@@ -114,11 +114,11 @@ La autorización temporal de revisión diferida terminó al regresar el propieta
 |---|---|---|---|---|---|
 | S05-T07 | Compilación del grafo de dependencias | S01-T04 | Developer | low | Grafo puro y orden determinista; detecta ciclos, IDs repetidos y dependencias ausentes y propone tareas dentro de los slots |
 | S05-T08 | Watchdog y recuperación con fixtures | S01-T03, S03-T03 | Senior Developer | high | Clasifica sesión y progreso, conserva época, checkpoint y backoff en un diario local; verifica reanudación sin efectos |
-| S05-T01 | DAG y runtime de tareas | S04-T04, S05-T07 | Senior Developer | high | Dependencias acíclicas, estados, leases, idempotencia y límites de concurrencia |
+| S05-T01 | DAG y runtime de tareas | S04-T04, S05-T07, S05-T09 | Senior Developer | high | Dependencias acíclicas, estados, leases, idempotencia y límites de concurrencia |
 | S05-T02 | Herramientas de orquestador | S05-T01 | Developer | high | Delegar/consultar/cancelar/recolectar con caller identity y deny por rol |
 | S05-T03 | Workers nativos y mensajes | S05-T02 | Developer | high | Crear con rol/proveedor, parent-child, resultados y permisos visibles en Paseo |
 | S05-T04 | Recuperación y handoff | S05-T03, S05-T08 | Senior Developer | high | Progreso real y lease con caducidad y exclusión por época. Supervisor local sin inferencia, reintentos acotados y reanudación tras cuota verificada. Conservar intentos y sesiones |
-| S05-T05 | Actividad local y estado | S05-T03 | UI Developer | medium | Mostrar decisiones, tareas, bloqueos; sin copiar conversaciones ni dashboard redundante |
+| S05-T05 | Actividad local y estado | S05-T03, S05-T10 | UI Developer | medium | Mostrar decisiones, tareas, bloqueos; sin copiar conversaciones ni dashboard redundante |
 | S05-T06 | Gate G5 | S05-T04, S05-T05 | Reviewer | high | Delegación bajo demanda, cancelación, recursión negativa y reconciliación demostradas |
 
 ## S06 — Git Coordinator
@@ -127,47 +127,65 @@ La autorización temporal de revisión diferida terminó al regresar el propieta
 | S06-T07 | Evaluación de snapshots Git | S01-T04 | Developer | low | Contrasta identidad, SHA y estado local con fixtures; sin comandos Git ni permisos de escritura |
 | S06-T08 | Conciliación Git de resultado incierto | S01-T04 | Developer | low | Clasifica refs y conserva intenciones pendientes al reabrir; sin ejecutar Git ni autorizar reintentos |
 | S06-T01 | Preflight y workflows Git | S05-T06, S06-T07 | Senior Developer | high | Repo/remotos/base/dirty/permissions; Git local, PR, fork, direct y no-Git diferenciados |
-| S06-T02 | Ramas, worktrees y commits | S06-T01 | Developer | high | Base exacta, staging seguro y retirada verificable sin fuerza, solo con checkout limpio, refs preservadas y sin trabajo ni validaciones pendientes |
+| S06-T02 | Ramas, worktrees y commits | S06-T01, S06-T09 | Developer | high | Base exacta, staging seguro y retirada verificable sin fuerza, solo con checkout limpio, refs preservadas y sin trabajo ni validaciones pendientes |
 | S06-T03 | Integración y conflictos | S06-T02, S06-T08 | Senior Developer | high | Lock común, CAS/revalidación, integración serial, journal y recuperación sin pérdida |
-| S06-T04 | Adaptador GitHub | S06-T01 | Developer | high | gh autenticado y destino explícito; checks/protecciones por SHA; denegación si falta capacidad para aplicar la política |
+| S06-T04 | Adaptador GitHub | S06-T01, S06-T10 | Developer | high | gh autenticado y destino explícito; checks/protecciones por SHA; denegación si falta capacidad para aplicar la política |
 | S06-T05 | UI Git y evidencia | S06-T02, S06-T04 | UI Developer | medium | Mostrar workflow, ramas, SHA, permisos y bloqueos; cambios de configuración confirmados |
 | S06-T06 | Gate G6 | S06-T03, S06-T05 | Reviewer | high | Fixtures Git y sandbox remoto; pruebas negativas, conflictos y rechazo por rulesets |
 
 ## S07 — Work Modes
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
 |---|---|---|---|---|---|
-| S07-T01 | Delivery gates y aprobación | S06-T06 | Senior Developer | high | Actor humano verificable y tarea/acción/SHA/política ligados; pendientes se recuperan tras reinicio y efectos revalidan y deduplican |
-| S07-T02 | Review First y Auto Merge | S07-T01 | Developer | high | Aprobación explícita o merge autorizado tras checks; no bypass, pending bloquea |
-| S07-T03 | Clasificador Smart Review | S07-T01 | Developer | high | Diff real e impacto, docs/UI/backend/riesgo/unknown; sin depender de prefijo |
+| S07-T01 | Delivery gates y aprobación | S06-T06, S07-T09 | Senior Developer | high | Actor humano verificable y tarea/acción/SHA/política ligados; pendientes se recuperan tras reinicio y efectos revalidan y deduplican |
+| S07-T02 | Review First y Auto Merge | S07-T01, S07-T08 | Developer | high | Aprobación explícita o merge autorizado tras checks; no bypass, pending bloquea |
+| S07-T03 | Clasificador Smart Review | S07-T01, S07-T08 | Developer | high | Diff real e impacto, docs/UI/backend/riesgo/unknown; sin depender de prefijo |
 | S07-T04 | Iteraciones Smart Review | S07-T03 | UI Developer | high | Request changes y approve sobre misma rama/PR; invalidación SHA y estado de prueba |
-| S07-T05 | Autopilot | S07-T01 | Developer | high | Flujo resultado-first y mínimos bloqueos autorizados; no publicación o gasto implícito |
+| S07-T05 | Autopilot | S07-T01, S07-T08 | Developer | high | Flujo resultado-first y mínimos bloqueos autorizados; no publicación o gasto implícito |
 | S07-T06 | Selector y overrides de modo | S07-T02, S07-T04, S07-T05 | UI Developer | medium | Global/proyecto/sesión visibles; políticas superiores prevalecen |
 | S07-T07 | Gate G7 | S07-T06 | Reviewer | high | Cuatro modos con escenarios locales y PR; pruebas de aprobación obsoleta y restricciones |
 
 ## S08 — Validation & Delivery
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
 |---|---|---|---|---|---|
-| S08-T01 | Checks y evidencia | S07-T07 | Developer | high | Plan proporcional, local vs CI, N/A/pending/fail; evidencia ligada a candidato |
+| S08-T01 | Checks y evidencia | S07-T07, S08-T08 | Developer | high | Plan proporcional, local vs CI, N/A/pending/fail; evidencia ligada a candidato |
 | S08-T02 | Revisión independiente | S08-T01 | Senior Developer | high | Selección cross-provider cuando viable; sin falsa independencia; bloqueos de riesgo |
-| S08-T03 | Servicios y preview | S07-T07 | Developer | high | Servicio nativo, puertos/health/version, host remoto y parada verificados |
+| S08-T03 | Servicios y preview | S07-T07, S08-T08 | Developer | high | Servicio nativo, puertos/health/version, host remoto y parada verificados |
 | S08-T04 | Entrega y UX final | S08-T01, S08-T03 | UI Developer | medium | Resultado funcional o bloqueo honesto, preview/PR/diff según modo |
-| S08-T06 | Power Management | S08-T03 | Senior Developer | high | Prevención temporal de suspensión y liberación. Suspensión opcional cancelable solo con autorización y ausencia verificable de trabajo protegido. Windows primero |
+| S08-T06 | Power Management | S08-T03, S08-T07 | Senior Developer | high | Prevención temporal de suspensión y liberación. Suspensión opcional cancelable solo con autorización y ausencia verificable de trabajo protegido. Windows primero |
 | S08-T05 | Gate G8 | S08-T02, S08-T04, S08-T06 | QA | high | Escenarios end-to-end de entrega y ciclo de vida de Power Management. Efectos de energía sujetos a evidencia y autorización |
 
 ## S09 — Hardening
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
 |---|---|---|---|---|---|
-| S09-T01 | Auditoría de seguridad | S08-T05 | Reviewer | high | Amenazas, symlink/junctions, inyección, permisos, rutas, secretos y recursión; hallazgos resueltos |
-| S09-T02 | Fault injection y recuperación | S08-T05 | QA | high | Relevos fallidos, reset, suspensión, reinicio y carreras; no duplicación ni pérdida; journal reconciliado |
-| S09-T03 | Privacidad y retención | S08-T05 | Developer | high | Redacción, expiración segura, export manual y zero telemetry verificado |
+| S09-T01 | Auditoría de seguridad | S08-T05, S09-T08 | Reviewer | high | Amenazas, symlink/junctions, inyección, permisos, rutas, secretos y recursión; hallazgos resueltos |
+| S09-T02 | Fault injection y recuperación | S08-T05, S09-T08 | QA | high | Relevos fallidos, reset, suspensión, reinicio y carreras; no duplicación ni pérdida; journal reconciliado |
+| S09-T03 | Privacidad y retención | S08-T05, S09-T07 | Developer | high | Redacción, expiración segura, export manual y zero telemetry verificado |
 | S09-T04 | Matriz real multiplataforma | S09-T01, S09-T02, S09-T03 | QA | high | Versiones, proveedores y Power Management en Windows, macOS y Linux. Capacidades sin verificar deshabilitadas |
-| S09-T05 | Actualización y desinstalación | S09-T02, S09-T03 | Developer | high | Migraciones rollback y recursos ajenos intactos; clean install sin terceros |
+| S09-T05 | Actualización y desinstalación | S09-T02, S09-T03, S09-T07 | Developer | high | Migraciones rollback y recursos ajenos intactos; clean install sin terceros |
 | S09-T06 | Gate G9 | S09-T04, S09-T05, S00-T06, S00-T07, S00-T08 | Reviewer | high | Revisión independiente, cierre de validaciones del MVP completo, compatibilidad y aceptación del propietario. |
 
 ## S10 — Public Release
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
 |---|---|---|---|---|---|
-| S10-T01 | Documentación pública EN/ES | S09-T06 | Assistant | low | Install, setup, modos, Git, permisos, troubleshooting, límites y uninstall |
+| S10-T01 | Documentación pública EN/ES | S09-T06, S09-T09 | Assistant | low | Install, setup, modos, Git, permisos, troubleshooting, límites y uninstall |
 | S10-T02 | Packaging y licencias | S09-T06 | Developer | medium | Manifest, SemVer, LICENSE titular confirmado, avisos terceros, paquete sin datos privados |
 | S10-T03 | Release candidate y validación | S10-T01, S10-T02 | QA | high | Instalación desde tag/candidato limpio, upgrade/rollback, matriz y CI reales |
 | S10-T04 | Gate G10 y publicación | S10-T03 | Orchestrator | high | Aprobación explícita, requisitos actuales catálogo verificados, tag/release/publicación autorizados |
+## Línea de implementación independiente
+
+Estas tareas preparan contratos, lógica pura y fixtures dentro de Foundation. La integración de cada fixture exige los checks y Smart Review. Los gates de integración y habilitación de las capacidades completas permanecen en sus tareas originales. La matriz describe el trabajo que puede prepararse antes de cada gate. [Matriz por tarea](DEPENDENCIAS.md)
+
+| ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
+|---|---|---|---|---|---|
+| S04-T08 | Contratos de ciclo de vida de agentes | S01-T04 | Developer | medium | Distingue identidad gestionada, intento, estado y permisos mediante snapshots sintéticos |
+| S05-T09 | Reserva y conciliación de intentos | S01-T03, S05-T07, S05-T08 | Developer | medium | Reserva slots e intentos idempotentes en fixtures locales; conserva ambigüedad tras reinicio |
+| S05-T10 | Proyección local de actividad y cuota | S03-T01, S01-T04 | Developer | low | Proyecta actividad, frescura, bloqueos y reingreso sin conversaciones ni inferencia |
+| S06-T09 | Preparación para retirada de worktrees | S06-T07 | Developer | low | Evalúa un snapshot de retirada y bloquea si faltan pruebas de propiedad, limpieza o alcance |
+| S06-T10 | Evaluación de checks exactos de GitHub | S06-T07 | Developer | low | Contrasta checks de fixtures con SHA, app, resultado y reglas exigidas |
+| S07-T08 | Decisiones de entrega y revisión diferida | S01-T04 | Developer | low | Simula los cuatro modos con decisiones tipadas, restricciones y caducidad; sin publicación |
+| S07-T09 | Solicitudes de aprobación persistidas | S01-T03 | Developer | medium | Fixture vincula solicitud, alcance, SHA y política; reinicio, rechazo e invalidación |
+| S08-T07 | Política de energía con adaptador simulado | S01-T04, S05-T08 | Developer | low | Propone adquisición y liberación temporal, y suspensión solo con autorización y ausencia verificada de trabajo protegido |
+| S08-T08 | Modelo local de evidencia y preview | S01-T04 | Developer | low | Proyecta evidencia y salud de preview ligadas al SHA sin iniciar servicios |
+| S09-T07 | Exportación mínima y retención simulada | S01-T03 | Developer | low | Exporta campos permitidos desde fixtures y protege referencias activas al evaluar retención |
+| S09-T08 | Regresión y fallos de componentes puros | S05-T08, S06-T08 | Developer | low | Ejercita reinicio, colisión, datos obsoletos y fallos en fixtures sin efectos ni credenciales |
+| S09-T09 | Cobertura EN/ES y accesibilidad de contratos | S01-T05 | Developer | low | Comprueba cobertura de claves y variables en ambos idiomas para estados del producto |
