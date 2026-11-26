@@ -685,6 +685,60 @@
       "role": "Reviewer",
       "risk": "medium",
       "acceptance": "Instalación aislada Windows/Paseo 0.17.4, CI y documentación verificados, Smart Review para cambios visuales y efectos avanzados inactivos.",
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "git clone origin/main; npm ci --ignore-scripts; npm run check; paseo plugin install <clone> in an isolated daemon (own home, loopback port, relay off)",
+          "result": "PASS",
+          "sha": "dd659a7",
+          "date": "2026-11-26",
+          "notes": "Clean clone: 27 tests passed; plugin running with method zelqio.status registered and no error-level log lines. Client rendering of the identical tree was verified earlier in the owner-approved validation batch (SHA 7b447c5) in English and Spanish.",
+          "limitations": "Windows with Paseo 0.17.4 only; client rendering was not repeated on the clean clone. Environment removed afterwards."
+        },
+        {
+          "kind": "ci",
+          "command": "GitHub Actions ci (ubuntu, windows, macos) and planning-integrity on every merged PR and on main",
+          "result": "PASS",
+          "sha": "d703d69",
+          "date": "2026-11-26",
+          "notes": "All four checks succeeded on main. Required status checks on main now include the three matrix jobs plus planning-integrity (strict, linear history, admin enforcement and conversation resolution unchanged); check names verified against actual check runs on pull_request and push events.",
+          "limitations": "Merge effectiveness of the new required checks is proven by the next PR."
+        },
+        {
+          "kind": "review",
+          "command": "static scan for lifecycle hooks and effects (server.on/before, execCommand, child_process, fetch, paseo.agents/workspaces)",
+          "result": "PASS",
+          "sha": "d703d69",
+          "date": "2026-11-26",
+          "notes": "No hooks and no effects in the plugin sources: Foundation exposes only the read-only status RPC and screen.",
+          "limitations": "Scan is textual."
+        },
+        {
+          "kind": "review",
+          "command": "README local development guide (PR 14); owner validation workflow in DEVELOPMENT-WORKFLOW (PR 8); S01-T03 review (PR 15)",
+          "result": "PASS",
+          "sha": "d703d69",
+          "date": "2026-11-26",
+          "notes": "Documentation covers setup, checks, isolated-daemon install and Foundation limits. Smart Review: the owner validated the visual batch at an exact SHA; later low-risk PRs were integrated after verifying SHA, scope and checks.",
+          "limitations": "Independent persistence review by a primary provider and stale-temp cleanup are tracked as S01-T07 and do not block G1."
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "docs/g1-close-auto-merge-policy",
+      "pr": 16,
+      "blockers": []
+    },
+    {
+      "id": "S01-T07",
+      "phase": "S01",
+      "title": "Revisión independiente de persistencia y limpieza de temporales",
+      "dependencies": [
+        "S01-T03"
+      ],
+      "role": "Reviewer",
+      "risk": "medium",
+      "acceptance": "Revisión independiente por Codex de server/store.ts y test/store.test.ts cuando su cuota esté disponible; hallazgos corregidos o registrados. Decidir y probar la limpieza segura de temporales .tmp-* y .bak.tmp-* tras cierres abruptos. No bloquea G1 ni tareas independientes.",
       "status": "todo",
       "evidence": [],
       "owner": null,

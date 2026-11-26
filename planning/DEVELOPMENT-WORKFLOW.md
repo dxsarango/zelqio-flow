@@ -64,6 +64,29 @@ Agrupar validaciones relacionadas en un solo lote cuando sea razonable. La aprob
 
 **Escalada.** Pedir intervención técnica solo ante una limitación real de permisos, acceso o interacción humana obligatoria, y explicarla.
 
+### Integración automática autorizada
+
+El propietario autoriza de forma permanente, solo en `dxsarango/zelqio-flow`, integrar un PR sin pedir aprobación individual cuando se cumplan todas estas condiciones: Smart Review lo clasifica como apto para integración automática; se satisfacen los criterios de aceptación; hay revisión independiente cuando corresponda; todos los checks obligatorios de `main` están en verde sobre el SHA a integrar; no hay conflictos ni validación humana pendiente; el PR se integra con `gh pr merge <n> --squash --match-head-commit <SHA verificado>` sin bypass administrativo ni desactivación de protecciones. Quedan fuera de esta autorización las validaciones visuales relevantes, los gates con aprobación explícita, los cambios de seguridad o arquitectura, los de protecciones del repositorio y cualquier otro repositorio.
+
+La barrera técnica es la protección de `main` (checks obligatorios `planning-integrity` y `check (ubuntu-latest|windows-latest|macos-latest)`, rama al día, historial lineal, aplicación a administradores). Los pasos previos son un procedimiento del orquestador: verificar con `gh api repos/dxsarango/zelqio-flow/commits/<SHA>/check-runs` que los cuatro checks terminaron con éxito sobre el SHA exacto, comparar el alcance con la clasificación y no combinar la fusión con otros comandos.
+
+**Representación en permisos (Claude Code).** El sistema soporta reglas `permissions` por proyecto. El modo automático las evalúa antes del clasificador y su `autoMode` solo se lee de la configuración de usuario o gestionada, nunca de la del proyecto. La regla puede limitarse a este proyecto colocándola en `.claude/settings.local.json` (ignorado por Git), con una excepción por prioridad de `deny`:
+
+```json
+{
+  "permissions": {
+    "allow": ["Bash(gh pr merge * --squash --match-head-commit *)"],
+    "deny": [
+      "Bash(gh pr merge *--admin*)", "Bash(gh pr merge *--repo*)", "Bash(gh pr merge * -R *)",
+      "Bash(gh pr merge *--auto*)", "Bash(gh pr merge *--merge*)", "Bash(gh pr merge *--rebase*)",
+      "Bash(gh pr merge *--delete-branch*)", "Bash(gh pr merge *-d *)"
+    ]
+  }
+}
+```
+
+Limitaciones: una regla de permisos no puede comprobar checks, SHA ni clasificación, y no fija el repositorio salvo por la ausencia de `--repo`/`-R` y por el remoto del proyecto. Claude Code no permite que el agente escriba esa configuración (ruta protegida): la instala el propietario una sola vez. Mientras no esté instalada, o con un proveedor cuyo sistema de permisos no pueda acotarla, el orquestador cumple las condiciones y solicita la aprobación individual. Esta autorización no crea permisos globales ni modifica otros proyectos.
+
 ## Brief por tarea
 ID + objetivo + dependencias aceptadas + archivos/contratos permitidos + non-goals + aceptación + comandos de verificación + riesgo/permiso + entrega. Worker reporta cambios, commits/SHA, checks realmente ejecutados, limitaciones y blockers. Orquestador revisa, integra secuencialmente y actualiza tasks.json con evidencia. No marcar Done por relato del worker sin verificación. Mismo chat si contexto relevante; nuevo chat para tarea independiente, handoff con estado. Modelo/razonamiento según complejidad (Medium normal, High complejo), verificar modelos disponibles. No fijar modelos en instrucciones públicas.
 
