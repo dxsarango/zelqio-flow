@@ -30,11 +30,19 @@ export const runRecord = z.strictObject({
   /** When a waiting run should be checked again. */
   resumeAt: epoch.nullable(),
   /** A side effect started but not confirmed; reconciled on restart so it never runs twice. */
-  pending: z.strictObject({ kind: z.enum(["create", "resume"]), key: reference }).nullable(),
+  pending: z.strictObject({ kind: z.enum(["create", "resume", "report"]), key: reference }).nullable(),
   /** The last error text already handled, so the same failure is not processed twice. */
   handledError: z.string().nullable(),
   /** When the user last wrote to the agent as of the stop. A later message means a person took over. */
   userBaseline: epoch.nullable(),
+  /** Short name shown in listings; set for delegated tasks. */
+  title: z.string().max(200).nullable().default(null),
+  /** The run that delegated this one. Only a coordinator delegates, so the tree is one level deep. */
+  parentRunId: reference.nullable().default(null),
+  /** Delegated tasks of the same coordinator that must be delivered before this one starts. */
+  dependsOn: z.array(reference).max(10).default([]),
+  /** The coordinator was told that its delegated tasks finished. */
+  reported: z.boolean().default(false),
   attention: z.boolean(),
   result: z.string().nullable(),
   error: z.string().nullable(),

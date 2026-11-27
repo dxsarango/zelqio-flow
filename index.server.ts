@@ -4,6 +4,7 @@ import type { PaseoApi } from "@getpaseo/client";
 import type { PluginServerContext } from "@getpaseo/plugin/server";
 import { AttemptJournal } from "./server/attempt-journal";
 import { automaticRouting } from "./server/automatic-routing";
+import { delegationTools, type ChildSummary } from "./server/delegation-tools";
 import { draftOrchestration } from "./shared/orchestration";
 import { paseoAgentPort } from "./server/paseo-agent-port";
 import { paseoSnapshotSource, readCatalog } from "./server/providers";
@@ -25,6 +26,8 @@ import { routingPreviewRpc } from "./shared/routing-preview";
 import { ZelqioError } from "./shared/errors";
 
 /** How often waiting and running runs are looked at. Overridable only through the environment, for tests. */
+const DELEGATION_GUIDANCE = "Zelqio Flow can run parts of this work on other agents. Use zelqio_delegate for a self-contained task (name its role; Zelqio Flow picks the authorized model), zelqio_wait to wait for results and zelqio_status to review them. Delegated agents cannot delegate again. Do not delegate trivial work.";
+
 const TICK_MS = Math.max(250, Number(process.env.ZELQIO_TICK_MS) || 30_000);
 
 /** Where the plugin keeps its own run state. Local only, never sent anywhere. */
@@ -87,6 +90,21 @@ export default function contribute(server: PluginServerContext) {
     return recovered;
   };
 
+  const summarize = (run: Awaited<ReturnType<typeof runs.list>>[number]): ChildSummary => ({
+    id: run.id,
+    title: run.title ?? run.prompt.slice(0, 80),
+    status: run.status,
+    provider: run.current?.provider,
+    model: run.current?.model,
+    result: run.result,
+    error: run.error,
+  });
+  const delegation = delegationTools({
+    delegate: async (agentId, input) => summarize(await runs.delegate(agentId, input)),
+    children: async agentId => (await runs.children(agentId)).map(summarize),
+    cancel: async (agentId, childId) => summarize(await runs.cancelChild(agentId, childId)),
+  });
+
   handleZelqio(server, statusRpc, getStatus);
   handleZelqio(server, providersListRpc, async (_input, { paseo }) => {
     remember(paseo);
@@ -136,6 +154,15 @@ export default function contribute(server: PluginServerContext) {
     await runs.adopt({ agentId: agent.id, provider, model: routing?.model ?? "", cwd: agent.cwd }).catch(() => undefined);
   });
 
+  // Only a coordinator gets the delegation tools: a submitted run or an Automatic agent, never a delegated one.
+  const removeOpen = server.addHook("agent.open.before", async ({ request }, { paseo }) => {
+    remember(paseo);
+    const delegated = Object.hasOwn(request.metadata, "zelqio.parent");
+    const coordinator = !delegated && (Object.hasOwn(request.metadata, "zelqio.run") || draftOrchestration(request.metadata) === "automatic");
+    if (!coordinator) return request;
+    return { ...request, tools: [...request.tools, ...delegation], appendSystemPrompt: [...(request.appendSystemPrompt ?? []), DELEGATION_GUIDANCE] };
+  });
+
   // A finished or failed turn is the moment a limit shows up, so react to it right away.
   const removeHook = server.addHook("agent.turn.after", async ({ agent, outcome }, { paseo }) => {
     await ready(paseo);
@@ -151,5 +178,6 @@ export default function contribute(server: PluginServerContext) {
     removeHook();
     removeCreateBefore();
     removeCreateAfter();
+    removeOpen();
   };
 }

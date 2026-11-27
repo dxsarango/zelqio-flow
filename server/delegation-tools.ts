@@ -75,7 +75,7 @@ export function delegationTools(port: DelegationPort): AgentToolDefinition[] {
       input: z.strictObject({}),
       async execute(_input, { agent }) {
         const children = await port.children(agent.id);
-        return { text: text(children), structuredContent: children };
+        return { text: text(children), structuredContent: { children } };
       },
     }),
     defineAgentTool({
@@ -88,7 +88,7 @@ export function delegationTools(port: DelegationPort): AgentToolDefinition[] {
         for (;;) {
           const children = await port.children(agent.id);
           const open = children.some(child => child.status === "queued" || child.status === "running" || child.status === "waiting_quota");
-          if (!open || Date.now() >= deadline || signal.aborted) return { text: text(children), structuredContent: children };
+          if (!open || Date.now() >= deadline || signal.aborted) return { text: text(children), structuredContent: { children } };
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       },

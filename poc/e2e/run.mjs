@@ -5,10 +5,12 @@ import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { isolate } from "./isolation.mjs";
 
-const [, , sandbox, runId, git, version = "0.17.6", ...selection] = process.argv;
-assert(sandbox && runId && git, "Usage: node poc/e2e/run.mjs <sandbox> <run-id> <git.exe> [version] [S1 S2 …]");
+const [, , sandbox, runId, git, version = "0.17.6", ...options] = process.argv;
+const delegation = options.includes("--delegation-isolation");
+const selection = options.filter(option => option !== "--delegation-isolation");
+assert(sandbox && runId && git, "Usage: node poc/e2e/run.mjs <sandbox> <run-id> <git.exe> [version] [--delegation-isolation] [S1 S2 …]");
 assert(selection.every(id => /^S[1-8]$/.test(id)), "Select scenarios S1–S8");
-const probe = isolate(sandbox, runId, git, version);
+const probe = isolate(sandbox, runId, git, version, { delegation, fixtureTools: false });
 const fixturePlugin = "zelqio-e2e-fixture";
 const repository = fileURLToPath(new URL("../../", import.meta.url));
 const fixture = fileURLToPath(new URL("./fixture/", import.meta.url));

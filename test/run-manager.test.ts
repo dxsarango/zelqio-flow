@@ -48,6 +48,7 @@ class FakePaseo implements AgentPort {
     agent.lastError = null;
   }
   async lastReply(id: string) { return this.replies.get(id) ?? null; }
+  async stop(id: string) { this.agents.get(id)!.status = "idle"; }
   async recentActivity(id: string) { return `activity of ${id}`; }
   firstMessages = new Map<string, string>();
   async firstUserMessage(id: string) { return this.firstMessages.get(id) ?? null; }

@@ -20,6 +20,7 @@ export function paseoAgentPort(api: () => PaseoApi): AgentPort {
         clientMessageId: input.key,
         title: input.title,
         metadata: input.metadata,
+        ...(input.parentAgentId ? { parent: input.parentAgentId } : {}),
       });
       return { id: handle.id };
     },
@@ -41,6 +42,15 @@ export function paseoAgentPort(api: () => PaseoApi): AgentPort {
 
     async send(agentId, text, messageId) {
       await api().agents.ref(agentId).send(text, { messageId });
+    },
+
+    async stop(agentId) {
+      const handle = api().agents.ref(agentId);
+      const agent = (await handle.refresh())?.agent;
+      if (agent?.status === "running" || agent?.status === "initializing") {
+        // The plugin SDK's reload interrupts a live turn without archiving the native agent or its workspace.
+        await handle.reload();
+      }
     },
 
     async lastReply(agentId) {
