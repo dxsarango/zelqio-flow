@@ -67,7 +67,7 @@ La autorización temporal de revisión diferida terminó al regresar el propieta
 | S00-T08 | Persistencia, aislamiento y privacidad | S00-T04, S00-T05 | QA | high | POC-12/13/14/16: recuperar pendientes al reiniciar sin otorgar permisos, preservar el entorno al retirar y atribuir tráfico y estado exportado |
 | S00-T09 | ADR y gate G0 | S00-T02, S00-T03, S00-T04, S00-T05 | Reviewer | high | Revisión independiente y aprobación condicionada de Foundation; validaciones del MVP completo siguen como prerequisitos de G9. |
 
-[G0 aprobado condicionalmente](../docs/adr/G0-supervised-scope.md) para S01 local supervisado en Windows y Paseo 0.17.4. S00-T06, S00-T07 y S00-T08 conservan sus bloqueos para el MVP completo y son prerequisitos de G9. Consultar el [dictamen](../docs/evidence/G0-decision.md) y la [matriz de validación](../docs/VALIDATION-BACKLOG.md).
+[G0 aprobado condicionalmente](../docs/adr/G0-supervised-scope.md) para S01 local supervisado en Windows y Paseo 0.17.4. S00-T06 se cerró el 27 de noviembre con un [sandbox público desechable](../docs/evidence/S00-T06-public-sandbox.md). S00-T07 espera la decisión del propietario sobre la [alternativa de aprobación verificable](../docs/adr/S00-T07-human-approval-alternative.md). S00-T08 conserva su bloqueo. Las tres son prerequisitos de G9. Consultar el [dictamen](../docs/evidence/G0-decision.md) y la [matriz de validación](../docs/VALIDATION-BACKLOG.md).
 
 ## S01 — Foundation
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
