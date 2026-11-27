@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runsState } from "../shared/runs";
 import type { ProviderCatalogData } from "../shared/providers";
 import { defaultSettings, type ZelqioSettings } from "../shared/settings";
@@ -35,7 +35,7 @@ class FakePaseo implements AgentPort {
     this.created.push(input);
     const id = `agent-${this.agents.size + 1}`;
     this.byKey.set(input.key, id);
-    this.agents.set(id, { id, status: "running", lastError: null, pendingPermissions: 0, archived: false, lastUserMessageAt: null, provider: input.provider, model: input.model, prompt: input.prompt, sent: [] });
+    this.agents.set(id, { id, status: "running", lastError: null, pendingPermissions: 0, archived: false, restorable: false, lastUserMessageAt: null, provider: input.provider, model: input.model, prompt: input.prompt, sent: [] });
     return { id };
   }
   async snapshot(id: string) { return this.agents.get(id) ?? null; }
@@ -203,6 +203,26 @@ describe("run manager: real orchestration loop over native agents", () => {
     expect(paseo.agents.get("agent-1")!.sent).toHaveLength(1);
   });
 
+  it("delivers a resumed turn that finishes before a tick sees the agent running", async () => {
+    use("alpha", "primary");
+    const manager = build();
+    await submit(manager);
+    paseo.fail("agent-1", "Usage limit reached. Try again in 1 hour.");
+    await manager.tick();
+    const [waiting] = await manager.list();
+    now = waiting.resumeAt! + 1;
+    const send = vi.spyOn(paseo, "send").mockImplementation(async id => {
+      paseo.finish(id, "Finished immediately after the reset");
+    });
+
+    await manager.tick();
+    await Promise.all([manager.onAgentUpdate("agent-1"), manager.tick()]);
+    const [run] = await manager.list();
+    expect(run).toMatchObject({ status: "delivered", result: "Finished immediately after the reset", pending: null });
+    expect(run.history.filter(event => event.kind === "resumed")).toHaveLength(1);
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
   it("treats an ordinary failure as a failure, never as a quota problem", async () => {
     use("alpha", "primary");
     use("beta", "auxiliary");
@@ -267,6 +287,33 @@ describe("run manager: real orchestration loop over native agents", () => {
     expect(paseo.created).toHaveLength(1);
     expect(recovered.current?.agentId).toBe("agent-1");
     expect(recovered.pending).toBeNull();
+  });
+
+  it("resumes a persisted agent that Paseo projects as closed after a daemon restart", async () => {
+    use("alpha", "primary");
+    const first = build();
+    const run = await submit(first);
+    paseo.fail("agent-1", "Usage limit reached. Try again in 1 hour.");
+    await first.tick();
+    const waiting = (await first.list())[0];
+    expect(waiting.status).toBe("waiting_quota");
+    const agent = paseo.agents.get("agent-1")!;
+    Object.assign(agent, { status: "closed", restorable: true });
+
+    const restarted = build();
+    await restarted.recoverAfterRestart();
+    expect((await restarted.list())[0]).toEqual(waiting);
+    now = waiting.resumeAt! + 1;
+    usage = { status: "available", reports: [report("alpha", 95, "fresh", null)] };
+    await restarted.tick();
+    await restarted.tick();
+    paseo.finish("agent-1", "Delivered after restart");
+    await restarted.onAgentUpdate(agent.id);
+    expect((await restarted.list())[0]).toMatchObject({
+      id: run.id, status: "delivered", result: "Delivered after restart", current: { agentId: agent.id }, attempts: 1,
+    });
+    expect(agent.sent).toHaveLength(1);
+    expect(paseo.created).toHaveLength(1);
   });
 
   it("can be cancelled and then ignores the agent", async () => {
@@ -342,6 +389,29 @@ describe("run manager: real orchestration loop over native agents", () => {
     const [run] = await manager.list();
     expect(run.status).toBe("cancelled");
     expect(run.history.at(-1)?.note).toMatch(/took over/);
+    expect(paseo.agents.get("agent-1")!.sent).toHaveLength(0);
+  });
+
+  it("notices a user turn while waiting even when the initial prompt had no native user timestamp", async () => {
+    use("alpha", "primary");
+    const manager = build();
+    const run = await submit(manager);
+    paseo.fail("agent-1", "Usage limit reached. Try again in 1 hour.");
+    await manager.onAgentUpdate("agent-1");
+    expect((await manager.list())[0]).toMatchObject({ status: "waiting_quota", userBaseline: null });
+
+    // An older user entry can appear after the agent timeline is restored.
+    paseo.agents.get("agent-1")!.lastUserMessageAt = START - 1000;
+    await manager.onAgentUpdate("agent-1");
+    expect((await manager.list())[0].status).toBe("waiting_quota");
+
+    now += 1000;
+    paseo.agents.get("agent-1")!.lastUserMessageAt = now;
+    paseo.finish("agent-1", "Finished by the user");
+    await manager.onAgentUpdate("agent-1");
+    expect((await manager.list())[0]).toMatchObject({ id: run.id, status: "cancelled" });
+    now += 2 * HOUR;
+    await manager.tick();
     expect(paseo.agents.get("agent-1")!.sent).toHaveLength(0);
   });
 
