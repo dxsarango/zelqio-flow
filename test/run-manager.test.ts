@@ -1,0 +1,279 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { runsState } from "../shared/runs";
+import type { ProviderCatalogData } from "../shared/providers";
+import { defaultSettings, type ZelqioSettings } from "../shared/settings";
+import type { UsageSnapshot } from "../shared/usage";
+import { AttemptJournal } from "../server/attempt-journal";
+import { RunManager, type AgentPort, type AgentSnapshot, type CreateAgentInput } from "../server/run-manager";
+import { VersionedStore } from "../server/store";
+
+const HOUR = 3_600_000;
+const START = Date.parse("2026-11-27T12:00:00Z");
+
+function provider(id: string): ProviderCatalogData["providers"][number] {
+  return {
+    id, label: id, status: "ready", enabled: true, source: "builtin",
+    models: [{ id: `${id}-model`, label: id, isDefault: true, selectable: true, thinkingOptions: [] }],
+    modes: [],
+  };
+}
+
+class FakePaseo implements AgentPort {
+  agents = new Map<string, AgentSnapshot & { provider: string; model: string; prompt: string; sent: string[] }>();
+  created: CreateAgentInput[] = [];
+  byKey = new Map<string, string>();
+  replies = new Map<string, string>();
+  failCreate = false;
+
+  async create(input: CreateAgentInput) {
+    if (this.failCreate) throw new Error("create failed");
+    const known = this.byKey.get(input.key);
+    if (known) return { id: known };
+    this.created.push(input);
+    const id = `agent-${this.agents.size + 1}`;
+    this.byKey.set(input.key, id);
+    this.agents.set(id, { id, status: "running", lastError: null, pendingPermissions: 0, archived: false, provider: input.provider, model: input.model, prompt: input.prompt, sent: [] });
+    return { id };
+  }
+  async snapshot(id: string) { return this.agents.get(id) ?? null; }
+  async send(id: string, text: string, messageId: string) {
+    const agent = this.agents.get(id)!;
+    if (agent.sent.includes(messageId)) return;
+    agent.sent.push(messageId);
+    void text;
+    agent.status = "running";
+    agent.lastError = null;
+  }
+  async lastReply(id: string) { return this.replies.get(id) ?? null; }
+  async recentActivity(id: string) { return `activity of ${id}`; }
+  finish(id: string, reply: string) { const agent = this.agents.get(id)!; agent.status = "idle"; agent.lastError = null; this.replies.set(id, reply); }
+  fail(id: string, message: string) { const agent = this.agents.get(id)!; agent.status = "error"; agent.lastError = message; }
+}
+
+describe("run manager: real orchestration loop over native agents", () => {
+  let directory: string;
+  let now: number;
+  let paseo: FakePaseo;
+  let usage: UsageSnapshot | null;
+  let settings: ZelqioSettings;
+  let catalog: ProviderCatalogData;
+
+  const build = (extra: { maxConcurrent?: number; maxAttempts?: number } = {}) => new RunManager({
+    port: paseo,
+    store: new VersionedStore({ dir: directory, name: "runs", version: 1, schema: runsState, defaults: () => ({ runs: [] }) }),
+    attempts: new AttemptJournal(directory, () => now),
+    readCatalog: async () => catalog,
+    readUsage: async () => usage,
+    readSettings: async () => settings,
+    clock: () => now,
+    recheckMs: 5 * 60_000,
+    ...extra,
+  });
+  const use = (id: string, use: "primary" | "auxiliary", funding: "subscription" | "free" | "consumption" = "subscription") => {
+    settings = { ...settings, providers: { ...settings.providers, [id]: { use, funding } } };
+  };
+  const submit = (manager: RunManager) => manager.submit({ prompt: "Add a health endpoint", cwd: "/work/repo" });
+  const report = (sourceId: string, remainingPct: number | null, status: "fresh" | "exhausted", resetsAt: number | null, fetchedAt = now): UsageSnapshot["reports"][number] => ({
+    sourceId, status: "available", fetchedAt: new Date(fetchedAt).toISOString(),
+    windows: [{ id: "five_hour", status, remainingPct, resetsAt: resetsAt === null ? null : new Date(resetsAt).toISOString(), durationSeconds: 18000 }],
+  });
+
+  beforeEach(async () => {
+    directory = await mkdtemp(join(tmpdir(), "zelqio-runs-"));
+    now = START;
+    paseo = new FakePaseo();
+    usage = null;
+    catalog = { providers: [provider("alpha"), provider("beta")], generatedAt: new Date(START).toISOString() };
+    settings = { ...defaultSettings(), providers: {} };
+  });
+  afterEach(() => rm(directory, { recursive: true, force: true }));
+
+  it("selects an authorized model, lets Paseo run the agent and delivers its answer", async () => {
+    use("alpha", "primary");
+    const manager = build();
+    const run = await submit(manager);
+    expect(run.status).toBe("running");
+    expect(paseo.created).toHaveLength(1);
+    expect(paseo.created[0]).toMatchObject({ provider: "alpha", model: "alpha-model", cwd: "/work/repo", prompt: "Add a health endpoint" });
+    expect(paseo.created[0].metadata["zelqio.run"]).toBe(run.id);
+
+    await manager.tick();
+    expect((await manager.list())[0].status).toBe("running");
+    paseo.finish("agent-1", "Done: /health returns 200.");
+    await manager.tick();
+    expect((await manager.list())[0]).toMatchObject({ status: "delivered", result: "Done: /health returns 200." });
+  });
+
+  it("never uses a provider the user switched off", async () => {
+    use("alpha", "primary");
+    use("beta", "primary");
+    settings.providers.alpha = { use: "off", funding: "subscription" };
+    const manager = build();
+    await submit(manager);
+    expect(paseo.created.map(item => item.provider)).toEqual(["beta"]);
+  });
+
+  it("fails clearly when no authorized model exists, without creating anything", async () => {
+    const manager = build();
+    const run = await submit(manager);
+    expect(run.status).toBe("failed");
+    expect(run.error).toMatch(/No authorized model/);
+    expect(paseo.created).toHaveLength(0);
+  });
+
+  it("keeps the work and hands it to another authorized provider when the limit is reached", async () => {
+    use("alpha", "primary");
+    use("beta", "auxiliary");
+    const manager = build();
+    await submit(manager);
+    expect(paseo.created[0].provider).toBe("alpha");
+    paseo.fail("agent-1", "You've hit your usage limit. Try again in 2 hours.");
+    await manager.tick();
+
+    const [run] = await manager.list();
+    expect(run.status).toBe("running");
+    expect(run.current).toMatchObject({ provider: "beta", agentId: "agent-2" });
+    expect(run.suspended).toHaveProperty("alpha");
+    expect(paseo.created).toHaveLength(2);
+    expect(paseo.created[1].prompt).toContain("Add a health endpoint");
+    expect(paseo.created[1].prompt).toContain("activity of agent-1");
+    expect(paseo.agents.get("agent-1")?.archived).toBe(false);
+    expect(run.history.map(entry => entry.kind)).toEqual(["queued", "started", "exhausted", "reassigned"]);
+
+    paseo.finish("agent-2", "Done by beta.");
+    await manager.tick();
+    expect((await manager.list())[0]).toMatchObject({ status: "delivered", result: "Done by beta." });
+  });
+
+  it("waits for the reset and resumes the same agent exactly once", async () => {
+    use("alpha", "primary");
+    const manager = build();
+    await submit(manager);
+    paseo.fail("agent-1", "Usage limit reached. Try again in 2 hours.");
+    await manager.tick();
+    let [run] = await manager.list();
+    expect(run).toMatchObject({ status: "waiting_quota", resumeAt: START + 2 * HOUR });
+    expect(paseo.created).toHaveLength(1);
+
+    now = START + HOUR;
+    await manager.tick();
+    expect(paseo.agents.get("agent-1")!.sent).toHaveLength(0);
+
+    now = START + 2 * HOUR + 1000;
+    await manager.tick();
+    await manager.tick();
+    [run] = await manager.list();
+    expect(run.status).toBe("running");
+    expect(paseo.agents.get("agent-1")!.sent).toHaveLength(1);
+    expect(run.history.map(entry => entry.kind)).toContain("resumed");
+    expect(paseo.created).toHaveLength(1);
+
+    paseo.finish("agent-1", "Finished after the reset.");
+    await manager.tick();
+    expect((await manager.list())[0]).toMatchObject({ status: "delivered", result: "Finished after the reset." });
+  });
+
+  it("does not resume while Paseo still reports the quota as exhausted, and does once fresh quota appears", async () => {
+    use("alpha", "primary");
+    const manager = build();
+    await submit(manager);
+    usage = { status: "available", reports: [report("alpha", 0, "exhausted", START + 2 * HOUR)] };
+    paseo.fail("agent-1", "Usage limit reached.");
+    await manager.tick();
+    expect((await manager.list())[0]).toMatchObject({ status: "waiting_quota", resumeAt: START + 2 * HOUR });
+
+    now = START + 2 * HOUR + 1000;
+    usage = { status: "available", reports: [report("alpha", 0, "exhausted", START + 3 * HOUR, now)] };
+    await manager.tick();
+    let [run] = await manager.list();
+    expect(run.status).toBe("waiting_quota");
+    expect(paseo.agents.get("agent-1")!.sent).toHaveLength(0);
+    expect(run.resumeAt).toBeGreaterThan(now);
+
+    now = START + 3 * HOUR + 1000;
+    usage = { status: "available", reports: [report("alpha", 80, "fresh", null, now)] };
+    await manager.tick();
+    [run] = await manager.list();
+    expect(run.status).toBe("running");
+    expect(paseo.agents.get("agent-1")!.sent).toHaveLength(1);
+  });
+
+  it("treats an ordinary failure as a failure, never as a quota problem", async () => {
+    use("alpha", "primary");
+    use("beta", "auxiliary");
+    const manager = build();
+    await submit(manager);
+    paseo.fail("agent-1", "TypeError: cannot read properties of undefined");
+    await manager.tick();
+    expect((await manager.list())[0]).toMatchObject({ status: "failed" });
+    expect(paseo.created).toHaveLength(1);
+  });
+
+  it("never reassigns work to a pay-per-use provider", async () => {
+    use("alpha", "primary");
+    use("beta", "auxiliary", "consumption");
+    settings.consumptionOptIn = true;
+    const manager = build();
+    await submit(manager);
+    paseo.fail("agent-1", "You've hit your usage limit. Try again in 1 hour.");
+    await manager.tick();
+    const [run] = await manager.list();
+    expect(run.status).toBe("waiting_quota");
+    expect(paseo.created).toHaveLength(1);
+  });
+
+  it("queues work beyond the concurrency limit and starts it when a slot frees", async () => {
+    use("alpha", "primary");
+    const manager = build({ maxConcurrent: 1 });
+    const first = await submit(manager);
+    const second = await submit(manager);
+    expect(first.status).toBe("running");
+    expect(second.status).toBe("queued");
+    paseo.finish("agent-1", "first done");
+    await manager.tick();
+    const runs = await manager.list();
+    expect(runs.find(run => run.id === first.id)?.status).toBe("delivered");
+    expect(runs.find(run => run.id === second.id)?.status).toBe("running");
+    expect(paseo.created).toHaveLength(2);
+  });
+
+  it("stops reassigning after the attempt limit and waits instead", async () => {
+    use("alpha", "primary");
+    use("beta", "auxiliary");
+    const manager = build({ maxAttempts: 1 });
+    await submit(manager);
+    paseo.fail("agent-1", "Usage limit reached. Try again in 1 hour.");
+    await manager.tick();
+    expect((await manager.list())[0].status).toBe("waiting_quota");
+    expect(paseo.created).toHaveLength(1);
+  });
+
+  it("survives a restart without creating a second agent for the same attempt", async () => {
+    use("alpha", "primary");
+    const first = build();
+    const run = await submit(first);
+    // Simulate a crash after the create request was sent but before the agent id was recorded.
+    const store = new VersionedStore({ dir: directory, name: "runs", version: 1, schema: runsState, defaults: () => ({ runs: [] }) });
+    await store.update(state => ({ result: undefined, next: { runs: state.runs.map(entry => ({ ...entry, current: null, pending: { kind: "create" as const, key: `${run.id}-a1` } })) } }));
+
+    const restarted = build();
+    await restarted.recoverAfterRestart();
+    const [recovered] = await restarted.list();
+    expect(paseo.created).toHaveLength(1);
+    expect(recovered.current?.agentId).toBe("agent-1");
+    expect(recovered.pending).toBeNull();
+  });
+
+  it("can be cancelled and then ignores the agent", async () => {
+    use("alpha", "primary");
+    const manager = build();
+    const run = await submit(manager);
+    await manager.cancel(run.id);
+    paseo.finish("agent-1", "late");
+    await manager.tick();
+    expect((await manager.list())[0].status).toBe("cancelled");
+  });
+});

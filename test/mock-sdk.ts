@@ -9,7 +9,7 @@ type Registered = { contract: PluginRpcContract; handler: Handler };
  * Test double for the plugin server context. It records RPC handlers and invokes them after parsing the input
  * and output with the contract's Zod schemas. This approximates, but is not, the SDK's wire behaviour
  * (`callPluginRpc` is not public API); wire-level behaviour is covered by the isolated-daemon check.
- * Only `handle` and `registerSettings` are implemented; anything else a plugin touches must be added deliberately.
+ * Only `handle`, `registerSettings` and `addHook` are implemented; anything else a plugin touches must be added deliberately.
  */
 export function createMockServer(
   context: PluginHandlerContext = { paseo: {} as PluginHandlerContext["paseo"] },
@@ -17,10 +17,15 @@ export function createMockServer(
 ) {
   const handlers = new Map<string, Registered>();
   const registeredSettings: string[] = [];
+  const hooks = new Map<string, (payload: unknown, context: PluginHandlerContext) => unknown>();
   const server = {
     registerSettings(definition: { id: string }) {
       registeredSettings.push(definition.id);
       return { read: async () => settings(definition.id), subscribe: () => () => {} };
+    },
+    addHook(name: string, handler: (payload: unknown, context: PluginHandlerContext) => unknown) {
+      hooks.set(name, handler);
+      return () => { hooks.delete(name); };
     },
     handle(contract: PluginRpcContract, handler: Handler) {
       if (handlers.has(contract.name)) throw new Error(`duplicate handler: ${contract.name}`);
@@ -38,5 +43,5 @@ export function createMockServer(
     const output = await registered.handler(parsedInput, context);
     return contract.output.parse(output) as ZodOutput<Contract["output"]>;
   }
-  return { server, call, methods: () => [...handlers.keys()].sort(), settings: () => [...registeredSettings] };
+  return { server, call, hooks, methods: () => [...handlers.keys()].sort(), settings: () => [...registeredSettings] };
 }
