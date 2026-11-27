@@ -7,6 +7,7 @@ import { automaticRouting } from "./server/automatic-routing";
 import { delegationTools, type ChildSummary } from "./server/delegation-tools";
 import { draftOrchestration } from "./shared/orchestration";
 import { paseoAgentPort } from "./server/paseo-agent-port";
+import { platformPowerAdapter, PowerManager } from "./server/power-manager";
 import { paseoSnapshotSource, readCatalog } from "./server/providers";
 import { handleZelqio } from "./server/rpc";
 import { RunManager } from "./server/run-manager";
@@ -18,7 +19,7 @@ import { VersionedStore } from "./server/store";
 import { UsageCache } from "./server/usage";
 import { providersListRpc } from "./shared/providers";
 import { draftPreference } from "./shared/orchestration";
-import { rolesListRpc } from "./shared/roles";
+import { rolesListRpc, rolesSettingsDefinition } from "./shared/roles";
 import { runsCancelRpc, runsListRpc, runsState, runsSubmitRpc } from "./shared/runs";
 import { statusRpc } from "./shared/status";
 import { usageListRpc } from "./shared/usage";
@@ -50,12 +51,18 @@ export default function contribute(server: PluginServerContext) {
 
   const settings = registerZelqioSettings(server);
   server.registerSettings(draftPreference);
+  const rolesStore = server.registerSettings(rolesSettingsDefinition);
+  const readRoles = async () => {
+    const saved = await rolesStore.read();
+    return saved.status === "ready" ? saved.values : {};
+  };
 
   const directory = stateDirectory();
   const runs = new RunManager({
     port: paseoAgentPort(api),
     store: new VersionedStore({ dir: directory, name: "runs", version: 1, schema: runsState, defaults: () => ({ runs: [] }) }),
     attempts: new AttemptJournal(directory),
+    readRoles,
     // Test-only overrides; production keeps the defaults.
     recheckMs: Number(process.env.ZELQIO_RECHECK_MS) || undefined,
     defaultWaitMs: Number(process.env.ZELQIO_DEFAULT_WAIT_MS) || undefined,
@@ -75,6 +82,7 @@ export default function contribute(server: PluginServerContext) {
   });
 
   const routeAutomatically = automaticRouting({
+    readRoles,
     readCatalog: async () => readCatalog(paseoSnapshotSource(api())),
     readUsage: () => usage.read(() => api().providers.listUsage()).catch(() => null),
     readSettings: async () => {
@@ -82,6 +90,15 @@ export default function contribute(server: PluginServerContext) {
       return saved.status === "ready" ? saved.values : null;
     },
   });
+
+  const power = new PowerManager({
+    adapter: platformPowerAdapter(),
+    enabled: async () => {
+      const saved = await settings.read();
+      return saved.status === "ready" && saved.values.power.preventSleep;
+    },
+  });
+  const syncPower = async () => { await power.sync(await runs.hasWork()); };
 
   let recovered: Promise<void> | undefined;
   const ready = (paseo: PaseoApi) => {
@@ -121,9 +138,9 @@ export default function contribute(server: PluginServerContext) {
     const saved = await settings.read();
     if (saved.status !== "ready") throw new ZelqioError("unavailable", "Routing preferences are unavailable.");
     const catalog = await readCatalog(paseoSnapshotSource(paseo));
-    return previewRouting(input, catalog, saved.values, Date.now());
+    return previewRouting(input, catalog, saved.values, Date.now(), await readRoles());
   });
-  handleZelqio(server, rolesListRpc, () => ({ roles: resolveRoles({}) }));
+  handleZelqio(server, rolesListRpc, async () => ({ roles: resolveRoles(await readRoles()) }));
 
   handleZelqio(server, runsSubmitRpc, async (input, { paseo }) => {
     await ready(paseo);
@@ -132,6 +149,7 @@ export default function contribute(server: PluginServerContext) {
   handleZelqio(server, runsListRpc, async (_input, { paseo }) => {
     await ready(paseo);
     await runs.tick();
+    await syncPower().catch(() => undefined);
     return { runs: await runs.list() };
   });
   handleZelqio(server, runsCancelRpc, async (input, { paseo }) => {
@@ -169,12 +187,13 @@ export default function contribute(server: PluginServerContext) {
     await runs.onAgentUpdate(agent.id, outcome.kind === "failed" ? { error: outcome.error } : undefined);
   });
   const timer = setInterval(() => {
-    if (latest) void runs.tick().catch(() => undefined);
+    if (latest) void runs.tick().then(syncPower).catch(() => undefined);
   }, TICK_MS);
   timer.unref?.();
 
   return () => {
     clearInterval(timer);
+    void power.release();
     removeHook();
     removeCreateBefore();
     removeCreateAfter();

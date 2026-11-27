@@ -30,6 +30,7 @@ describe("defaults", () => {
       mode: "review_first",
       git: { workflow: "local_only" },
       remoteAuthorization: "denied",
+      power: { preventSleep: false },
     });
   });
 
