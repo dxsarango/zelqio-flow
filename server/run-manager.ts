@@ -18,6 +18,8 @@ export interface AgentSnapshot {
   lastError: string | null;
   pendingPermissions: number;
   archived: boolean;
+  /** Paseo has a persisted session that can be reopened for this agent. */
+  restorable: boolean;
   /** When the user last wrote to the agent, in epoch milliseconds. Used to notice that a person took over. */
   lastUserMessageAt: number | null;
 }
@@ -237,8 +239,13 @@ export class RunManager {
   /** Reconciles the run that owns this agent, if any. Safe to call for every Paseo agent update. */
   onAgentUpdate(agentId: string, hint?: { error?: { message: string; code?: string | null } }): Promise<void> {
     return this.exclusive(async () => {
-      const run = (await this.list()).find(entry => entry.current?.agentId === agentId && entry.status === "running");
-      if (run) await this.reconcile(run, hint);
+      const run = (await this.list()).find(entry => entry.current?.agentId === agentId
+        && (entry.status === "running" || entry.status === "waiting_quota"));
+      if (run?.status === "running") await this.reconcile(run, hint);
+      else if (run?.status === "waiting_quota") {
+        const snapshot = await this.deps.port.snapshot(agentId);
+        if (snapshot) await this.stopForTakeover(run, snapshot);
+      }
     });
   }
 
@@ -362,6 +369,7 @@ export class RunManager {
     if (run.pending?.kind === "resume") {
       // The resume was recorded but the agent is not running: send it again with the same message id.
       await this.deps.port.send(run.current.agentId, "The usage limit was restored. Continue the task from where you stopped.", run.pending.key);
+      await this.confirmResume(run);
       return;
     }
     if (snapshot.status === "idle" && !snapshot.lastError && !hint?.error) {
@@ -429,22 +437,38 @@ export class RunManager {
     await this.save(working);
   }
 
+  private async stopForTakeover(run: RunRecord, snapshot: AgentSnapshot): Promise<boolean> {
+    // Older runs, and native prompts sent without a message ID, may have no user timestamp at exhaustion.
+    const baseline = run.userBaseline ?? run.history.findLast(event => event.kind === "exhausted")?.at ?? run.createdAt;
+    if (snapshot.lastUserMessageAt === null || snapshot.lastUserMessageAt <= baseline) return false;
+    await this.save(this.note({ ...run, status: "cancelled", resumeAt: null }, "cancelled", { agentId: snapshot.id, note: "the user took over" }));
+    return true;
+  }
+
+  private async confirmResume(run: RunRecord): Promise<void> {
+    const current = run.current!;
+    const { [current.provider]: _removed, ...remaining } = run.suspended;
+    void _removed;
+    const confirmed: RunRecord = { ...run, pending: null, suspended: remaining, handledError: null };
+    // Older state could persist the history entry while still leaving the resume pending.
+    const alreadyRecorded = run.history.at(-1)?.kind === "resumed";
+    await this.save(alreadyRecorded ? confirmed : this.note(confirmed, "resumed", {
+      provider: current.provider, model: current.model, agentId: current.agentId,
+    }));
+  }
+
   /** A waiting run reached its check time: resume the same agent when its provider recovered, or hand the work over. */
   private async recover(run: RunRecord): Promise<void> {
     const current = run.current;
     if (!current) return;
     const now = this.clock();
-    const snapshot = await this.deps.port.snapshot(current.agentId).catch(() => null);
-    if (!snapshot || snapshot.archived || snapshot.status === "closed") {
+    const snapshot = await this.deps.port.snapshot(current.agentId);
+    if (!snapshot || snapshot.archived || (snapshot.status === "closed" && !snapshot.restorable)) {
       await this.save(this.note({ ...run, status: "failed", error: "The agent is no longer available.", resumeAt: null }, "failed", { agentId: current.agentId }));
       return;
     }
-    if (snapshot.lastUserMessageAt !== null && run.userBaseline !== null && snapshot.lastUserMessageAt > run.userBaseline) {
-      // A person wrote to the agent after it stopped: they took over, so the run no longer acts on it.
-      await this.save(this.note({ ...run, status: "cancelled", resumeAt: null }, "cancelled", { agentId: current.agentId, note: "the user took over" }));
-      return;
-    }
-    if (snapshot.pendingPermissions > 0 || snapshot.status === "running") {
+    if (await this.stopForTakeover(run, snapshot)) return;
+    if (snapshot.pendingPermissions > 0 || snapshot.status === "running" || snapshot.status === "initializing") {
       await this.save({ ...run, resumeAt: now + this.recheckMs, attention: snapshot.pendingPermissions > 0 });
       return;
     }
@@ -470,12 +494,11 @@ export class RunManager {
       await this.save(marked);
       try {
         await this.deps.port.send(current.agentId, "The usage limit was restored. Continue the task from where you stopped.", key);
-        const { [current.provider]: _removed, ...remaining } = suspended;
-        void _removed;
-        await this.save(this.note({ ...marked, suspended: remaining, handledError: null }, "resumed", { provider: current.provider, model: current.model, agentId: current.agentId }));
       } catch (error) {
         await this.save(this.note({ ...marked, status: "waiting_quota", pending: null, resumeAt: now + this.recheckMs }, "waiting", { note: clip(error instanceof Error ? error.message : "resume failed", 120) ?? undefined }));
+        return;
       }
+      await this.confirmResume(marked);
       return;
     }
     const alternative = decision.selected;

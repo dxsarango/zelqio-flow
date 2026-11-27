@@ -17,6 +17,7 @@ export function paseoAgentPort(api: () => PaseoApi): AgentPort {
         config: { provider: `${input.provider}/${input.model}`, ...(input.thinkingOptionId ? { thinkingOptionId: input.thinkingOptionId } : {}) },
         cwd: input.cwd,
         prompt: input.prompt,
+        clientMessageId: input.key,
         title: input.title,
         metadata: input.metadata,
       });
@@ -33,12 +34,13 @@ export function paseoAgentPort(api: () => PaseoApi): AgentPort {
         lastError: typeof agent.lastError === "string" && agent.lastError ? agent.lastError : null,
         pendingPermissions: agent.pendingPermissions?.length ?? 0,
         archived: Boolean(agent.archivedAt),
+        restorable: Boolean(agent.persistence) && !agent.providerUnavailable,
         lastUserMessageAt: typeof agent.lastUserMessageAt === "string" ? Date.parse(agent.lastUserMessageAt) || null : null,
       };
     },
 
     async send(agentId, text, messageId) {
-      await api().agents.ref(agentId).send(text, { messageId, activeTurnBehavior: "queue" });
+      await api().agents.ref(agentId).send(text, { messageId });
     },
 
     async lastReply(agentId) {

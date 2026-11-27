@@ -1,0 +1,4 @@
+{
+  "id": "zelqio-e2e-fixture",
+  "requirements": { "paseo": ">=0.17.5 <0.18.0" }
+}
