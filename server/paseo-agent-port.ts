@@ -20,6 +20,7 @@ export function paseoAgentPort(api: () => PaseoApi): AgentPort {
         clientMessageId: input.key,
         title: input.title,
         metadata: input.metadata,
+        ...(input.parentAgentId ? { parent: input.parentAgentId } : {}),
       });
       return { id: handle.id };
     },
