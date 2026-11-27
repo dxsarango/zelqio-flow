@@ -185,7 +185,8 @@ export class GitDelivery {
         throw error;
       }),
       this.revision(cwd, "HEAD"),
-      this.git(cwd, "status", "--porcelain=v1", "-z", "--untracked-files=no", "--ignore-submodules=none"),
+      // Status can refresh the index under an optional lock. Concurrent snapshots must stay read-only.
+      this.git(cwd, "--no-optional-locks", "status", "--porcelain=v1", "-z", "--untracked-files=no", "--ignore-submodules=none"),
       this.git(cwd, "ls-files", "-z", "--others", "--exclude-standard"),
     ]);
     const [commonDir, gitDir] = await Promise.all([realpath(common.trim()), realpath(dir.trim())]);
@@ -676,7 +677,19 @@ export class GitDelivery {
         if (target.head === plan.baseSha) expected = candidate;
         else {
           const contents = await this.git(target.cwd, "merge-tree", "--write-tree", target.head, candidate)
-            .catch(error => { if (errorCode(error, 1)) return block("integration_conflict"); throw error; });
+            .catch(async error => {
+              if (!errorCode(error, 1)) throw error;
+              // merge-tree leaves the checkout alone. Verify both refs and the clean target before reporting the conflict.
+              const [after, childHead] = await Promise.all([
+                this.checkout(target.cwd),
+                this.revision(source.cwd, source.ref),
+              ]);
+              if (after.repository !== target.repository || after.ref !== target.ref || after.head !== target.head ||
+                  after.operation || after.tracked.length || after.untracked.length || childHead !== candidate) {
+                return block("integration_target_changed");
+              }
+              return block("integration_conflict");
+            });
           expected = sha.parse((await this.git(target.cwd, "commit-tree", sha.parse(contents.trim()), "-p", target.head,
             "-p", candidate, "-m", "chore: integrate delegated task")).trim());
         }
