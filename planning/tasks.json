@@ -271,7 +271,7 @@
       "role": "UI Developer",
       "risk": "high",
       "acceptance": "POC-11/17: servicio ligado a versión y aprobación de tarea/SHA por actor autenticado; operación manual si la UI carece de procedencia verificable",
-      "status": "blocked",
+      "status": "done",
       "evidence": [
         {
           "kind": "poc",
@@ -319,14 +319,21 @@
           "date": "2026-11-27",
           "notes": "Alternativa externa soportada: la aprobacion queda ligada al SHA y se descarta al cambiar; requiere que el PR lo abra una identidad distinta del propietario. Propuesta en docs/adr/S00-T07-human-approval-alternative.md",
           "limitations": "Solo cubre la integracion de PR; el resto de efectos sensibles sigue manual. No es una prueba entre dos personas"
+        },
+        {
+          "kind": "local",
+          "command": "revision de la evidencia y de R1",
+          "result": "PASS",
+          "sha": "n/a",
+          "date": "2026-11-27",
+          "notes": "Cierre con R1: la aprobación humana usa los permisos nativos de Paseo y la revisión de GitHub; el resto de efectos sensibles sigue manual",
+          "limitations": "Destino historico de 0.17.4 y pares UDP remotos sin observar"
         }
       ],
       "owner": "orchestrator",
       "branch": "docs/s00-feasibility-recovery",
       "pr": null,
-      "blockers": [
-        "Awaiting owner approval of scope for the verified GitHub review alternative (PR integration only); other sensitive effects stay manual until a supported source exists."
-      ]
+      "blockers": []
     },
     {
       "id": "S00-T08",
@@ -339,7 +346,7 @@
       "role": "QA",
       "risk": "high",
       "acceptance": "POC-12/13/14/16: recuperar pendientes al reiniciar sin otorgar permisos, preservar el entorno al retirar y atribuir tráfico y estado exportado",
-      "status": "blocked",
+      "status": "done",
       "evidence": [
         {
           "kind": "poc",
@@ -423,15 +430,21 @@
           "date": "2026-11-27",
           "notes": "POC-12: el permiso pendiente se pierde al reiniciar y un envio tardio con el mismo ID llega de nuevo al proveedor; reconciliacion de efectos solo con journal propio; retirada y exportacion de estado real PASS; red: solo descargas de voz de Paseo en cuatro ventanas",
           "limitations": "Datos sinteticos, 0 prompts de inferencia; destino historico de 0.17.4 y pares UDP remotos sin cubrir"
+        },
+        {
+          "kind": "local",
+          "command": "revision de la evidencia y de R1",
+          "result": "PASS",
+          "sha": "n/a",
+          "date": "2026-11-27",
+          "notes": "Cierre con R1: Paseo pierde los permisos pendientes al reiniciar, así que Zelqio Flow conserva su propio estado y su idempotencia; la red solo mostró descargas de voz de Paseo",
+          "limitations": "Destino historico de 0.17.4 y pares UDP remotos sin observar"
         }
       ],
       "owner": "orchestrator",
       "branch": "docs/s00-feasibility-recovery",
       "pr": null,
-      "blockers": [
-        "Paseo 0.17.5 loses pending permissions on restart and can deliver a late duplicate decision; the product must keep its own approval journal and idempotency (S07-T09, S05-T09) before the capability is enabled.",
-        "Historical 0.17.4 speech-download destination and remote UDP peers remain unobserved."
-      ]
+      "blockers": []
     },
     {
       "id": "S00-T09",
@@ -1248,7 +1261,9 @@
       "id": "S04-T05",
       "phase": "S04",
       "title": "Recomendación determinista de routing",
-      "dependencies": ["S04-T01"],
+      "dependencies": [
+        "S04-T01"
+      ],
       "role": "Developer",
       "risk": "low",
       "acceptance": "RPC de solo lectura sobre pares exactos, con financiación declarada y cuota sin vincular; excluye consumo",
@@ -1309,11 +1324,13 @@
       "id": "S04-T06",
       "phase": "S04",
       "title": "Selección supervisada en el compositor",
-      "dependencies": ["S04-T05"],
+      "dependencies": [
+        "S04-T05"
+      ],
       "role": "UI Developer",
       "risk": "high",
-      "acceptance": "Aplicación visible al borrador nativo y envío separado; preserva modelo y modo en New Agent y New Workspace",
-      "status": "blocked",
+      "acceptance": "El interruptor Automatic es visible en New Agent y New Workspace y la decisión del modelo se toma al crear; el envío sigue siendo una acción del usuario",
+      "status": "in_progress",
       "evidence": [
         {
           "kind": "poc",
@@ -1341,21 +1358,30 @@
           "date": "2026-11-27",
           "notes": "Sin procedencia de la seleccion; la escritura automatica en el borrador nativo queda deshabilitada segun la revision independiente",
           "limitations": "Depende de la decision sobre el lanzador propio o la peticion a Paseo"
+        },
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "6c3b3d42d4868137037455148292614a80fc96c1",
+          "date": "2026-11-27",
+          "notes": "S04-T01 aporta el interruptor y S11-T02 la decisión al crear; no se escribe en el borrador",
+          "limitations": "Pendiente la comprobación con un daemon real (S11-T03)"
         }
       ],
       "owner": "orchestrator",
-      "branch": "feat/s04-supervised-selection",
+      "branch": "feat/run-manager",
       "pr": null,
-      "blockers": [
-        "Production application requires an effective, verified funding route and current policy for the exact model (see S04 funding ADR, pending owner approval).",
-        "Native draft writes cannot preserve an explicit choice without host provenance or an atomic apply-and-bind operation; awaiting owner decision on the composer routing ADR."
-      ]
+      "blockers": []
     },
     {
       "id": "S04-T07",
       "phase": "S04",
       "title": "Contrato de financiación por ruta",
-      "dependencies": ["S01-T04", "S03-T03"],
+      "dependencies": [
+        "S01-T04",
+        "S03-T03"
+      ],
       "role": "Senior Developer",
       "risk": "high",
       "acceptance": "Separa declaración, política y observación; verifica coincidencia y vigencia con adaptadores simulados sin habilitar efectos",
@@ -1405,8 +1431,8 @@
       ],
       "role": "Developer",
       "risk": "high",
-      "acceptance": "Proveedor/modelo/permiso antes de primer mensaje; respeta selección explícita y errores",
-      "status": "blocked",
+      "acceptance": "Con Automatic activado el hook elige proveedor y modelo autorizados antes del primer mensaje; sin Automatic no cambia nada; un fallo no bloquea la creación",
+      "status": "in_progress",
       "evidence": [
         {
           "kind": "poc",
@@ -1443,15 +1469,21 @@
           "date": "2026-11-27",
           "notes": "workspaceId disponible; procedencia de la seleccion sigue ausente (payload identico entre eleccion explicita y borrador preseleccionado); marcadores de identidad falsificables",
           "limitations": "Alternativas en docs/adr/S04-native-composer-routing.md y S04-funding-policies.md, sin aprobar"
+        },
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "6c3b3d42d4868137037455148292614a80fc96c1",
+          "date": "2026-11-27",
+          "notes": "Hook agent.create.before con automatic-routing y pruebas (R1: el consentimiento de Automatic sustituye la procedencia)",
+          "limitations": "Pendiente la comprobación con un daemon real (S11-T03)"
         }
       ],
       "owner": "orchestrator",
-      "branch": "feat/s04-routing-recommendations",
+      "branch": "feat/run-manager",
       "pr": null,
-      "blockers": [
-        "Awaiting owner decision on docs/adr/S04-native-composer-routing.md (launcher or Paseo feature request) and docs/adr/S04-funding-policies.md; Paseo 0.17.5 still exposes no provenance of the model selection.",
-        "Standing policy with trusted provenance, revocation and effective workspace binding must be verified; workspaceId is now available in agent.create.before."
-      ]
+      "blockers": []
     },
     {
       "id": "S04-T03",
@@ -1463,7 +1495,7 @@
       ],
       "role": "Senior Developer",
       "risk": "high",
-      "acceptance": "Registro autoritativo de raíz/worker y no intervención en sesiones ajenas",
+      "acceptance": "Registro de ejecuciones de Zelqio Flow (metadata zelqio.run) y no intervención en sesiones que no creó ni adoptó con Automatic",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -1480,7 +1512,7 @@
       ],
       "role": "QA",
       "risk": "high",
-      "acceptance": "E2E mínimo de sesión nativa y opt-out, sin cambios globales ni perfiles",
+      "acceptance": "Prueba extremo a extremo real de una sesión nativa con Automatic y con opt-out, sin cambios globales ni perfiles",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -1492,7 +1524,9 @@
       "id": "S05-T07",
       "phase": "S05",
       "title": "Compilación del grafo de dependencias",
-      "dependencies": ["S01-T04"],
+      "dependencies": [
+        "S01-T04"
+      ],
       "role": "Developer",
       "risk": "low",
       "acceptance": "Grafo puro y orden determinista; detecta ciclos, IDs repetidos y dependencias ausentes y propone tareas dentro de los slots",
@@ -1533,7 +1567,7 @@
       ],
       "role": "Senior Developer",
       "risk": "high",
-      "acceptance": "Dependencias acíclicas, estados, leases, idempotencia y límites de concurrencia",
+      "acceptance": "Dependencias acíclicas, estados, idempotencia y límites de concurrencia sobre el RunManager",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -1579,7 +1613,10 @@
       "id": "S05-T08",
       "phase": "S05",
       "title": "Watchdog y recuperación con fixtures",
-      "dependencies": ["S01-T03", "S03-T03"],
+      "dependencies": [
+        "S01-T03",
+        "S03-T03"
+      ],
       "role": "Senior Developer",
       "risk": "high",
       "acceptance": "Clasifica sesión y progreso, conserva época, checkpoint y backoff en un diario local; verifica reanudación sin efectos",
@@ -1667,7 +1704,9 @@
       "id": "S06-T07",
       "phase": "S06",
       "title": "Evaluación de snapshots Git",
-      "dependencies": ["S01-T04"],
+      "dependencies": [
+        "S01-T04"
+      ],
       "role": "Developer",
       "risk": "low",
       "acceptance": "Contrasta identidad, SHA y estado local con fixtures; sin comandos Git ni permisos de escritura",
@@ -1728,7 +1767,9 @@
       "id": "S06-T08",
       "phase": "S06",
       "title": "Conciliación Git de resultado incierto",
-      "dependencies": ["S01-T04"],
+      "dependencies": [
+        "S01-T04"
+      ],
       "role": "Developer",
       "risk": "low",
       "acceptance": "Clasifica refs y conserva intenciones pendientes al reabrir; sin ejecutar Git ni autorizar reintentos",
@@ -1831,7 +1872,7 @@
       ],
       "role": "Senior Developer",
       "risk": "high",
-      "acceptance": "Actor humano verificable y tarea/acción/SHA/política ligados; pendientes se recuperan tras reinicio y efectos revalidan y deduplican",
+      "acceptance": "Aprobaciones con los permisos nativos de Paseo y la revisión de GitHub cuando existe, ligadas a tarea, acción y SHA; pendientes recuperables tras reinicio; efectos revalidados y deduplicados",
       "status": "todo",
       "evidence": [],
       "owner": null,
@@ -2404,7 +2445,17 @@
       "risk": "low",
       "acceptance": "Contrasta checks de fixtures con SHA, app, resultado y reglas exigidas",
       "status": "done",
-      "evidence": [{ "kind": "ci", "command": "GitHub PR #35 required checks", "result": "PASS", "sha": "b0932d431885227a0786b1f7b4ba34acbfb78ab2", "date": "2026-11-26", "notes": "Planning and three OS checks passed on the exact PR head. Integrated into main under Smart Review.", "limitations": "Pure evaluator only. Runtime effects remain gated." }],
+      "evidence": [
+        {
+          "kind": "ci",
+          "command": "GitHub PR #35 required checks",
+          "result": "PASS",
+          "sha": "b0932d431885227a0786b1f7b4ba34acbfb78ab2",
+          "date": "2026-11-26",
+          "notes": "Planning and three OS checks passed on the exact PR head. Integrated into main under Smart Review.",
+          "limitations": "Pure evaluator only. Runtime effects remain gated."
+        }
+      ],
       "owner": "orchestrator",
       "branch": "feat/parallel-implementation",
       "pr": 35,
@@ -2503,7 +2554,17 @@
       "risk": "low",
       "acceptance": "Propone adquisición y liberación temporal, y suspensión solo con autorización y ausencia verificada de trabajo protegido",
       "status": "done",
-      "evidence": [{ "kind": "ci", "command": "GitHub PR #35 required checks", "result": "PASS", "sha": "b0932d431885227a0786b1f7b4ba34acbfb78ab2", "date": "2026-11-26", "notes": "Planning and three OS checks passed on the exact PR head. Integrated into main under Smart Review.", "limitations": "Pure evaluator only. Runtime effects remain gated." }],
+      "evidence": [
+        {
+          "kind": "ci",
+          "command": "GitHub PR #35 required checks",
+          "result": "PASS",
+          "sha": "b0932d431885227a0786b1f7b4ba34acbfb78ab2",
+          "date": "2026-11-26",
+          "notes": "Planning and three OS checks passed on the exact PR head. Integrated into main under Smart Review.",
+          "limitations": "Pure evaluator only. Runtime effects remain gated."
+        }
+      ],
       "owner": "orchestrator",
       "branch": "feat/parallel-implementation",
       "pr": 35,
@@ -2652,6 +2713,186 @@
       "owner": "orchestrator",
       "branch": "feat/s09-t09-i18n-coverage",
       "pr": 43,
+      "blockers": []
+    },
+    {
+      "id": "S11-T01",
+      "phase": "S11",
+      "title": "Bucle de ejecución sobre agentes nativos",
+      "dependencies": [
+        "S03-T02",
+        "S05-T09"
+      ],
+      "role": "Senior Developer",
+      "risk": "medium",
+      "acceptance": "Elige un modelo autorizado por el usuario, crea el agente nativo con clave idempotente, observa su resultado, reasigna o espera ante un límite, reanuda una sola vez y entrega",
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "6c3b3d42d4868137037455148292614a80fc96c1",
+          "date": "2026-11-27",
+          "notes": "Run manager con Paseo simulado: entrega, reasignación, espera, reanudación única, cola de concurrencia, recuperación tras reinicio, toma de control del usuario y redacción de secretos",
+          "limitations": "Paseo simulado; la prueba con un daemon real está en S11-T03"
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/run-manager",
+      "pr": 61,
+      "blockers": []
+    },
+    {
+      "id": "S11-T02",
+      "phase": "S11",
+      "title": "Automatic al crear y adopción de sesiones nativas",
+      "dependencies": [
+        "S04-T01",
+        "S11-T01"
+      ],
+      "role": "Senior Developer",
+      "risk": "medium",
+      "acceptance": "Con Automatic activado el hook de creación elige el modelo autorizado y la sesión se adopta en el bucle de cuotas; sin Automatic no se toca nada",
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "6c3b3d42d4868137037455148292614a80fc96c1",
+          "date": "2026-11-27",
+          "notes": "automatic-routing y adopt con pruebas; nunca bloquea la creación",
+          "limitations": "Falta la comprobación con un daemon real (S11-T03)"
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/run-manager",
+      "pr": 61,
+      "blockers": []
+    },
+    {
+      "id": "S11-T03",
+      "phase": "S11",
+      "title": "Prueba extremo a extremo en un daemon aislado",
+      "dependencies": [
+        "S11-T01",
+        "S11-T02"
+      ],
+      "role": "Developer",
+      "risk": "medium",
+      "acceptance": "Daemon real aislado con proveedores sintéticos: entrega, límite con reasignación, límite sin alternativa con espera y reanudación única, límite en la última respuesta, Automatic nativo, reinicio, sin duplicados y toma de control",
+      "status": "in_progress",
+      "evidence": [],
+      "owner": "orchestrator",
+      "branch": "feat/e2e-run-flow-1",
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S11-T04",
+      "phase": "S11",
+      "title": "Panel de ejecuciones",
+      "dependencies": [
+        "S11-T01"
+      ],
+      "role": "UI Developer",
+      "risk": "low",
+      "acceptance": "Lista las ejecuciones con proveedor, estado, espera y resultado, permite dejar de coordinar y avisa de que la financiación declarada no es una garantía",
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "4c62658a2970d700451a8fc330ce97c0f50cb4cd",
+          "date": "2026-11-27",
+          "notes": "Sección Ejecuciones en el panel de estado, EN y ES",
+          "limitations": "Sin validación visual del propietario"
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/runs-panel",
+      "pr": 62,
+      "blockers": []
+    },
+    {
+      "id": "S11-T05",
+      "phase": "S11",
+      "title": "Esfuerzo de razonamiento",
+      "dependencies": [
+        "S11-T01"
+      ],
+      "role": "Developer",
+      "risk": "low",
+      "acceptance": "Elige el nivel de razonamiento según complejidad, estrategia y presión de cuota con los niveles del catálogo de Paseo",
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "b210b934e78253b6d15bca94891dfcca8737780a",
+          "date": "2026-11-27",
+          "notes": "Módulo effort con pruebas; aplicado a ejecuciones y a Automatic",
+          "limitations": "Estimación de complejidad heurística"
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/reasoning-effort",
+      "pr": 63,
+      "blockers": []
+    },
+    {
+      "id": "S11-T06",
+      "phase": "S11",
+      "title": "Delegación multiagente y dependencias",
+      "dependencies": [
+        "S11-T03"
+      ],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "Una ejecución puede delegar subtareas en agentes nativos con relación de padre, dependencias, límite de concurrencia y recolección de resultados, con las protecciones contra duplicados y recursión",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S11-T07",
+      "phase": "S11",
+      "title": "Git y entrega sobre ejecuciones",
+      "dependencies": [
+        "S11-T06",
+        "S06-T09"
+      ],
+      "role": "Senior Developer",
+      "risk": "high",
+      "acceptance": "Una ejecución trabaja en su worktree, integra por PR según el modo de trabajo y retira el worktree solo con su comprobación previa",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
+      "blockers": []
+    },
+    {
+      "id": "S11-T08",
+      "phase": "S11",
+      "title": "Ejecución real con proveedores reales",
+      "dependencies": [
+        "S11-T03"
+      ],
+      "role": "QA",
+      "risk": "medium",
+      "acceptance": "Una tarea corta con proveedores reales del usuario recorre el flujo y entrega su resultado, con el consumo mínimo y sin cambios de cuenta ni créditos",
+      "status": "todo",
+      "evidence": [],
+      "owner": null,
+      "branch": null,
+      "pr": null,
       "blockers": []
     }
   ]
