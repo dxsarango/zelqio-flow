@@ -1,13 +1,15 @@
 import {
   BUILTIN_ROLE_IDS,
+  isBuiltinRole as isBuiltin,
   rolesConfig,
-  roleDefinition,
   type BuiltinRoleId,
   type Candidate,
   type RoleDefinition,
   type RolesConfig,
 } from "../shared/roles";
 import type { ProviderCatalogData } from "../shared/providers";
+
+export { addCustomRole, removeCustomRole, setCandidates } from "../shared/roles";
 
 /**
  * Built-in roles. An empty candidate list means "no restriction": any provider and model the catalog reports as
@@ -22,8 +24,6 @@ const BUILTIN: Record<BuiltinRoleId, Omit<RoleDefinition, "candidates" | "kind">
   qa: { id: "qa", label: "QA", capabilities: ["test"] },
   assistant: { id: "assistant", label: "Assistant", capabilities: ["docs"] },
 };
-
-const isBuiltin = (id: string): id is BuiltinRoleId => (BUILTIN_ROLE_IDS as readonly string[]).includes(id);
 
 export interface RoleIssue {
   severity: "error" | "warning";
@@ -96,25 +96,4 @@ export function validateRolesConfig(input: unknown, catalog?: ProviderCatalogDat
     overrides: Object.fromEntries(Object.entries(config.overrides).filter(([id]) => isBuiltin(id) || ids.has(id))),
   };
   return { ok: !issues.some((i) => i.severity === "error"), issues, roles: resolveRoles(usable) };
-}
-
-/** Immutable edits. Each returns a new config; callers validate before saving. */
-export function setCandidates(config: RolesConfig, roleId: string, candidates: Candidate[]): RolesConfig {
-  const base = rolesConfig.parse(config);
-  if (!isBuiltin(roleId)) {
-    return { ...base, custom: base.custom.map((r) => (r.id === roleId ? { ...r, candidates } : r)) };
-  }
-  return { ...base, overrides: { ...base.overrides, [roleId]: { ...base.overrides[roleId], candidates } } };
-}
-
-export function addCustomRole(config: RolesConfig, role: Omit<RoleDefinition, "kind">): RolesConfig {
-  const base = rolesConfig.parse(config);
-  const custom = roleDefinition.parse({ ...role, kind: "custom" });
-  return { ...base, custom: [...base.custom, custom as (typeof base.custom)[number]] };
-}
-
-export function removeCustomRole(config: RolesConfig, roleId: string): RolesConfig {
-  const base = rolesConfig.parse(config);
-  const overrides = Object.fromEntries(Object.entries(base.overrides).filter(([id]) => id !== roleId));
-  return { ...base, custom: base.custom.filter((r) => r.id !== roleId), overrides };
 }

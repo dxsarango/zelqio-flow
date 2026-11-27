@@ -11,9 +11,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { ScrollView, Text, TextInput, View } from "react-native";
 import { unwrapResult } from "../shared/rpc";
-import { addCustomRole, removeCustomRole, setCandidates } from "../server/roles";
 import type { ProviderCatalogData } from "../shared/providers";
-import { capability, rolesConfig, rolesListRpc, rolesSettingsDefinition } from "../shared/roles";
+import { addCustomRole, capability, removeCustomRole, rolesConfig, rolesListRpc, rolesSettingsDefinition, setCandidates } from "../shared/roles";
 import {
   FUNDINGS,
   MODES,

@@ -1,4 +1,5 @@
 import type { PaseoApi } from "@getpaseo/client";
+import { relative, isAbsolute, sep } from "node:path";
 import type { AgentPort, AgentSnapshot } from "./run-manager";
 
 type TimelineEntry = { item?: { type?: string; text?: string; name?: string } };
@@ -12,17 +13,58 @@ function entriesOf(payload: unknown): TimelineEntry[] {
 export function paseoAgentPort(api: () => PaseoApi): AgentPort {
   return {
     async create(input) {
-      const handle = await api().agents.create({
+      const options = {
         idempotencyKey: input.key,
         config: { provider: `${input.provider}/${input.model}`, ...(input.thinkingOptionId ? { thinkingOptionId: input.thinkingOptionId } : {}) },
-        cwd: input.cwd,
         prompt: input.prompt,
         clientMessageId: input.key,
+        autoArchive: false,
         title: input.title,
         metadata: input.metadata,
         ...(input.parentAgentId ? { parent: input.parentAgentId } : {}),
-      });
+      };
+      const handle = input.workspaceId
+        ? await api().workspaces.ref(input.workspaceId).agents.create(options)
+        : await api().agents.create({ ...options, cwd: input.cwd });
       return { id: handle.id };
+    },
+
+    async createWorktree(input) {
+      const workspace = await api().workspaces.create({
+        idempotencyKey: input.key,
+        title: input.branch,
+        source: {
+          kind: "worktree", action: "branch-off", cwd: input.source, baseBranch: input.baseRef,
+          refName: input.baseRef, branchName: input.branch, worktreeSlug: input.key,
+        },
+      });
+      const cwd = workspace.directory ?? (await workspace.refresh())?.workspaceDirectory;
+      if (!cwd) throw new Error("Paseo did not return a worktree directory.");
+      return { cwd, workspaceId: workspace.id };
+    },
+
+    async worktreeInactive(workspaceId, cwd, owners) {
+      const terminals = await api().workspaces.ref(workspaceId).terminals.list();
+      if (terminals.entries.length > 0) return false;
+      let cursor: string | undefined;
+      do {
+        const result = await api().agents.list({
+          filter: { includeBackground: true, includeInternal: true }, page: { limit: 100, cursor },
+        });
+        for (const { agent } of result.entries) {
+          const location = relative(cwd, agent.cwd);
+          const sameWorktree = agent.workspaceId === workspaceId ||
+            (!isAbsolute(location) && location !== ".." && !location.startsWith(".." + sep));
+          if (!sameWorktree) continue;
+          if (agent.activeTurn || agent.pendingPermissions?.length || agent.status === "running" || agent.status === "initializing" ||
+              (!owners.includes(agent.id) && agent.status !== "closed")) return false;
+        }
+        if (!result.pageInfo.hasMore) return true;
+        const next = result.pageInfo.nextCursor;
+        if (!next || next === cursor) return false;
+        cursor = next;
+      } while (cursor);
+      return false;
     },
 
     async snapshot(agentId): Promise<AgentSnapshot | null> {

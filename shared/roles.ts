@@ -35,9 +35,11 @@ export const roleDefinition = z.object({
 });
 export type RoleDefinition = z.infer<typeof roleDefinition>;
 
+const customRoleDefinition = roleDefinition.extend({ kind: z.literal("custom") });
+
 /** What the user stores: custom roles and candidate/instruction edits for built-in roles. Nothing else is editable. */
 export const rolesConfig = z.object({
-  custom: z.array(roleDefinition.extend({ kind: z.literal("custom") })).max(30).default([]),
+  custom: z.array(customRoleDefinition).max(30).default([]),
   overrides: z
     .record(
       z.string(),
@@ -46,6 +48,29 @@ export const rolesConfig = z.object({
     .default({}),
 });
 export type RolesConfig = z.input<typeof rolesConfig>;
+
+export const isBuiltinRole = (id: string): id is BuiltinRoleId => (BUILTIN_ROLE_IDS as readonly string[]).includes(id);
+
+/** Immutable edits. Each returns a new config; callers validate before saving. */
+export function setCandidates(config: RolesConfig, roleId: string, candidates: Candidate[]): RolesConfig {
+  const base = rolesConfig.parse(config);
+  if (!isBuiltinRole(roleId)) {
+    return { ...base, custom: base.custom.map((role) => (role.id === roleId ? { ...role, candidates } : role)) };
+  }
+  return { ...base, overrides: { ...base.overrides, [roleId]: { ...base.overrides[roleId], candidates } } };
+}
+
+export function addCustomRole(config: RolesConfig, role: Omit<RoleDefinition, "kind">): RolesConfig {
+  const base = rolesConfig.parse(config);
+  const custom = customRoleDefinition.parse({ ...role, kind: "custom" });
+  return { ...base, custom: [...base.custom, custom] };
+}
+
+export function removeCustomRole(config: RolesConfig, roleId: string): RolesConfig {
+  const base = rolesConfig.parse(config);
+  const overrides = Object.fromEntries(Object.entries(base.overrides).filter(([id]) => id !== roleId));
+  return { ...base, custom: base.custom.filter((role) => role.id !== roleId), overrides };
+}
 
 export const rolesListRpc = defineZelqioRpc({
   name: "roles.list",

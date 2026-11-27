@@ -6,6 +6,7 @@ import { AttemptJournal } from "./server/attempt-journal";
 import { automaticRouting } from "./server/automatic-routing";
 import { delegationTools, type ChildSummary } from "./server/delegation-tools";
 import { draftOrchestration } from "./shared/orchestration";
+import { GitDelivery } from "./server/git-delivery";
 import { paseoAgentPort } from "./server/paseo-agent-port";
 import { platformPowerAdapter, PowerManager } from "./server/power-manager";
 import { paseoSnapshotSource, readCatalog } from "./server/providers";
@@ -52,6 +53,10 @@ export default function contribute(server: PluginServerContext) {
   const settings = registerZelqioSettings(server);
   server.registerSettings(draftPreference);
   const rolesStore = server.registerSettings(rolesSettingsDefinition);
+  const readSettings = async () => {
+    const saved = await settings.read();
+    return saved.status === "ready" ? saved.values : null;
+  };
   const readRoles = async () => {
     const saved = await rolesStore.read();
     return saved.status === "ready" ? saved.values : {};
@@ -62,6 +67,7 @@ export default function contribute(server: PluginServerContext) {
     port: paseoAgentPort(api),
     store: new VersionedStore({ dir: directory, name: "runs", version: 1, schema: runsState, defaults: () => ({ runs: [] }) }),
     attempts: new AttemptJournal(directory),
+    git: new GitDelivery(directory, undefined, undefined, undefined, readSettings),
     readRoles,
     // Test-only overrides; production keeps the defaults.
     recheckMs: Number(process.env.ZELQIO_RECHECK_MS) || undefined,
@@ -75,28 +81,19 @@ export default function contribute(server: PluginServerContext) {
       return catalog;
     },
     readUsage: () => usage.read(() => api().providers.listUsage()).catch(() => null),
-    readSettings: async () => {
-      const saved = await settings.read();
-      return saved.status === "ready" ? saved.values : null;
-    },
+    readSettings,
   });
 
   const routeAutomatically = automaticRouting({
     readRoles,
     readCatalog: async () => readCatalog(paseoSnapshotSource(api())),
     readUsage: () => usage.read(() => api().providers.listUsage()).catch(() => null),
-    readSettings: async () => {
-      const saved = await settings.read();
-      return saved.status === "ready" ? saved.values : null;
-    },
+    readSettings,
   });
 
   const power = new PowerManager({
     adapter: platformPowerAdapter(),
-    enabled: async () => {
-      const saved = await settings.read();
-      return saved.status === "ready" && saved.values.power.preventSleep;
-    },
+    enabled: async () => (await readSettings())?.power.preventSleep ?? false,
   });
   const syncPower = async () => { await power.sync(await runs.hasWork()); };
 
@@ -135,10 +132,10 @@ export default function contribute(server: PluginServerContext) {
   handleZelqio(server, usageListRpc, (_input, { paseo }) => usage.read(() => remember(paseo).providers.listUsage()));
   handleZelqio(server, routingPreviewRpc, async (input, { paseo }) => {
     remember(paseo);
-    const saved = await settings.read();
-    if (saved.status !== "ready") throw new ZelqioError("unavailable", "Routing preferences are unavailable.");
+    const preferences = await readSettings();
+    if (!preferences) throw new ZelqioError("unavailable", "Routing preferences are unavailable.");
     const catalog = await readCatalog(paseoSnapshotSource(paseo));
-    return previewRouting(input, catalog, saved.values, Date.now(), await readRoles());
+    return previewRouting(input, catalog, preferences, Date.now(), await readRoles());
   });
   handleZelqio(server, rolesListRpc, async () => ({ roles: resolveRoles(await readRoles()) }));
 
