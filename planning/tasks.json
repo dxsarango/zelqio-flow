@@ -2532,11 +2532,30 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Ejercita reinicio, colisión, datos obsoletos y fallos en fixtures sin efectos ni credenciales",
-      "status": "in_progress",
-      "evidence": [],
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "bce9c3749546a5f5adc7919361f7b5f6380cc41f",
+          "date": "2026-11-26",
+          "notes": "321 pruebas verificadas antes del PR",
+          "limitations": "Fixtures sin efectos ni credenciales; cubre los componentes puros existentes"
+        },
+        {
+          "kind": "ci",
+          "command": "checks ci (3 sistemas) y planning del PR 51",
+          "result": "PASS",
+          "sha": "f3cff6dca3e755e483a749502e128921a7bb3933",
+          "date": "2026-11-26",
+          "notes": "Integrado con squash y match-head-commit tras update-branch",
+          "limitations": "Sin revision independiente; riesgo bajo"
+        }
+      ],
       "owner": "orchestrator",
       "branch": "test/s09-t08-component-regression",
-      "pr": null,
+      "pr": 51,
       "blockers": []
     },
     {
