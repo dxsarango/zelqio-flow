@@ -16,7 +16,7 @@ const START = Date.parse("2026-11-27T12:00:00Z");
 function provider(id: string): ProviderCatalogData["providers"][number] {
   return {
     id, label: id, status: "ready", enabled: true, source: "builtin",
-    models: [{ id: `${id}-model`, label: id, isDefault: true, selectable: true, thinkingOptions: [] }],
+    models: [{ id: `${id}-model`, label: id, isDefault: true, selectable: true, thinkingOptions: [{ id: "low", label: "Low", isDefault: false }, { id: "high", label: "High", isDefault: true }] }],
     modes: [],
   };
 }
@@ -424,5 +424,14 @@ describe("run manager: real orchestration loop over native agents", () => {
     await manager.tick();
     expect(paseo.created[1].prompt).not.toContain("abcd1234efgh5678ijkl");
     expect(paseo.created[1].prompt).toContain("[redacted]");
+  });
+
+  it("chooses a reasoning level for the model from the request and the strategy", async () => {
+    use("alpha", "primary");
+    const manager = build();
+    await manager.submit({ prompt: "Fix a typo", cwd: "/work/repo" });
+    expect(paseo.created[0].thinkingOptionId).toBe("low");
+    await manager.submit({ prompt: "Redesign the module", cwd: "/work/repo", complexity: "high" });
+    expect(paseo.created[1].thinkingOptionId).toBe("high");
   });
 });

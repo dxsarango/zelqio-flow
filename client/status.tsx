@@ -7,6 +7,7 @@ import { ScrollView, Text, View } from "react-native";
 import type { CatalogProvider } from "../shared/providers";
 import { unwrapResult } from "../shared/rpc";
 import { STRATEGIES, type ZelqioSettings } from "../shared/settings";
+import { runsCancelRpc, runsListRpc } from "../shared/runs";
 import { statusRpc } from "../shared/status";
 import { displayedUsageStatus, usageListRpc } from "../shared/usage";
 import { useCatalog, useZelqioSettings } from "./settings-common";
@@ -144,6 +145,55 @@ function UsageSection() {
   );
 }
 
+function RunsSection() {
+  const { t, locale } = useTranslation(messages);
+  const read = useRpc(runsListRpc);
+  const stop = useRpc(runsCancelRpc);
+  const [failed, setFailed] = useState(false);
+  const runs = useQuery({
+    queryKey: ["zelqio.runs"],
+    queryFn: async () => unwrapResult(await read({})),
+    refetchInterval: 10_000,
+    retry: false,
+  });
+  const dates = new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" });
+  const list = [...(runs.data?.runs ?? [])].sort((a, b) => b.createdAt - a.createdAt).slice(0, 20);
+  return (
+    <SettingsSection title={t("runs.title")} testID="zelqio-runs">
+      {runs.isPending ? <SettingsRow label={t("runs.loading")} /> : null}
+      {runs.isError ? <SettingsRow label={t("runs.unavailable")} /> : null}
+      {runs.data && list.length === 0 ? <SettingsRow label={t("runs.empty")} /> : null}
+      {list.map((run) => {
+        const using = run.current ? t("runs.using", { provider: run.current.provider, model: run.current.model }) : "";
+        const waiting = run.status === "waiting_quota" && run.resumeAt !== null
+          ? t("runs.waitingUntil", { at: dates.format(new Date(run.resumeAt)) })
+          : "";
+        const detail = run.status === "delivered" ? (run.result ?? "") : run.status === "failed" ? (run.error ?? "") : "";
+        const hint = [t(`runs.status.${run.status}`), using, waiting, run.attention ? t("runs.takeover") : "", detail.slice(0, 200)]
+          .filter(Boolean).join(" · ");
+        const active = run.status === "queued" || run.status === "running" || run.status === "waiting_quota";
+        return active ? (
+          <SettingsAction
+            key={run.id}
+            label={run.prompt.slice(0, 80)}
+            hint={hint}
+            actionLabel={t("runs.cancel")}
+            onPress={() => {
+              setFailed(false);
+              stop({ id: run.id }).then((result) => { unwrapResult(result); void runs.refetch(); }, () => setFailed(true));
+            }}
+          />
+        ) : (
+          <SettingsRow key={run.id} label={run.prompt.slice(0, 80)} hint={hint} />
+        );
+      })}
+      {failed ? <SettingsRow label={t("runs.cancelFailed")} /> : null}
+      <SettingsAction label={t("runs.title")} actionLabel={t("runs.refresh")} disabled={runs.isFetching} onPress={() => void runs.refetch()} />
+      <SettingsRow label={t("runs.fundingNote")} />
+    </SettingsSection>
+  );
+}
+
 export function StatusScreen({ theme, layout }: PluginScreenProps) {
   const { t } = useTranslation(messages);
   const getStatus = useRpc(statusRpc);
@@ -160,6 +210,7 @@ export function StatusScreen({ theme, layout }: PluginScreenProps) {
             ? t(status.data.effectsEnabled ? "resources.selectionEnabled" : "resources.selectionInactive")
             : t(status.isError ? "status.unavailable" : "status.loading")}
         </Text>
+        <RunsSection />
         <ProvidersSection />
         <UsageSection />
         <RoutingPreferences />

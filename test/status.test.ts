@@ -5,10 +5,10 @@ import { statusRpc } from "../shared/status";
 import { createMockServer } from "./mock-sdk";
 
 describe("status", () => {
-  it("reports Foundation with no effects enabled", () => {
+  it("reports the advanced level with the run loop enabled", () => {
     const status = getStatus();
-    expect(status.level).toBe("foundation");
-    expect(status.effectsEnabled).toBe(false);
+    expect(status.level).toBe("advanced");
+    expect(status.effectsEnabled).toBe(true);
   });
 
   it("is served through the plugin entry as a successful envelope", async () => {

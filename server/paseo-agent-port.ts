@@ -14,7 +14,7 @@ export function paseoAgentPort(api: () => PaseoApi): AgentPort {
     async create(input) {
       const handle = await api().agents.create({
         idempotencyKey: input.key,
-        config: { provider: `${input.provider}/${input.model}` },
+        config: { provider: `${input.provider}/${input.model}`, ...(input.thinkingOptionId ? { thinkingOptionId: input.thinkingOptionId } : {}) },
         cwd: input.cwd,
         prompt: input.prompt,
         clientMessageId: input.key,
