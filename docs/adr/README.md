@@ -5,4 +5,5 @@ Registrar contexto, alternativas, decisión, evidencia POC, consecuencias y esta
 [Propuesta consolidada para G0](../evidence/G0-decision.md) y [ADR de Foundation aprobado condicionalmente](G0-supervised-scope.md). Registrar las decisiones aprobadas, las capacidades que quedan deshabilitadas y los casos que requieren verificación adicional.
 
 - [S04 · Autoridad para seleccionar modelos](S04-routing-authority.md)
+- [S04 · Políticas de financiación](S04-funding-policies.md) (propuesta; Estricta sigue vigente)
 - [S00-T07 · Alternativa verificable para la aprobación humana](S00-T07-human-approval-alternative.md) (propuesta)
