@@ -133,9 +133,9 @@ export default function contribute(server: PluginServerContext) {
   });
 
   // A finished or failed turn is the moment a limit shows up, so react to it right away.
-  const removeHook = server.addHook("agent.turn.after", async ({ agent }, { paseo }) => {
+  const removeHook = server.addHook("agent.turn.after", async ({ agent, outcome }, { paseo }) => {
     await ready(paseo);
-    await runs.onAgentUpdate(agent.id);
+    await runs.onAgentUpdate(agent.id, outcome.kind === "failed" ? { error: outcome.error } : undefined);
   });
   const timer = setInterval(() => {
     if (latest) void runs.tick().catch(() => undefined);

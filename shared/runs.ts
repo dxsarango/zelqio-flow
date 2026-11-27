@@ -31,6 +31,8 @@ export const runRecord = z.strictObject({
   pending: z.strictObject({ kind: z.enum(["create", "resume"]), key: reference }).nullable(),
   /** The last error text already handled, so the same failure is not processed twice. */
   handledError: z.string().nullable(),
+  /** When the user last wrote to the agent as of the stop. A later message means a person took over. */
+  userBaseline: epoch.nullable(),
   attention: z.boolean(),
   result: z.string().nullable(),
   error: z.string().nullable(),

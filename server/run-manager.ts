@@ -6,7 +6,7 @@ import type { ZelqioSettings } from "../shared/settings";
 import type { UsageSnapshot } from "../shared/usage";
 import type { AttemptJournal } from "./attempt-journal";
 import { deriveModelFacts, providerQuotas } from "./model-facts";
-import { classifyFailure } from "./quota-signal";
+import { classifyFailure, limitFromReply, redactSecrets } from "./quota-signal";
 import { resolveRoles } from "./roles";
 import { route, type RoutingTarget } from "./router";
 import type { VersionedStore } from "./store";
@@ -17,6 +17,8 @@ export interface AgentSnapshot {
   lastError: string | null;
   pendingPermissions: number;
   archived: boolean;
+  /** When the user last wrote to the agent, in epoch milliseconds. Used to notice that a person took over. */
+  lastUserMessageAt: number | null;
 }
 
 export interface CreateAgentInput {
@@ -78,10 +80,10 @@ function handoffPrompt(run: RunRecord, activity: string): string {
     "Inspect the current state of the workspace first and do not redo work that is already done.",
     "",
     "Original task:",
-    run.prompt,
+    redactSecrets(run.prompt),
     "",
     "Recent activity of the previous agent (may be incomplete):",
-    activity || "(not available)",
+    redactSecrets(activity) || "(not available)",
   ].join("\n");
 }
 
@@ -135,6 +137,7 @@ export class RunManager {
         resumeAt: null,
         pending: null,
         handledError: null,
+        userBaseline: null,
         attention: false,
         result: null,
         error: null,
@@ -164,7 +167,7 @@ export class RunManager {
         id, prompt: clip(prompt, 20_000) ?? ADOPTED_PROMPT, role: input.role ?? "developer", capability: "implement", cwd: input.cwd,
         status: "running",
         current: { agentId: input.agentId, provider: input.provider, model: input.model, startedAt: now },
-        attempts: 1, suspended: {}, resumeAt: null, pending: null, handledError: null, attention: false, result: null, error: null,
+        attempts: 1, suspended: {}, resumeAt: null, pending: null, handledError: null, userBaseline: null, attention: false, result: null, error: null,
         history: [{ at: now, kind: "started", provider: input.provider, model: input.model, agentId: input.agentId, note: "adopted" }],
         createdAt: now, updatedAt: now,
       };
@@ -228,10 +231,10 @@ export class RunManager {
   }
 
   /** Reconciles the run that owns this agent, if any. Safe to call for every Paseo agent update. */
-  onAgentUpdate(agentId: string): Promise<void> {
+  onAgentUpdate(agentId: string, hint?: { error?: { message: string; code?: string | null } }): Promise<void> {
     return this.exclusive(async () => {
       const run = (await this.list()).find(entry => entry.current?.agentId === agentId && entry.status === "running");
-      if (run) await this.reconcile(run);
+      if (run) await this.reconcile(run, hint);
     });
   }
 
@@ -331,7 +334,7 @@ export class RunManager {
     }
   }
 
-  private async reconcile(run: RunRecord): Promise<void> {
+  private async reconcile(run: RunRecord, hint?: { error?: { message: string; code?: string | null } }): Promise<void> {
     if (!run.current) return;
     const snapshot = await this.deps.port.snapshot(run.current.agentId);
     if (!snapshot || snapshot.archived || snapshot.status === "closed") {
@@ -349,25 +352,31 @@ export class RunManager {
       await this.deps.port.send(run.current.agentId, "The usage limit was restored. Continue the task from where you stopped.", run.pending.key);
       return;
     }
-    if (snapshot.status === "idle" && !snapshot.lastError) {
-      const reply = clip(await this.deps.port.lastReply(run.current.agentId), MAX_REPLY);
+    if (snapshot.status === "idle" && !snapshot.lastError && !hint?.error) {
+      const full = await this.deps.port.lastReply(run.current.agentId);
+      const limit = limitFromReply(full, this.clock());
+      if (limit && full !== run.handledError) {
+        await this.exhausted({ ...run, userBaseline: snapshot.lastUserMessageAt }, full ?? "", limit.resetsAt, false, true);
+        return;
+      }
+      const reply = clip(full, MAX_REPLY);
       await this.deps.attempts.settle({ key: `${run.id}-a${run.attempts}`, outcome: "succeeded", evidenceRef: "agent-idle" }).catch(() => undefined);
       await this.save(this.note({ ...run, status: "delivered", result: reply ?? "The agent finished without a final message.", attention: false, pending: null }, "delivered", { agentId: run.current.agentId }));
       return;
     }
-    const message = snapshot.lastError ?? "The agent reported an error.";
+    const message = snapshot.lastError ?? hint?.error?.message ?? "The agent reported an error.";
     if (message === run.handledError) return;
-    const signal = classifyFailure(message, this.clock());
+    const signal = classifyFailure(message, this.clock(), hint?.error?.code);
     if (signal.kind === "other") {
       await this.deps.attempts.settle({ key: `${run.id}-a${run.attempts}`, outcome: "failed", evidenceRef: "agent-error" }).catch(() => undefined);
       await this.save(this.note({ ...run, status: "failed", error: clip(message, 300), handledError: message, attention: false }, "failed", { agentId: run.current.agentId }));
       return;
     }
-    await this.exhausted(run, message, signal.resetsAt, signal.kind === "rate_limit");
+    await this.exhausted({ ...run, userBaseline: snapshot.lastUserMessageAt }, message, signal.resetsAt, signal.kind === "rate_limit");
   }
 
   /** The provider of the current agent reached a limit: keep the work, then reassign or wait. */
-  private async exhausted(run: RunRecord, message: string, hintedReset: number | undefined, transient: boolean): Promise<void> {
+  private async exhausted(run: RunRecord, message: string, hintedReset: number | undefined, transient: boolean, fromReply = false): Promise<void> {
     const current = run.current!;
     const now = this.clock();
     if (run.prompt === ADOPTED_PROMPT) {
@@ -382,9 +391,13 @@ export class RunManager {
     }
     const quotas = providerQuotas(ctx.usage, now);
     const reportedReset = quotas.get(current.provider)?.resetsAt;
-    const resumeAt = hintedReset ?? reportedReset ?? now + (transient ? Math.min(this.defaultWaitMs, 2 * 60_000) : this.defaultWaitMs);
+    const base = hintedReset ?? reportedReset ?? now + (transient ? Math.min(this.defaultWaitMs, 2 * 60_000) : this.defaultWaitMs);
+    // A short margin after the reset, so the first request is not sent at the very second the window opens.
+    const resumeAt = base + (hintedReset !== undefined || reportedReset !== undefined ? 30_000 : 0);
     const suspended = { ...run.suspended, [current.provider]: now };
-    let working = this.note({ ...run, suspended, handledError: message }, "exhausted", { provider: current.provider, model: current.model, agentId: current.agentId });
+    let working = this.note({ ...run, suspended, handledError: message }, "exhausted", {
+      provider: current.provider, model: current.model, agentId: current.agentId, ...(fromReply ? { note: "from the last reply" } : {}),
+    });
     await this.deps.attempts.settle({ key: `${run.id}-a${run.attempts}`, outcome: "failed", evidenceRef: "quota" }).catch(() => undefined);
 
     if (run.attempts < this.maxAttempts) {
@@ -409,6 +422,20 @@ export class RunManager {
     const current = run.current;
     if (!current) return;
     const now = this.clock();
+    const snapshot = await this.deps.port.snapshot(current.agentId).catch(() => null);
+    if (!snapshot || snapshot.archived || snapshot.status === "closed") {
+      await this.save(this.note({ ...run, status: "failed", error: "The agent is no longer available.", resumeAt: null }, "failed", { agentId: current.agentId }));
+      return;
+    }
+    if (snapshot.lastUserMessageAt !== null && run.userBaseline !== null && snapshot.lastUserMessageAt > run.userBaseline) {
+      // A person wrote to the agent after it stopped: they took over, so the run no longer acts on it.
+      await this.save(this.note({ ...run, status: "cancelled", resumeAt: null }, "cancelled", { agentId: current.agentId, note: "the user took over" }));
+      return;
+    }
+    if (snapshot.pendingPermissions > 0 || snapshot.status === "running") {
+      await this.save({ ...run, resumeAt: now + this.recheckMs, attention: snapshot.pendingPermissions > 0 });
+      return;
+    }
     let ctx;
     try {
       ctx = await this.context();

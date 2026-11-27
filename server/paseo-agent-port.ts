@@ -33,11 +33,12 @@ export function paseoAgentPort(api: () => PaseoApi): AgentPort {
         lastError: typeof agent.lastError === "string" && agent.lastError ? agent.lastError : null,
         pendingPermissions: agent.pendingPermissions?.length ?? 0,
         archived: Boolean(agent.archivedAt),
+        lastUserMessageAt: typeof agent.lastUserMessageAt === "string" ? Date.parse(agent.lastUserMessageAt) || null : null,
       };
     },
 
     async send(agentId, text, messageId) {
-      await api().agents.ref(agentId).send(text, { messageId });
+      await api().agents.ref(agentId).send(text, { messageId, activeTurnBehavior: "queue" });
     },
 
     async lastReply(agentId) {

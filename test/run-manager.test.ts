@@ -35,7 +35,7 @@ class FakePaseo implements AgentPort {
     this.created.push(input);
     const id = `agent-${this.agents.size + 1}`;
     this.byKey.set(input.key, id);
-    this.agents.set(id, { id, status: "running", lastError: null, pendingPermissions: 0, archived: false, provider: input.provider, model: input.model, prompt: input.prompt, sent: [] });
+    this.agents.set(id, { id, status: "running", lastError: null, pendingPermissions: 0, archived: false, lastUserMessageAt: null, provider: input.provider, model: input.model, prompt: input.prompt, sent: [] });
     return { id };
   }
   async snapshot(id: string) { return this.agents.get(id) ?? null; }
@@ -157,14 +157,14 @@ describe("run manager: real orchestration loop over native agents", () => {
     paseo.fail("agent-1", "Usage limit reached. Try again in 2 hours.");
     await manager.tick();
     let [run] = await manager.list();
-    expect(run).toMatchObject({ status: "waiting_quota", resumeAt: START + 2 * HOUR });
+    expect(run).toMatchObject({ status: "waiting_quota", resumeAt: START + 2 * HOUR + 30_000 });
     expect(paseo.created).toHaveLength(1);
 
     now = START + HOUR;
     await manager.tick();
     expect(paseo.agents.get("agent-1")!.sent).toHaveLength(0);
 
-    now = START + 2 * HOUR + 1000;
+    now = START + 2 * HOUR + 31_000;
     await manager.tick();
     await manager.tick();
     [run] = await manager.list();
@@ -185,9 +185,9 @@ describe("run manager: real orchestration loop over native agents", () => {
     usage = { status: "available", reports: [report("alpha", 0, "exhausted", START + 2 * HOUR)] };
     paseo.fail("agent-1", "Usage limit reached.");
     await manager.tick();
-    expect((await manager.list())[0]).toMatchObject({ status: "waiting_quota", resumeAt: START + 2 * HOUR });
+    expect((await manager.list())[0]).toMatchObject({ status: "waiting_quota", resumeAt: START + 2 * HOUR + 30_000 });
 
-    now = START + 2 * HOUR + 1000;
+    now = START + 2 * HOUR + 31_000;
     usage = { status: "available", reports: [report("alpha", 0, "exhausted", START + 3 * HOUR, now)] };
     await manager.tick();
     let [run] = await manager.list();
@@ -195,7 +195,7 @@ describe("run manager: real orchestration loop over native agents", () => {
     expect(paseo.agents.get("agent-1")!.sent).toHaveLength(0);
     expect(run.resumeAt).toBeGreaterThan(now);
 
-    now = START + 3 * HOUR + 1000;
+    now = START + 3 * HOUR + 31_000;
     usage = { status: "available", reports: [report("alpha", 80, "fresh", null, now)] };
     await manager.tick();
     [run] = await manager.list();
@@ -295,5 +295,64 @@ describe("run manager: real orchestration loop over native agents", () => {
     const [run] = await manager.list();
     expect(run.current?.provider).toBe("beta");
     expect(paseo.created.at(-1)?.prompt).toContain("Refactor the parser");
+  });
+
+  it("reads a limit that arrives as the last reply of a finished turn, not as an error", async () => {
+    use("alpha", "primary");
+    use("beta", "auxiliary");
+    const manager = build();
+    await submit(manager);
+    paseo.finish("agent-1", "You've hit your limit \u00b7 resets in 3 hours");
+    await manager.tick();
+    const [run] = await manager.list();
+    expect(run.status).toBe("running");
+    expect(run.current?.provider).toBe("beta");
+    expect(run.history.map(entry => entry.kind)).toContain("exhausted");
+  });
+
+  it("does not mistake a long normal answer that mentions limits for a limit", async () => {
+    use("alpha", "primary");
+    const manager = build();
+    await submit(manager);
+    paseo.finish("agent-1", `Implemented the endpoint. ${"The rate limit and usage limit settings are documented. ".repeat(12)}`);
+    await manager.tick();
+    expect((await manager.list())[0].status).toBe("delivered");
+  });
+
+  it("uses the structured error from the turn that failed, including its code", async () => {
+    use("alpha", "primary");
+    const manager = build();
+    await submit(manager);
+    paseo.agents.get("agent-1")!.status = "error";
+    await manager.onAgentUpdate("agent-1", { error: { message: "Request failed", code: "usage_limit_exceeded" } });
+    expect((await manager.list())[0].status).toBe("waiting_quota");
+  });
+
+  it("stops acting when the user wrote to the agent after the limit", async () => {
+    use("alpha", "primary");
+    const manager = build();
+    await submit(manager);
+    paseo.agents.get("agent-1")!.lastUserMessageAt = START - 1000;
+    paseo.fail("agent-1", "Usage limit reached. Try again in 1 hour.");
+    await manager.tick();
+    expect((await manager.list())[0].status).toBe("waiting_quota");
+    paseo.agents.get("agent-1")!.lastUserMessageAt = START + 10 * 60_000;
+    now = START + HOUR + 60_000;
+    await manager.tick();
+    const [run] = await manager.list();
+    expect(run.status).toBe("cancelled");
+    expect(run.history.at(-1)?.note).toMatch(/took over/);
+    expect(paseo.agents.get("agent-1")!.sent).toHaveLength(0);
+  });
+
+  it("removes credentials before passing conversation text to another provider", async () => {
+    use("alpha", "primary");
+    use("beta", "auxiliary");
+    const manager = build();
+    await manager.submit({ prompt: "Use token=abcd1234efgh5678ijkl to call the API", cwd: "/work/repo" });
+    paseo.fail("agent-1", "Usage limit reached. Try again in 1 hour.");
+    await manager.tick();
+    expect(paseo.created[1].prompt).not.toContain("abcd1234efgh5678ijkl");
+    expect(paseo.created[1].prompt).toContain("[redacted]");
   });
 });
