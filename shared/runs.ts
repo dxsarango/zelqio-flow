@@ -52,7 +52,7 @@ export const runRecord = z.strictObject({
   /** When a waiting run should be checked again. */
   resumeAt: epoch.nullable(),
   /** A side effect started but not confirmed; reconciled on restart so it never runs twice. */
-  pending: z.strictObject({ kind: z.enum(["create", "resume"]), key: reference }).nullable(),
+  pending: z.strictObject({ kind: z.enum(["create", "resume", "report"]), key: reference }).nullable(),
   /** The last error text already handled, so the same failure is not processed twice. */
   handledError: z.string().nullable(),
   /** When the user last wrote to the agent as of the stop. A later message means a person took over. */

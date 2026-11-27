@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { ZelqioError } from "../shared/errors";
 import type { ProviderCatalogData } from "../shared/providers";
+import type { RolesConfig } from "../shared/roles";
 import { runsState, type RunGitPlan, type RunRecord, type RunsState } from "../shared/runs";
 import type { ZelqioSettings } from "../shared/settings";
 import type { UsageSnapshot } from "../shared/usage";
@@ -46,6 +47,7 @@ export interface AgentPort {
   create(input: CreateAgentInput): Promise<{ id: string }>;
   snapshot(agentId: string): Promise<AgentSnapshot | null>;
   send(agentId: string, text: string, messageId: string): Promise<void>;
+  stop(agentId: string): Promise<void>;
   /** The final answer of the latest turn, if any. */
   lastReply(agentId: string): Promise<string | null>;
   /** A short transcript tail used to brief a replacement agent. */
@@ -68,6 +70,8 @@ export interface RunManagerDeps {
   readCatalog(): Promise<ProviderCatalogData>;
   readUsage(): Promise<UsageSnapshot | null>;
   readSettings(): Promise<ZelqioSettings | null>;
+  /** The user's role edits and custom roles. Built-in roles apply when absent. */
+  readRoles?(): Promise<RolesConfig>;
   clock?: () => number;
   /** Runs that may be active at once. The rest wait in the queue. */
   maxConcurrent?: number;
@@ -144,6 +148,11 @@ export class RunManager {
     return next;
   }
 
+  /** True while any run is running or waiting for a quota that is expected to come back. */
+  async hasWork(): Promise<boolean> {
+    return (await this.list()).some(run => run.status === "running" || run.status === "waiting_quota");
+  }
+
   list(): Promise<RunRecord[]> {
     return this.deps.store.update(state => ({ result: state.runs }));
   }
@@ -177,7 +186,7 @@ export class RunManager {
         createdAt: now,
         updatedAt: now,
       };
-      if (!resolveRoles({}).some(role => role.id === run.role)) throw new ZelqioError("invalid_input", `Unknown role: ${run.role}`);
+      if (!resolveRoles(await this.roles()).some(role => role.id === run.role)) throw new ZelqioError("invalid_input", `Unknown role: ${run.role}`);
       await this.save(run, true);
       await this.startQueued();
       return (await this.find(run.id)) ?? run;
@@ -215,14 +224,11 @@ export class RunManager {
     return this.exclusive(async () => {
       const run = await this.find(id);
       if (!run) throw new ZelqioError("not_found", "Run not found.");
-      if (run.status === "delivered" || run.status === "failed" || run.status === "cancelled") return run;
-      const next = this.note({ ...run, status: "cancelled", resumeAt: null }, "cancelled");
-      await this.save(next);
+      if (TERMINAL.has(run.status)) return run;
       for (const child of (await this.list()).filter(entry => entry.parentRunId === run.id && !TERMINAL.has(entry.status))) {
-        await this.save(this.note({ ...child, status: "cancelled", resumeAt: null }, "cancelled", { note: "the coordinator run was stopped" }));
+        await this.stopRun(child, "the coordinator run was stopped");
       }
-      await this.advanceDelivery(next);
-      return (await this.find(id)) ?? next;
+      return this.stopRun(run);
     });
   }
 
@@ -247,7 +253,7 @@ export class RunManager {
         if (!children.some(child => child.id === id)) throw new ZelqioError("invalid_input", `Unknown task to depend on: ${id}`);
       }
       const role = input.role ?? "developer";
-      if (!resolveRoles({}).some(entry => entry.id === role)) throw new ZelqioError("invalid_input", `Unknown role: ${role}`);
+      if (!resolveRoles(await this.roles()).some(entry => entry.id === role)) throw new ZelqioError("invalid_input", `Unknown role: ${role}`);
       const now = this.clock();
       const child: RunRecord = {
         id: `run-${randomUUID()}`, prompt: input.prompt, role, capability: input.capability ?? "implement",
@@ -279,10 +285,7 @@ export class RunManager {
       const child = parent ? runs.find(run => run.id === childId && run.parentRunId === parent.id) : undefined;
       if (!child) throw new ZelqioError("not_found", "Delegated task not found.");
       if (TERMINAL.has(child.status)) return child;
-      const next = this.note({ ...child, status: "cancelled", resumeAt: null }, "cancelled");
-      await this.save(next);
-      await this.advanceDelivery(next);
-      return (await this.find(childId)) ?? next;
+      return this.stopRun(child);
     });
   }
 
@@ -321,7 +324,7 @@ export class RunManager {
         }
         if (run.status !== "running" && run.status !== "waiting_quota") continue;
         try {
-          if (run.pending?.kind === "create") await this.launch(run, null, undefined, true);
+          if (run.pending?.kind === "create" && (!run.current || run.gitPlan)) await this.launch(run, null, undefined, true);
           const entry = (await this.deps.attempts.read()).entries.find(item => item.key === `${run.id}-a${run.attempts}`);
           if (entry?.status === "ambiguous") {
             await this.deps.attempts.resolveAmbiguous({ key: entry.key, outcome: entry.agentRef ? "failed" : "not_launched", evidenceRef: "restart-reconciled" }).catch(() => undefined);
@@ -352,6 +355,23 @@ export class RunManager {
     return (await this.list()).find(run => run.id === id);
   }
 
+  private async stopRun(run: RunRecord, note?: string): Promise<RunRecord> {
+    // Keep its slot and writer reservation until the native session acknowledges the stop.
+    if (run.parentRunId && run.current && run.status === "running") {
+      await this.deps.port.stop(run.current.agentId);
+    }
+    const unconfirmedPlacement = run.gitPlan && run.pending?.kind === "create";
+    const next = this.note({ ...run, status: "cancelled", resumeAt: null, pending: null, attention: false,
+      ...(unconfirmedPlacement ? { delivery: { state: "blocked" as const, reason: "operation_uncertain", retained: true } } : {}),
+    }, "cancelled", { note });
+    await this.save(next);
+    if (run.attempts > 0) {
+      await this.deps.attempts.settle({ key: `${run.id}-a${run.attempts}`, outcome: "failed", evidenceRef: "cancelled" }).catch(() => undefined);
+    }
+    await this.advanceDelivery(next);
+    return (await this.find(run.id)) ?? next;
+  }
+
   private async save(run: RunRecord, isNew = false): Promise<void> {
     const updated = { ...run, updatedAt: this.clock(), history: run.history.slice(-MAX_HISTORY) };
     await this.deps.store.update(state => {
@@ -366,10 +386,14 @@ export class RunManager {
     return { ...run, history: [...run.history, { at: this.clock(), kind, ...extra }] };
   }
 
+  private async roles(): Promise<RolesConfig> {
+    return (await this.deps.readRoles?.().catch(() => ({}))) ?? {};
+  }
+
   private async context() {
-    const [settings, catalog, usage] = await Promise.all([this.deps.readSettings(), this.deps.readCatalog(), this.deps.readUsage()]);
+    const [settings, catalog, usage, roles] = await Promise.all([this.deps.readSettings(), this.deps.readCatalog(), this.deps.readUsage(), this.roles()]);
     if (!settings) throw new ZelqioError("unavailable", "Zelqio settings are unavailable.");
-    return { settings, catalog, usage };
+    return { settings, catalog, usage, roles };
   }
 
   private choose(
@@ -377,7 +401,7 @@ export class RunManager {
     ctx: Awaited<ReturnType<RunManager["context"]>>,
     options: { continuity?: RoutingTarget; suspended?: RunRecord["suspended"] } = {},
   ) {
-    const role = resolveRoles({}).find(entry => entry.id === run.role);
+    const role = resolveRoles(ctx.roles).find(entry => entry.id === run.role);
     if (!role) throw new ZelqioError("invalid_input", `Unknown role: ${run.role}`);
     const models = deriveModelFacts({
       catalog: ctx.catalog, settings: ctx.settings, usage: ctx.usage, now: this.clock(), suspended: options.suspended ?? run.suspended,
@@ -430,7 +454,7 @@ export class RunManager {
           other.id !== next.id && !other.gitPlan && other.cwd === next.cwd && WRITERS.has(other.capability)
           && (this.deps.git ? other.id !== next.parentRunId : other.parentRunId !== null)
           && (other.status === "running" || other.status === "waiting_quota"))) continue;
-        if (this.deps.git && !prepared.gitPlan && WRITERS.has(next.capability) && parent?.current) {
+        if (parent?.gitPlan?.cwd && !prepared.gitPlan && WRITERS.has(next.capability) && parent.current) {
           const coordinator = await this.deps.port.snapshot(parent.current.agentId);
           if (!coordinator || coordinator.status === "running" || coordinator.status === "initializing" || coordinator.pendingPermissions) continue;
         }
@@ -516,61 +540,45 @@ export class RunManager {
   private async reconcile(run: RunRecord, hint?: { error?: { message: string; code?: string | null } }): Promise<void> {
     if (!run.current) return;
     const snapshot = await this.deps.port.snapshot(run.current.agentId);
-    if (!snapshot || snapshot.archived || snapshot.status === "closed") {
+    const children = run.parentRunId === null ? (await this.list()).filter(entry => entry.parentRunId === run.id) : [];
+    const reportKey = `${run.id}-c`;
+    // Earlier versions used a quota-resume marker for a report.
+    const pendingReport = run.pending?.kind === "report" || (run.pending?.kind === "resume" && run.pending.key === reportKey);
+    const needsReport = children.length > 0 && (!run.reported || pendingReport);
+    const canRestoreForReport = snapshot?.status === "closed" && snapshot.restorable && needsReport;
+    if (!snapshot || snapshot.archived || (snapshot.status === "closed" && !canRestoreForReport)) {
       await this.save(this.note({ ...run, status: "failed", error: "The agent is no longer available." }, "failed", { agentId: run.current.agentId }));
       return;
     }
     if (snapshot.status === "initializing" || snapshot.status === "running") {
       const attention = snapshot.pendingPermissions > 0;
-      const confirmed = run.pending?.kind === "resume" ? { ...run, pending: null } : run;
+      const confirmed = run.pending?.kind === "resume" && !pendingReport ? { ...run, pending: null } : run;
       if (attention !== run.attention || confirmed !== run) await this.save({ ...confirmed, attention });
+      return;
+    }
+    if (pendingReport) {
+      await this.sendReport(run, children, reportKey);
       return;
     }
     if (run.pending?.kind === "resume") {
       // The resume was recorded but the agent is not running: send it again with the same message id.
-      const message = run.pending.key === run.id + "-c"
-        ? childReport((await this.list()).filter(child => child.parentRunId === run.id))
-        : "The usage limit was restored. Continue the task from where you stopped.";
-      await this.deps.port.send(run.current.agentId, message, run.pending.key);
+      await this.deps.port.send(run.current.agentId, "The usage limit was restored. Continue the task from where you stopped.", run.pending.key);
       await this.confirmResume(run);
       return;
     }
-    if (snapshot.status === "idle" && !snapshot.lastError && !hint?.error) {
+    if ((snapshot.status === "idle" || canRestoreForReport) && !snapshot.lastError && !hint?.error) {
       const full = await this.deps.port.lastReply(run.current.agentId);
       const limit = limitFromReply(full, this.clock());
       if (limit && full !== run.handledError) {
         await this.exhausted({ ...run, userBaseline: snapshot.lastUserMessageAt }, full ?? "", limit.resetsAt, false, true);
         return;
       }
-      let children = (await this.list()).filter(entry => entry.parentRunId === run.id);
-      if (this.deps.git && run.gitPlan && !run.reported) {
-        if (children.some(child => !WRITERS.has(child.capability) && child.status === "running")) return;
-        for (const child of children) {
-          if (!child.gitPlan || child.status !== "delivered") continue;
-          if (child.delivery?.state === "pending") await this.advanceDelivery(child);
-          const fresh = (await this.find(child.id)) ?? child;
-          if (fresh.delivery?.state === "no_changes" || fresh.delivery?.state === "integrated") continue;
-          const outcome = fresh.delivery?.state === "local" ? await this.deps.git.integrate(fresh, run) : fresh.delivery;
-          if (outcome) {
-            const delivered = { ...fresh, delivery: outcome };
-            await this.save(delivered);
-            if (outcome.state === "integrated") await this.advanceDelivery(delivered);
-          }
-          if (outcome?.state === "blocked") {
-            await this.save(this.note({ ...run, status: "failed", attention: true,
-              delivery: { state: "blocked", reason: outcome.reason, retained: true },
-              error: "Delegated Git integration stopped. Review the child and coordinator branches." }, "failed"));
-            return;
-          }
-        }
-        children = (await this.list()).filter(entry => entry.parentRunId === run.id);
-      }
-      if (children.some(child => !TERMINAL.has(child.status))) return; // The coordinator is waiting for its delegated tasks.
-      if (children.length > 0 && !run.reported) {
-        // Every delegated task ended: tell the coordinator once so it can integrate the results.
-        const key = `${run.id}-c`;
-        await this.save({ ...run, reported: true, pending: { kind: "resume", key } });
-        await this.deps.port.send(run.current.agentId, childReport(children), key);
+      // Integrate completed writers before waiting for dependents that need their commits.
+      const reportedChildren = needsReport ? await this.integrateChildren(run, children) : children;
+      if (!reportedChildren || reportedChildren.some(child => !TERMINAL.has(child.status))) return;
+      if (needsReport) {
+        await this.save({ ...run, pending: { kind: "report", key: reportKey } });
+        await this.sendReport(run, reportedChildren, reportKey);
         return;
       }
       const reply = clip(full, MAX_REPLY);
@@ -590,6 +598,35 @@ export class RunManager {
       return;
     }
     await this.exhausted({ ...run, userBaseline: snapshot.lastUserMessageAt }, message, signal.resetsAt, signal.kind === "rate_limit");
+  }
+
+  private async integrateChildren(run: RunRecord, children: RunRecord[]): Promise<RunRecord[] | null> {
+    const git = this.deps.git;
+    if (!git || !run.gitPlan) return children;
+    if (children.some(child => !WRITERS.has(child.capability) && child.status === "running")) return null;
+    for (const child of children) {
+      if (!child.gitPlan || child.status !== "delivered") continue;
+      if (child.delivery?.state === "pending") await this.advanceDelivery(child);
+      const fresh = (await this.find(child.id)) ?? child;
+      if (fresh.delivery?.state === "no_changes" || fresh.delivery?.state === "integrated") continue;
+      if (fresh.delivery?.state !== "local" && fresh.delivery?.state !== "blocked") return null;
+      const outcome = fresh.delivery.state === "local" ? await git.integrate(fresh, run) : fresh.delivery;
+      const delivered = { ...fresh, delivery: outcome };
+      await this.save(delivered);
+      if (outcome.state === "integrated") await this.advanceDelivery(delivered);
+      if (outcome.state === "blocked") {
+        await this.save(this.note({ ...run, status: "failed", attention: true,
+          delivery: { state: "blocked", reason: outcome.reason, retained: true },
+          error: "Delegated Git integration stopped. Review the child and coordinator branches." }, "failed"));
+        return null;
+      }
+    }
+    return (await this.list()).filter(entry => entry.parentRunId === run.id);
+  }
+
+  private async sendReport(run: RunRecord, children: RunRecord[], key: string): Promise<void> {
+    await this.deps.port.send(run.current!.agentId, childReport(children), key);
+    await this.save({ ...run, reported: true, pending: null });
   }
 
   private async advanceDelivery(run: RunRecord): Promise<void> {
@@ -612,8 +649,10 @@ export class RunManager {
     }
     const local = delivery?.state === "no_changes" || delivery?.state === "remote_denied" || delivery?.state === "integrated" ||
       delivery?.state === "local" && !run.parentRunId;
-    if (!delivery?.retired && (local || delivery?.state === "direct" || delivery?.state === "merged" ||
-        run.status === "cancelled" && !run.pending && delivery?.reason !== "checkout_taken_over") && this.deps.port.worktreeInactive) {
+    const cancelled = run.status === "cancelled" && !run.pending &&
+      delivery?.reason !== "checkout_taken_over" && delivery?.reason !== "operation_uncertain";
+    if (!delivery?.retired && (local || delivery?.state === "direct" || delivery?.state === "merged" || cancelled) &&
+        this.deps.port.worktreeInactive) {
       const retired = await git.retire({ ...run, delivery }, async () => {
         const tasks = await this.list();
         if (tasks.some(entry => entry.id !== run.id && !TERMINAL.has(entry.status) &&

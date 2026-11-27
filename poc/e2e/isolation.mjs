@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-export function isolate(root, run, git, version) {
+export function isolate(root, run, git, version, { delegation = false, fixtureTools = delegation } = {}) {
   assert.match(run, /^run-[a-z0-9-]+$/);
   assert(["0.17.5", "0.17.6"].includes(version));
   const sandbox = realpathSync(root);
@@ -12,7 +12,7 @@ export function isolate(root, run, git, version) {
   const cli = join(installed, "cli", "bin", "paseo");
   const manifest = name => JSON.parse(readFileSync(join(installed, name, "package.json"), "utf8"));
   for (const name of ["cli", "client", "plugin"]) assert.equal(manifest(name).version, version);
-  const homeRoot = join(sandbox, "home-e2e");
+  const homeRoot = join(sandbox, delegation ? "home-deleg" : "home-e2e");
   if (existsSync(homeRoot)) assert.equal(realpathSync(homeRoot), homeRoot);
   const home = join(homeRoot, run);
   assert(!existsSync(home), "Use a fresh run identifier");
@@ -47,7 +47,7 @@ export function isolate(root, run, git, version) {
     ZELQIO_DEFAULT_WAIT_MS: "1000",
   };
   function command(executable, args) {
-    const result = spawnSync(executable, args, { cwd: sandbox, env, encoding: "utf8", windowsHide: true, timeout: 60_000 });
+    const result = spawnSync(executable, args, { cwd: sandbox, env, encoding: "utf8", windowsHide: true, timeout: delegation ? 300_000 : 60_000 });
     if (result.error) throw result.error;
     assert.equal(result.status, 0, result.stderr || result.stdout);
     return result.stdout;
@@ -64,9 +64,11 @@ export function isolate(root, run, git, version) {
   const atPort = (rows, port) => rows.filter(row => row.address.endsWith(`:${port}`));
   const initial = listeners();
   const regular = atPort(initial, 6767);
-  const port = Array.from({ length: 10 }, (_, index) => 16791 + index).find(p => atPort(initial, p).length === 0);
-  assert(port, "No free port in 16791–16800");
+  const firstPort = delegation ? 16801 : 16791;
+  const port = Array.from({ length: 10 }, (_, index) => firstPort + index).find(p => atPort(initial, p).length === 0);
+  assert(port, `No free port in ${firstPort}–${firstPort + 9}`);
   const endpoint = `127.0.0.1:${port}`;
+  if (fixtureTools) env.ZELQIO_E2E_ENDPOINT = endpoint;
   function initialize() {
     mkdirSync(homeRoot, { recursive: true });
     mkdirSync(home);
@@ -79,12 +81,13 @@ export function isolate(root, run, git, version) {
     checked("daemon", "config", "set", "features.dictation.enabled", "false");
     checked("daemon", "config", "set", "features.voiceMode.enabled", "false");
     checked("daemon", "config", "set", "pluginsEnabled", "true");
+    if (fixtureTools) checked("daemon", "config", "set", "daemon.mcp.injectIntoAgents", "true");
   }
   let startRequested = false;
   function start() {
     assert.deepEqual(atPort(listeners(), port), []);
     startRequested = true;
-    checked("daemon", "start", "--timeout", "30");
+    checked("daemon", "start", "--timeout", delegation ? "180" : "30");
     const status = checked("daemon", "status");
     assert.equal(status.listen, endpoint);
     assert.equal(status.daemonVersion, version);
@@ -100,7 +103,13 @@ export function isolate(root, run, git, version) {
   }
   function stop() {
     if (startRequested) {
-      checked("daemon", "stop", "--timeout", "20");
+      try {
+        checked("daemon", "stop", "--timeout", delegation ? "90" : "20");
+      } catch (error) {
+        if (!delegation) throw error;
+        // The home was created by this run and the CLI checks ownership of its PID lock.
+        checked("daemon", "stop", "--timeout", "60", "--force");
+      }
       startRequested = false;
     }
     assert.deepEqual(atPort(listeners(), port), []);

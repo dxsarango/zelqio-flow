@@ -48,6 +48,7 @@ class FakePaseo implements AgentPort {
     agent.lastError = null;
   }
   async lastReply(id: string) { return this.replies.get(id) ?? null; }
+  async stop(id: string) { this.agents.get(id)!.status = "idle"; }
   async recentActivity(id: string) { return `activity of ${id}`; }
   firstMessages = new Map<string, string>();
   async firstUserMessage(id: string) { return this.firstMessages.get(id) ?? null; }
@@ -63,16 +64,18 @@ describe("run manager: real orchestration loop over native agents", () => {
   let settings: ZelqioSettings;
   let catalog: ProviderCatalogData;
 
-  const build = (extra: { maxConcurrent?: number; maxAttempts?: number } = {}) => new RunManager({
+  const build = (extra: { maxConcurrent?: number; maxAttempts?: number; roles?: import("../shared/roles").RolesConfig } = {}) => new RunManager({
     port: paseo,
     store: new VersionedStore({ dir: directory, name: "runs", version: 1, schema: runsState, defaults: () => ({ runs: [] }) }),
     attempts: new AttemptJournal(directory, () => now),
     readCatalog: async () => catalog,
     readUsage: async () => usage,
     readSettings: async () => settings,
+    readRoles: async () => extra.roles ?? {},
     clock: () => now,
     recheckMs: 5 * 60_000,
-    ...extra,
+    maxConcurrent: extra.maxConcurrent,
+    maxAttempts: extra.maxAttempts,
   });
   const use = (id: string, use: "primary" | "auxiliary", funding: "subscription" | "free" | "consumption" = "subscription") => {
     settings = { ...settings, providers: { ...settings.providers, [id]: { use, funding } } };
@@ -433,5 +436,18 @@ describe("run manager: real orchestration loop over native agents", () => {
     expect(paseo.created[0].thinkingOptionId).toBe("low");
     await manager.submit({ prompt: "Redesign the module", cwd: "/work/repo", complexity: "high" });
     expect(paseo.created[1].thinkingOptionId).toBe("high");
+  });
+
+  it("honours a role's preferred provider and a custom role the user defined", async () => {
+    use("alpha", "primary");
+    use("beta", "auxiliary");
+    const manager = build({ roles: {
+      overrides: { developer: { candidates: [{ provider: "beta" }] } },
+      custom: [{ id: "doc_writer", kind: "custom", label: "Doc writer", capabilities: ["docs"], candidates: [{ provider: "alpha" }] }],
+    } });
+    await manager.submit({ prompt: "Implement it", cwd: "/work/repo" });
+    await manager.submit({ prompt: "Write the docs", cwd: "/work/repo", role: "doc_writer", capability: "docs" });
+    expect(paseo.created.map(item => item.provider)).toEqual(["beta", "alpha"]);
+    await expect(manager.submit({ prompt: "x", cwd: "/work/repo", role: "nobody" })).rejects.toThrow(/Unknown role/);
   });
 });

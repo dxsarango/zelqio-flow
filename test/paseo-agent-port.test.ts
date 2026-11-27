@@ -33,3 +33,15 @@ it("exposes a closed agent's persistence without treating it as archived", async
   const port = paseoAgentPort(() => api);
   expect(await port.snapshot("agent-1")).toMatchObject({ status: "closed", restorable: true, archived: false });
 });
+
+it("stops the live turn without reopening an idle or closed session", async () => {
+  const refresh = vi.fn()
+    .mockResolvedValueOnce({ agent: { status: "running" } })
+    .mockResolvedValueOnce({ agent: { status: "idle" } })
+    .mockResolvedValueOnce({ agent: { status: "closed" } });
+  const reload = vi.fn(async () => null);
+  const api = { agents: { ref: () => ({ refresh, reload }) } } as unknown as PaseoApi;
+  const port = paseoAgentPort(() => api);
+  for (const id of ["running-agent", "idle-agent", "closed-agent"]) await port.stop(id);
+  expect(reload).toHaveBeenCalledTimes(1);
+});

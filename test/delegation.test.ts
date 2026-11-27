@@ -17,6 +17,10 @@ class FakePaseo implements AgentPort {
   agents = new Map<string, AgentSnapshot & { sent: string[]; parent?: string }>();
   created: CreateAgentInput[] = [];
   replies = new Map<string, string>();
+  stopped: string[] = [];
+  rejectedStops = false;
+  deliveries: { id: string; text: string; key: string }[] = [];
+  rejectNextSend = false;
   async create(input: CreateAgentInput) {
     const id = `agent-${this.agents.size + 1}`;
     this.created.push(input);
@@ -24,7 +28,21 @@ class FakePaseo implements AgentPort {
     return { id };
   }
   async snapshot(id: string) { return this.agents.get(id) ?? null; }
-  async send(id: string, text: string) { const agent = this.agents.get(id)!; agent.sent.push(text); agent.status = "running"; }
+  async send(id: string, text: string, key: string) {
+    this.deliveries.push({ id, text, key });
+    if (this.rejectNextSend) {
+      this.rejectNextSend = false;
+      throw new Error("temporary send failure");
+    }
+    const agent = this.agents.get(id)!;
+    agent.sent.push(text);
+    agent.status = "running";
+  }
+  async stop(id: string) {
+    if (this.rejectedStops) throw new Error("temporary stop failure");
+    this.stopped.push(id);
+    this.agents.get(id)!.status = "idle";
+  }
   async lastReply(id: string) { return this.replies.get(id) ?? null; }
   async recentActivity() { return ""; }
   async firstUserMessage() { return null; }
@@ -135,6 +153,39 @@ describe("delegation to native agents", () => {
     expect((await manager.list()).find(entry => entry.id === run.id)).toMatchObject({ status: "delivered", result: "All integrated." });
   });
 
+  it("retries a report with the same message id and content if sending fails", async () => {
+    const { run, agentId } = await root();
+    const child = await manager.delegate(agentId, { title: "Review", prompt: "Review it", role: "reviewer", capability: "review" });
+    paseo.finish(agentId, "Waiting for results.");
+    paseo.finish(child.current!.agentId, "Looks good");
+    await manager.onAgentUpdate(child.current!.agentId);
+    paseo.rejectNextSend = true;
+    await manager.tick();
+    expect((await manager.list()).find(row => row.id === run.id)?.pending).toMatchObject({ kind: "report" });
+    await manager.tick();
+    expect(paseo.deliveries).toHaveLength(2);
+    expect(paseo.deliveries[0]).toEqual(paseo.deliveries[1]);
+    expect(paseo.agents.get(agentId)?.sent).toEqual([expect.stringContaining("Looks good")]);
+    expect((await manager.list()).find(row => row.id === run.id)).toMatchObject({ reported: true, pending: null });
+  });
+
+  it("keeps a closed, restorable coordinator while its child finishes and reopens it for the report", async () => {
+    const { run, agentId } = await root();
+    const child = await manager.delegate(agentId, { title: "Review", prompt: "Review it", role: "reviewer", capability: "review" });
+    paseo.finish(agentId, "Waiting for results.");
+    paseo.agents.get(agentId)!.status = "closed";
+    await manager.tick();
+    expect(await status(run.id)).toBe("running");
+    expect(paseo.deliveries).toHaveLength(0);
+    paseo.finish(child.current!.agentId, "Looks good");
+    await manager.tick();
+    await manager.tick();
+    expect(paseo.deliveries).toMatchObject([{ id: agentId, text: expect.stringContaining("Looks good") }]);
+    paseo.finish(agentId, "All integrated.");
+    await manager.tick();
+    expect(await status(run.id)).toBe("delivered");
+  });
+
   it("does not let a waiting coordinator hold the only slot", async () => {
     const tight = new RunManager({
       port: paseo,
@@ -153,6 +204,23 @@ describe("delegation to native agents", () => {
     const child = await manager.delegate(agentId, { title: "Review", prompt: "Review it", role: "reviewer", capability: "review" });
     await manager.cancel(run.id);
     expect(await status(child.id)).toBe("cancelled");
+    expect(paseo.stopped).toEqual([child.current!.agentId]);
+  });
+
+  it("keeps the writer reservation when a native stop fails and releases it on retry", async () => {
+    const { agentId } = await root();
+    const writer = await manager.delegate(agentId, { title: "First", prompt: "Edit first" });
+    const second = await manager.delegate(agentId, { title: "Second", prompt: "Edit second" });
+    paseo.rejectedStops = true;
+    await expect(manager.cancelChild(agentId, writer.id)).rejects.toThrow("temporary stop failure");
+    await manager.tick();
+    expect(await status(writer.id)).toBe("running");
+    expect(await status(second.id)).toBe("queued");
+    paseo.rejectedStops = false;
+    await manager.cancelChild(agentId, writer.id);
+    await manager.tick();
+    expect(paseo.stopped).toEqual([writer.current!.agentId]);
+    expect(await status(second.id)).toBe("running");
   });
 
   describe("coordinator tools", () => {
@@ -176,6 +244,12 @@ describe("delegation to native agents", () => {
       expect(result.isError).toBeUndefined();
       const listing = await tool(tools, "zelqio_status").execute({}, context(agentId));
       expect(listing.text).toContain("Review");
+      expect(listing.structuredContent).toEqual({ children: [expect.objectContaining({ title: "Review", status: "running" })] });
+      const child = (await manager.children(agentId))[0];
+      paseo.finish(child.current!.agentId, "Reviewed.");
+      await manager.onAgentUpdate(child.current!.agentId);
+      const waited = await tool(tools, "zelqio_wait").execute({ timeoutSeconds: 1 }, context(agentId));
+      expect(waited.structuredContent).toEqual({ children: [expect.objectContaining({ status: "delivered", result: "Reviewed." })] });
 
       const refused = await delegate.execute(parsed, context("agent-someone-else"));
       expect(refused.isError).toBe(true);

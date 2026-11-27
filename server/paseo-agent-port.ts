@@ -86,6 +86,15 @@ export function paseoAgentPort(api: () => PaseoApi): AgentPort {
       await api().agents.ref(agentId).send(text, { messageId });
     },
 
+    async stop(agentId) {
+      const handle = api().agents.ref(agentId);
+      const agent = (await handle.refresh())?.agent;
+      if (agent?.status === "running" || agent?.status === "initializing") {
+        // The plugin SDK's reload interrupts a live turn without archiving the native agent or its workspace.
+        await handle.reload();
+      }
+    },
+
     async lastReply(agentId) {
       const page = await api().agents.ref(agentId).timeline.refetch({ direction: "tail", limit: 40 });
       const replies = entriesOf(page).map(entry => entry.item).filter(item => item?.type === "assistant_message" && item.text);

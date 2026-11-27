@@ -118,6 +118,16 @@ export const resources = {
       },
     },
     options: {
+      capability: {
+        plan: "Plan",
+        coordinate: "Coordinate",
+        implement: "Implement",
+        architecture: "Architecture",
+        ui: "Interface",
+        review: "Review",
+        test: "Test",
+        docs: "Documentation",
+      },
       use: { primary: "Primary", auxiliary: "Auxiliary", off: "Off" },
       funding: { subscription: "Subscription", free: "Free", local: "Local", consumption: "Pay per use" },
       strategy: { balanced: "Balanced", economy: "Economy", quality_first: "Quality First", custom: "Custom" },
@@ -160,7 +170,7 @@ export const resources = {
       mode_effect_inactive: "This mode has no effect while Git is local only or remote publication is denied.",
     },
     notice: {
-      effects: "Foundation: your choices are only recorded. Automatic effects (routing, delegation, Git actions and merges) are not active yet.",
+      effects: "Zelqio Flow uses the providers you enable here when Automatic is on. Git actions and merges follow the work mode and the permissions you choose below.",
     },
     state: {
       loading: "Loading settings…",
@@ -218,6 +228,8 @@ export const resources = {
     },
     prefs: {
       title: "Zelqio Flow",
+      preventSleep: "Prevent sleep while working",
+      preventSleepHint: "While Zelqio Flow has work in progress the computer does not go to sleep. The screen can still turn off and your power plan is not changed. It lets go as soon as the work ends.",
       sections: {
         general: "General",
         providers: "Providers & Usage",
@@ -242,7 +254,14 @@ export const resources = {
       save: "Save changes",
       discard: "Discard changes",
       unsaved: "Unsaved changes",
-      rolesHint: "Read-only. Roles are plugin concepts and never create Paseo Agent Profiles.",
+      rolesHint: "Choose a preferred provider per role or add your own. Roles are plugin concepts and never create Paseo Agent Profiles.",
+      anyProvider: "Any authorized provider",
+      addRole: "Add a role",
+      roleName: "Role name",
+      roleCapability: "What it does",
+      roleAdd: "Add",
+      roleRemove: "Remove",
+      roleSaveFailed: "The role change was not saved. Try again.",
       rolesLoading: "Reading roles…",
       rolesUnavailable: "Roles unavailable",
       aboutPrivacy: "Settings are stored by Paseo on this host. No secrets are requested, no telemetry is sent, and no provider is installed.",
@@ -366,6 +385,16 @@ export const resources = {
       },
     },
     options: {
+      capability: {
+        plan: "Planificar",
+        coordinate: "Coordinar",
+        implement: "Implementar",
+        architecture: "Arquitectura",
+        ui: "Interfaz",
+        review: "Revisar",
+        test: "Probar",
+        docs: "Documentación",
+      },
       use: { primary: "Principal", auxiliary: "Auxiliar", off: "Desactivado" },
       funding: { subscription: "Suscripción", free: "Gratuito", local: "Local", consumption: "Pago por uso" },
       strategy: { balanced: "Equilibrada", economy: "Economía", quality_first: "Calidad primero", custom: "Personalizada" },
@@ -408,7 +437,7 @@ export const resources = {
       mode_effect_inactive: "Este modo no tiene efecto mientras Git sea solo local o la publicación remota esté denegada.",
     },
     notice: {
-      effects: "Foundation: tus elecciones solo se registran. Los efectos automáticos (enrutamiento, delegación, acciones Git y fusiones) aún no están activos.",
+      effects: "Zelqio Flow usa los proveedores que actives aquí cuando Automatic está activado. Las acciones Git y las fusiones siguen el modo de trabajo y los permisos que elijas abajo.",
     },
     state: {
       loading: "Cargando configuración…",
@@ -466,6 +495,8 @@ export const resources = {
     },
     prefs: {
       title: "Zelqio Flow",
+      preventSleep: "Evitar la suspensión mientras trabaja",
+      preventSleepHint: "Mientras Zelqio Flow tiene trabajo en curso el equipo no se suspende. La pantalla puede apagarse y tu plan de energía no cambia. Se libera en cuanto termina el trabajo.",
       sections: {
         general: "General",
         providers: "Proveedores y uso",
@@ -490,7 +521,14 @@ export const resources = {
       save: "Guardar cambios",
       discard: "Descartar cambios",
       unsaved: "Cambios sin guardar",
-      rolesHint: "Solo lectura. Los roles son conceptos del plugin y nunca crean perfiles de agente de Paseo.",
+      rolesHint: "Elige un proveedor preferido por rol o añade el tuyo. Los roles son conceptos del plugin y nunca crean perfiles de agente de Paseo.",
+      anyProvider: "Cualquier proveedor autorizado",
+      addRole: "Añadir un rol",
+      roleName: "Nombre del rol",
+      roleCapability: "Qué hace",
+      roleAdd: "Añadir",
+      roleRemove: "Quitar",
+      roleSaveFailed: "El cambio del rol no se guardó. Inténtalo de nuevo.",
       rolesLoading: "Leyendo roles…",
       rolesUnavailable: "Roles no disponibles",
       aboutPrivacy: "Paseo guarda la configuración en este host. No se piden secretos, no se envía telemetría y no se instala ningún proveedor.",
