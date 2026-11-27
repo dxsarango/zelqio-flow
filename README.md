@@ -1,6 +1,6 @@
 # Zelqio Flow — planning baseline
 
-Estado: G0 aprobado de forma condicionada para Foundation local supervisado en Windows con Paseo 0.17.4. MVP completo y distribución pública sujetos a sus validaciones y gates.
+Estado (27 de noviembre de 2026): plugin de orquestación **sobre Paseo**, no una reconstrucción de su infraestructura ([ADR R1](docs/adr/R1-orchestration-plugin-on-paseo.md)). Con **Automatic** activado en New Agent o New Workspace, Zelqio Flow elige un modelo entre los que autorizaste, crea y coordina agentes nativos, y si un proveedor llega a su límite conserva el trabajo y lo reasigna a otro proveedor autorizado o espera a que Paseo informe cuota recuperada y reanuda el mismo agente una sola vez. Verificado de extremo a extremo en daemons aislados de Paseo 0.17.5 y 0.17.6 con proveedores sintéticos ([evidencia](docs/evidence/S11-e2e-run-flow.md)). Zelqio Flow usa las cuentas y proveedores que configuraste en Paseo: una suscripción o una etiqueta Free no garantiza la ausencia de cargos, no verifica la facturación y nunca habilita créditos ni cambia de cuenta.
 
 Plugin independiente, licencia MIT, interfaz EN/ES, distribución objetivo en el catálogo de Paseo. La publicación de evidencias de desarrollo y la distribución del plugin siguen sus autorizaciones respectivas.
 
@@ -20,5 +20,5 @@ El repositorio raíz es el plugin de Paseo (`paseo-plugin.json`, `index.client.t
 - `npm ci` instala dependencias fijadas; `npm run check` ejecuta typecheck, lint y pruebas unitarias. CI ejecuta lo mismo en Linux, Windows y macOS.
 - Probar el plugin siempre en un daemon aislado: `paseo daemon config set daemon.listen 127.0.0.1:<puerto> --home <carpeta>`, `daemon.relay.enabled false`, `pluginsEnabled true`; `paseo daemon start --home <carpeta>` y `paseo plugin install <ruta-del-repo> --home <carpeta>`. No instalar en el daemon habitual.
 - `node tools/serve-app.mjs <app-dist> <puerto> <host:puerto-daemon>` sirve la app web preconectada al daemon aislado para validar la interfaz.
-- Los efectos avanzados permanecen desactivados en Foundation; la interfaz actual es una pantalla de estado de solo lectura.
+- El plugin ofrece: ejecuciones con reasignación y reanudación por cuota (`zelqio.runs.submit/list/cancel`), enrutado automático al crear, delegación a agentes nativos con dependencias, esfuerzo de razonamiento, roles propios, panel de ejecuciones, Power Management opcional y ajustes globales. La prueba extremo a extremo se reproduce con `node poc/e2e/run.mjs` (ver la evidencia). Git, PR y modos de entrega sobre ejecuciones están en curso (S11-T07).
 
