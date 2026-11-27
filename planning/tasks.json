@@ -2187,11 +2187,30 @@
       "role": "Developer",
       "risk": "medium",
       "acceptance": "Distingue identidad gestionada, intento, estado y permisos mediante snapshots sintéticos",
-      "status": "in_progress",
-      "evidence": [],
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "37575b6c764419c432d5d73a6b3af362b9b0eabd",
+          "date": "2026-11-26",
+          "notes": "265 pruebas verificadas por el coordinador en el worktree antes del PR",
+          "limitations": "Snapshots sinteticos; sin evidencia real del host"
+        },
+        {
+          "kind": "ci",
+          "command": "checks ci (3 sistemas) y planning del PR 47",
+          "result": "PASS",
+          "sha": "11c477e46a7f7644fc9f83ad6cb63c709560d1f6",
+          "date": "2026-11-26",
+          "notes": "Integrado con squash y match-head-commit tras update-branch",
+          "limitations": "Sin revision independiente; riesgo medio acotado a contratos puros"
+        }
+      ],
       "owner": "orchestrator",
       "branch": "feat/s04-t08-agent-lifecycle",
-      "pr": null,
+      "pr": 47,
       "blockers": []
     },
     {
@@ -2341,11 +2360,30 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Simula los cuatro modos con decisiones tipadas, restricciones y caducidad; sin publicación",
-      "status": "in_progress",
-      "evidence": [],
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "b02cb6397550c839f4a65bbea10d7eaf0ffee5ca",
+          "date": "2026-11-26",
+          "notes": "282 pruebas verificadas por el coordinador; revision de codigo del evaluador por el coordinador",
+          "limitations": "El llamador aporta reloj y atestaciones; publicationAllowed siempre false"
+        },
+        {
+          "kind": "ci",
+          "command": "checks ci (3 sistemas) y planning del PR 48",
+          "result": "PASS",
+          "sha": "6cc18bd602724d45598102b7e69f3fc2d56a0cd6",
+          "date": "2026-11-26",
+          "notes": "Integrado con squash y match-head-commit tras update-branch",
+          "limitations": "Sin revision independiente; riesgo bajo"
+        }
+      ],
       "owner": "orchestrator",
       "branch": "feat/s07-t08-delivery-decisions",
-      "pr": null,
+      "pr": 48,
       "blockers": []
     },
     {
@@ -2421,11 +2459,30 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Proyecta evidencia y salud de preview ligadas al SHA sin iniciar servicios",
-      "status": "in_progress",
-      "evidence": [],
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "8ab0c1e47f03eef9529f3e39b9370c4abcf22fd9",
+          "date": "2026-11-26",
+          "notes": "264 pruebas verificadas por el coordinador en el worktree antes del PR",
+          "limitations": "Proyeccion pura; no inicia ni sondea servicios"
+        },
+        {
+          "kind": "ci",
+          "command": "checks ci (3 sistemas) y planning del PR 49",
+          "result": "PASS",
+          "sha": "1e51a283cd340f21885597dd77e56a0b20ef5423",
+          "date": "2026-11-26",
+          "notes": "Integrado con squash y match-head-commit tras update-branch",
+          "limitations": "Sin revision independiente; riesgo bajo"
+        }
+      ],
       "owner": "orchestrator",
       "branch": "feat/s08-t08-evidence-preview",
-      "pr": null,
+      "pr": 49,
       "blockers": []
     },
     {
@@ -2438,11 +2495,30 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Exporta campos permitidos desde fixtures y protege referencias activas al evaluar retención",
-      "status": "in_progress",
-      "evidence": [],
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "6994f4cbd815604e7550c5c0c6a99418d81c6df7",
+          "date": "2026-11-26",
+          "notes": "256 pruebas verificadas antes del PR",
+          "limitations": "Fixture; no escribe ni envia nada; exporta solo id, veredicto y SHA"
+        },
+        {
+          "kind": "ci",
+          "command": "checks ci (3 sistemas) y planning del PR 46",
+          "result": "PASS",
+          "sha": "722a4140a40d75430528c5536529149601b0f16a",
+          "date": "2026-11-26",
+          "notes": "Integrado con squash y match-head-commit tras update-branch",
+          "limitations": "Sin revision independiente; riesgo bajo"
+        }
+      ],
       "owner": "orchestrator",
       "branch": "feat/s09-t07-export-retention",
-      "pr": null,
+      "pr": 46,
       "blockers": []
     },
     {
