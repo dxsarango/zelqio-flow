@@ -1,5 +1,7 @@
 # S04 — Routing automático y compositor nativo (propuesta)
 
+> **Actualización del 27 de noviembre de 2026.** [R1](R1-orchestration-plugin-on-paseo.md) simplifica la arquitectura: la verificación exhaustiva que describe este documento pasa a ser opcional (modo Estricto) y deja de bloquear el producto. El contenido sigue como referencia.
+
 **Estado:** propuesta, revisada tras una revisión independiente. No sustituye ni modifica [S04 · Autoridad para seleccionar modelos](S04-routing-authority.md). Todos los efectos siguen deshabilitados hasta que el propietario apruebe. Evidencia: [S04 · Compositor nativo](../evidence/S04-native-composer-routing.md).
 
 ## Contexto
