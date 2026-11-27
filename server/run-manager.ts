@@ -45,6 +45,7 @@ export interface AgentPort {
   create(input: CreateAgentInput): Promise<{ id: string }>;
   snapshot(agentId: string): Promise<AgentSnapshot | null>;
   send(agentId: string, text: string, messageId: string): Promise<void>;
+  stop(agentId: string): Promise<void>;
   /** The final answer of the latest turn, if any. */
   lastReply(agentId: string): Promise<string | null>;
   /** A short transcript tail used to brief a replacement agent. */
@@ -216,13 +217,11 @@ export class RunManager {
     return this.exclusive(async () => {
       const run = await this.find(id);
       if (!run) throw new ZelqioError("not_found", "Run not found.");
-      if (run.status === "delivered" || run.status === "failed" || run.status === "cancelled") return run;
-      const next = this.note({ ...run, status: "cancelled", resumeAt: null }, "cancelled");
-      await this.save(next);
+      if (TERMINAL.has(run.status)) return run;
       for (const child of (await this.list()).filter(entry => entry.parentRunId === run.id && !TERMINAL.has(entry.status))) {
-        await this.save(this.note({ ...child, status: "cancelled", resumeAt: null }, "cancelled", { note: "the coordinator run was stopped" }));
+        await this.stopRun(child, "the coordinator run was stopped");
       }
-      return next;
+      return this.stopRun(run);
     });
   }
 
@@ -279,9 +278,7 @@ export class RunManager {
       const child = parent ? runs.find(run => run.id === childId && run.parentRunId === parent.id) : undefined;
       if (!child) throw new ZelqioError("not_found", "Delegated task not found.");
       if (TERMINAL.has(child.status)) return child;
-      const next = this.note({ ...child, status: "cancelled", resumeAt: null }, "cancelled");
-      await this.save(next);
-      return next;
+      return this.stopRun(child);
     });
   }
 
@@ -344,6 +341,19 @@ export class RunManager {
 
   private async find(id: string): Promise<RunRecord | undefined> {
     return (await this.list()).find(run => run.id === id);
+  }
+
+  private async stopRun(run: RunRecord, note?: string): Promise<RunRecord> {
+    // Keep its slot and writer reservation until the native session acknowledges the stop.
+    if (run.parentRunId && run.current && run.status === "running") {
+      await this.deps.port.stop(run.current.agentId);
+    }
+    const next = this.note({ ...run, status: "cancelled", resumeAt: null, pending: null, attention: false }, "cancelled", { note });
+    await this.save(next);
+    if (run.attempts > 0) {
+      await this.deps.attempts.settle({ key: `${run.id}-a${run.attempts}`, outcome: "failed", evidenceRef: "cancelled" }).catch(() => undefined);
+    }
+    return next;
   }
 
   private async save(run: RunRecord, isNew = false): Promise<void> {
@@ -473,14 +483,24 @@ export class RunManager {
   private async reconcile(run: RunRecord, hint?: { error?: { message: string; code?: string | null } }): Promise<void> {
     if (!run.current) return;
     const snapshot = await this.deps.port.snapshot(run.current.agentId);
-    if (!snapshot || snapshot.archived || snapshot.status === "closed") {
+    const children = run.parentRunId === null ? (await this.list()).filter(entry => entry.parentRunId === run.id) : [];
+    const reportKey = `${run.id}-c`;
+    // Earlier versions used a quota-resume marker for a report.
+    const pendingReport = run.pending?.kind === "report" || (run.pending?.kind === "resume" && run.pending.key === reportKey);
+    const needsReport = children.length > 0 && (!run.reported || pendingReport);
+    const canRestoreForReport = snapshot?.status === "closed" && snapshot.restorable && needsReport;
+    if (!snapshot || snapshot.archived || (snapshot.status === "closed" && !canRestoreForReport)) {
       await this.save(this.note({ ...run, status: "failed", error: "The agent is no longer available." }, "failed", { agentId: run.current.agentId }));
       return;
     }
     if (snapshot.status === "initializing" || snapshot.status === "running") {
       const attention = snapshot.pendingPermissions > 0;
-      const confirmed = run.pending?.kind === "resume" ? { ...run, pending: null } : run;
+      const confirmed = run.pending?.kind === "resume" && !pendingReport ? { ...run, pending: null } : run;
       if (attention !== run.attention || confirmed !== run) await this.save({ ...confirmed, attention });
+      return;
+    }
+    if (pendingReport) {
+      await this.sendReport(run, children, reportKey);
       return;
     }
     if (run.pending?.kind === "resume") {
@@ -489,20 +509,17 @@ export class RunManager {
       await this.confirmResume(run);
       return;
     }
-    if (snapshot.status === "idle" && !snapshot.lastError && !hint?.error) {
+    if ((snapshot.status === "idle" || canRestoreForReport) && !snapshot.lastError && !hint?.error) {
       const full = await this.deps.port.lastReply(run.current.agentId);
       const limit = limitFromReply(full, this.clock());
       if (limit && full !== run.handledError) {
         await this.exhausted({ ...run, userBaseline: snapshot.lastUserMessageAt }, full ?? "", limit.resetsAt, false, true);
         return;
       }
-      const children = (await this.list()).filter(entry => entry.parentRunId === run.id);
       if (children.some(child => !TERMINAL.has(child.status))) return; // The coordinator is waiting for its delegated tasks.
-      if (children.length > 0 && !run.reported) {
-        // Every delegated task ended: tell the coordinator once so it can integrate the results.
-        const key = `${run.id}-c`;
-        await this.save({ ...run, reported: true, pending: { kind: "resume", key } });
-        await this.deps.port.send(run.current.agentId, childReport(children), key);
+      if (needsReport) {
+        await this.save({ ...run, pending: { kind: "report", key: reportKey } });
+        await this.sendReport(run, children, reportKey);
         return;
       }
       const reply = clip(full, MAX_REPLY);
@@ -519,6 +536,11 @@ export class RunManager {
       return;
     }
     await this.exhausted({ ...run, userBaseline: snapshot.lastUserMessageAt }, message, signal.resetsAt, signal.kind === "rate_limit");
+  }
+
+  private async sendReport(run: RunRecord, children: RunRecord[], key: string): Promise<void> {
+    await this.deps.port.send(run.current!.agentId, childReport(children), key);
+    await this.save({ ...run, reported: true, pending: null });
   }
 
   /** The provider of the current agent reached a limit: keep the work, then reassign or wait. */
