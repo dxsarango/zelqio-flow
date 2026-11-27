@@ -2948,11 +2948,21 @@
       "role": "Senior Developer",
       "risk": "high",
       "acceptance": "Una ejecución trabaja en su worktree, integra por PR según el modo de trabajo y retira el worktree solo con su comprobación previa",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
-      "pr": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check; Git real en repos temporales; prueba nativa en daemon aislado de Paseo 0.17.6; repositorio publico desechable",
+          "result": "PASS",
+          "sha": "f391f31ff2093a622131b5b12cb1df95863aece0",
+          "date": "2026-11-27",
+          "notes": "Worktree nativo por ejecucion, commit convencional sin atribucion, flujos local, PR, fork y directo, modos Review First y Auto Merge verificados en GitHub (PR de prueba esperando revision; fusion con match-head-commit sobre el SHA con check verde), integracion serie de hijos con conservacion ante conflicto, journal y reconciliacion tras reinicio, retirada sin fuerza solo con arbol limpio. Una carrera con index.lock transitorio corregida; 5 de 5 ejecuciones seguidas bajo carga",
+          "limitations": "Las sesiones adoptadas desde Automatic conservan su checkout y requieren entrega manual; Smart Review y la revision diferida sin validar en GitHub; el flujo fork se probo con remotos bare y GitHub simulado"
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/git-delivery-runs",
+      "pr": 76,
       "blockers": []
     },
     {
