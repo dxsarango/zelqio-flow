@@ -2532,10 +2532,10 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Ejercita reinicio, colisión, datos obsoletos y fallos en fixtures sin efectos ni credenciales",
-      "status": "todo",
+      "status": "in_progress",
       "evidence": [],
-      "owner": null,
-      "branch": null,
+      "owner": "orchestrator",
+      "branch": "test/s09-t08-component-regression",
       "pr": null,
       "blockers": []
     },
