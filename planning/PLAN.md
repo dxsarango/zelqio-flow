@@ -103,18 +103,18 @@ La autorización temporal de revisión diferida terminó al regresar el propieta
 |---|---|---|---|---|---|
 | S04-T01 | Control nativo y metadata | S03-T05 | UI Developer | high | New Agent/New Workspace, disabled/automatic y persistencia del opt-in; no chat separado |
 | S04-T05 | Recomendación determinista de routing | S04-T01 | Developer | low | RPC de solo lectura sobre pares exactos, con financiación declarada y cuota sin vincular; excluye consumo |
-| S04-T06 | Selección supervisada en el compositor | S04-T05 | UI Developer | high | Aplicación visible al borrador nativo y envío separado; preserva modelo y modo en New Agent y New Workspace |
+| S04-T06 | Selección supervisada en el compositor | S04-T05 | UI Developer | high | El interruptor Automatic es visible en New Agent y New Workspace y la decisión del modelo se toma al crear; el envío sigue siendo una acción del usuario |
 | S04-T07 | Contrato de financiación por ruta | S01-T04, S03-T03 | Senior Developer | high | Separa declaración, política y observación; verifica coincidencia y vigencia con adaptadores simulados sin habilitar efectos |
-| S04-T02 | Hook de creación y configuración | S04-T05, S04-T06, S04-T07 | Developer | high | Proveedor/modelo/permiso antes de primer mensaje; respeta selección explícita y errores |
-| S04-T03 | Identidad de sesiones gestionadas | S04-T02, S04-T08 | Senior Developer | high | Registro autoritativo de raíz/worker y no intervención en sesiones ajenas |
-| S04-T04 | Gate G4 | S04-T03 | QA | high | E2E mínimo de sesión nativa y opt-out, sin cambios globales ni perfiles |
+| S04-T02 | Hook de creación y configuración | S04-T05, S04-T06, S04-T07 | Developer | high | Con Automatic activado el hook elige proveedor y modelo autorizados antes del primer mensaje; sin Automatic no cambia nada; un fallo no bloquea la creación |
+| S04-T03 | Identidad de sesiones gestionadas | S04-T02, S04-T08 | Senior Developer | high | Registro de ejecuciones de Zelqio Flow (metadata zelqio.run) y no intervención en sesiones que no creó ni adoptó con Automatic |
+| S04-T04 | Gate G4 | S04-T03 | QA | high | Prueba extremo a extremo real de una sesión nativa con Automatic y con opt-out, sin cambios globales ni perfiles |
 
 ## S05 — Agent Orchestration
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
 |---|---|---|---|---|---|
 | S05-T07 | Compilación del grafo de dependencias | S01-T04 | Developer | low | Grafo puro y orden determinista; detecta ciclos, IDs repetidos y dependencias ausentes y propone tareas dentro de los slots |
 | S05-T08 | Watchdog y recuperación con fixtures | S01-T03, S03-T03 | Senior Developer | high | Clasifica sesión y progreso, conserva época, checkpoint y backoff en un diario local; verifica reanudación sin efectos |
-| S05-T01 | DAG y runtime de tareas | S04-T04, S05-T07, S05-T09 | Senior Developer | high | Dependencias acíclicas, estados, leases, idempotencia y límites de concurrencia |
+| S05-T01 | DAG y runtime de tareas | S04-T04, S05-T07, S05-T09 | Senior Developer | high | Dependencias acíclicas, estados, idempotencia y límites de concurrencia sobre el RunManager |
 | S05-T02 | Herramientas de orquestador | S05-T01 | Developer | high | Delegar/consultar/cancelar/recolectar con caller identity y deny por rol |
 | S05-T03 | Workers nativos y mensajes | S05-T02 | Developer | high | Crear con rol/proveedor, parent-child, resultados y permisos visibles en Paseo |
 | S05-T04 | Recuperación y handoff | S05-T03, S05-T08 | Senior Developer | high | Progreso real y lease con caducidad y exclusión por época. Supervisor local sin inferencia, reintentos acotados y reanudación tras cuota verificada. Conservar intentos y sesiones |
@@ -136,7 +136,7 @@ La autorización temporal de revisión diferida terminó al regresar el propieta
 ## S07 — Work Modes
 | ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
 |---|---|---|---|---|---|
-| S07-T01 | Delivery gates y aprobación | S06-T06, S07-T09 | Senior Developer | high | Actor humano verificable y tarea/acción/SHA/política ligados; pendientes se recuperan tras reinicio y efectos revalidan y deduplican |
+| S07-T01 | Delivery gates y aprobación | S06-T06, S07-T09 | Senior Developer | high | Aprobaciones con los permisos nativos de Paseo y la revisión de GitHub cuando existe, ligadas a tarea, acción y SHA; pendientes recuperables tras reinicio; efectos revalidados y deduplicados |
 | S07-T02 | Review First y Auto Merge | S07-T01, S07-T08 | Developer | high | Aprobación explícita o merge autorizado tras checks; no bypass, pending bloquea |
 | S07-T03 | Clasificador Smart Review | S07-T01, S07-T08 | Developer | high | Diff real e impacto, docs/UI/backend/riesgo/unknown; sin depender de prefijo |
 | S07-T04 | Iteraciones Smart Review | S07-T03 | UI Developer | high | Request changes y approve sobre misma rama/PR; invalidación SHA y estado de prueba |
@@ -171,6 +171,21 @@ La autorización temporal de revisión diferida terminó al regresar el propieta
 | S10-T02 | Packaging y licencias | S09-T06 | Developer | medium | Manifest, SemVer, LICENSE titular confirmado, avisos terceros, paquete sin datos privados |
 | S10-T03 | Release candidate y validación | S10-T01, S10-T02 | QA | high | Instalación desde tag/candidato limpio, upgrade/rollback, matriz y CI reales |
 | S10-T04 | Gate G10 y publicación | S10-T03 | Orchestrator | high | Aprobación explícita, requisitos actuales catálogo verificados, tag/release/publicación autorizados |
+## S11 — Runtime real sobre Paseo
+
+Según [R1](../docs/adr/R1-orchestration-plugin-on-paseo.md), estas tareas construyen el flujo funcional de extremo a extremo con agentes nativos. Son la prioridad; el resto de fases se apoya en ellas.
+
+| ID | Tarea | Depende de | Rol | Riesgo | Entregable y aceptación |
+|---|---|---|---|---|---|
+| S11-T01 | Bucle de ejecución sobre agentes nativos | S03-T02, S05-T09 | Senior Developer | medium | Elige un modelo autorizado por el usuario, crea el agente nativo con clave idempotente, observa su resultado, reasigna o espera ante un límite, reanuda una sola vez y entrega |
+| S11-T02 | Automatic al crear y adopción de sesiones nativas | S04-T01, S11-T01 | Senior Developer | medium | Con Automatic activado el hook de creación elige el modelo autorizado y la sesión se adopta en el bucle de cuotas; sin Automatic no se toca nada |
+| S11-T03 | Prueba extremo a extremo en un daemon aislado | S11-T01, S11-T02 | Developer | medium | Daemon real aislado con proveedores sintéticos: entrega, límite con reasignación, límite sin alternativa con espera y reanudación única, límite en la última respuesta, Automatic nativo, reinicio, sin duplicados y toma de control |
+| S11-T04 | Panel de ejecuciones | S11-T01 | UI Developer | low | Lista las ejecuciones con proveedor, estado, espera y resultado, permite dejar de coordinar y avisa de que la financiación declarada no es una garantía |
+| S11-T05 | Esfuerzo de razonamiento | S11-T01 | Developer | low | Elige el nivel de razonamiento según complejidad, estrategia y presión de cuota con los niveles del catálogo de Paseo |
+| S11-T06 | Delegación multiagente y dependencias | S11-T03 | Senior Developer | high | Una ejecución puede delegar subtareas en agentes nativos con relación de padre, dependencias, límite de concurrencia y recolección de resultados, con las protecciones contra duplicados y recursión |
+| S11-T07 | Git y entrega sobre ejecuciones | S11-T06, S06-T09 | Senior Developer | high | Una ejecución trabaja en su worktree, integra por PR según el modo de trabajo y retira el worktree solo con su comprobación previa |
+| S11-T08 | Ejecución real con proveedores reales | S11-T03 | QA | medium | Una tarea corta con proveedores reales del usuario recorre el flujo y entrega su resultado, con el consumo mínimo y sin cambios de cuenta ni créditos |
+
 ## Línea de implementación independiente
 
 Estas tareas preparan contratos, lógica pura y fixtures dentro de Foundation. La integración de cada fixture exige los checks y Smart Review. Los gates de integración y habilitación de las capacidades completas permanecen en sus tareas originales. La matriz describe el trabajo que puede prepararse antes de cada gate. [Matriz por tarea](DEPENDENCIAS.md)
