@@ -143,7 +143,7 @@ export const resources = {
       mode_effect_inactive: "This mode has no effect while Git is local only or remote publication is denied.",
     },
     notice: {
-      effects: "Foundation: your choices are only recorded. Automatic effects (routing, delegation, Git actions and merges) are not active yet.",
+      effects: "Zelqio Flow uses the providers you enable here when Automatic is on. Git actions and merges follow the work mode and the permissions you choose below.",
     },
     state: {
       loading: "Loading settings…",
@@ -201,6 +201,8 @@ export const resources = {
     },
     prefs: {
       title: "Zelqio Flow",
+      preventSleep: "Prevent sleep while working",
+      preventSleepHint: "While Zelqio Flow has work in progress the computer does not go to sleep. The screen can still turn off and your power plan is not changed. It lets go as soon as the work ends.",
       sections: {
         general: "General",
         providers: "Providers & Usage",
@@ -374,7 +376,7 @@ export const resources = {
       mode_effect_inactive: "Este modo no tiene efecto mientras Git sea solo local o la publicación remota esté denegada.",
     },
     notice: {
-      effects: "Foundation: tus elecciones solo se registran. Los efectos automáticos (enrutamiento, delegación, acciones Git y fusiones) aún no están activos.",
+      effects: "Zelqio Flow usa los proveedores que actives aquí cuando Automatic está activado. Las acciones Git y las fusiones siguen el modo de trabajo y los permisos que elijas abajo.",
     },
     state: {
       loading: "Cargando configuración…",
@@ -432,6 +434,8 @@ export const resources = {
     },
     prefs: {
       title: "Zelqio Flow",
+      preventSleep: "Evitar la suspensión mientras trabaja",
+      preventSleepHint: "Mientras Zelqio Flow tiene trabajo en curso el equipo no se suspende. La pantalla puede apagarse y tu plan de energía no cambia. Se libera en cuanto termina el trabajo.",
       sections: {
         general: "General",
         providers: "Proveedores y uso",

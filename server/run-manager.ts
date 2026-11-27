@@ -138,6 +138,11 @@ export class RunManager {
     return next;
   }
 
+  /** True while any run is running or waiting for a quota that is expected to come back. */
+  async hasWork(): Promise<boolean> {
+    return (await this.list()).some(run => run.status === "running" || run.status === "waiting_quota");
+  }
+
   list(): Promise<RunRecord[]> {
     return this.deps.store.update(state => ({ result: state.runs }));
   }
