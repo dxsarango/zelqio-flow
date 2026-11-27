@@ -183,7 +183,7 @@
       "role": "Senior Developer",
       "risk": "high",
       "acceptance": "POC-09/10/15: integración, recuperación de conflictos, PR privado, checks por SHA, rechazos y capacidad efectiva de protecciones/auto-merge",
-      "status": "blocked",
+      "status": "done",
       "evidence": [
         {
           "kind": "poc",
@@ -236,14 +236,30 @@
           "date": "2026-11-26",
           "notes": "Private plan rejected protections and effective rules with HTTP 403. Auto-merge setting stayed false. Kept PR open.",
           "limitations": "No live branch-rule rejection, auto-merge, or queue. No visibility change."
+        },
+        {
+          "kind": "ci",
+          "command": "Repositorio publico desechable: proteccion de rama, auto-merge y rechazos por regla",
+          "result": "PASS",
+          "sha": "n/a",
+          "date": "2026-11-27",
+          "notes": "Push directo, merge con check fallido y --admin rechazados con enforce_admins; auto-merge fusiono solo con el check correcto y no fusiono con check fallido o sin revision; autoaprobacion rechazada; el repo principal quedo identico segun instantanea de solo lectura. Ver docs/evidence/S00-T06-public-sandbox.md",
+          "limitations": "Repositorio de usuario: la cola de merge se rechaza con HTTP 422; sin dos personas distintas"
+        },
+        {
+          "kind": "ci",
+          "command": "Aprobacion de una identidad distinta y descarte por SHA",
+          "result": "PASS",
+          "sha": "n/a",
+          "date": "2026-11-27",
+          "notes": "PR abierto por la identidad del workflow, aprobado por el propietario y fusionado; una nueva subida descarto la aprobacion",
+          "limitations": "Identidad de maquina de prueba (GITHUB_TOKEN); el workflow pull_request requiere aprobacion de la ejecucion"
         }
       ],
       "owner": "orchestrator",
       "branch": "docs/s00-feasibility-recovery",
       "pr": null,
-      "blockers": [
-        "The authorized private sandbox cannot enable branch protection or auto-merge under its current plan. Required-rule rejection and protected automatic merge remain unverified."
-      ]
+      "blockers": []
     },
     {
       "id": "S00-T07",
@@ -294,13 +310,22 @@
           "date": "2026-11-26",
           "notes": "Pinned runtime analysis corroborated the T07 panel run: plugin RPC receives no authenticated human actor. A caller-supplied client type has no authority.",
           "limitations": "Separated external authentication is a design alternative. The sandbox rejected self-review; a positive independently authenticated flow remains unverified."
+        },
+        {
+          "kind": "ci",
+          "command": "Revision de PR de GitHub como aprobacion humana verificable",
+          "result": "PASS",
+          "sha": "n/a",
+          "date": "2026-11-27",
+          "notes": "Alternativa externa soportada: la aprobacion queda ligada al SHA y se descarta al cambiar; requiere que el PR lo abra una identidad distinta del propietario. Propuesta en docs/adr/S00-T07-human-approval-alternative.md",
+          "limitations": "Solo cubre la integracion de PR; el resto de efectos sensibles sigue manual. No es una prueba entre dos personas"
         }
       ],
       "owner": "orchestrator",
       "branch": "docs/s00-feasibility-recovery",
       "pr": null,
       "blockers": [
-        "Paseo 0.17.4 plugin RPC does not expose independently verifiable human provenance. Use manual-only handling pending a verified authority and owner approval of scope."
+        "Awaiting owner approval of scope for the verified GitHub review alternative (PR integration only); other sensitive effects stay manual until a supported source exists."
       ]
     },
     {
