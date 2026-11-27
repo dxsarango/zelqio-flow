@@ -24,7 +24,8 @@ import { usageListRpc } from "./shared/usage";
 import { routingPreviewRpc } from "./shared/routing-preview";
 import { ZelqioError } from "./shared/errors";
 
-const TICK_MS = 30_000;
+/** How often waiting and running runs are looked at. Overridable only through the environment, for tests. */
+const TICK_MS = Math.max(250, Number(process.env.ZELQIO_TICK_MS) || 30_000);
 
 /** Where the plugin keeps its own run state. Local only, never sent anywhere. */
 function stateDirectory(): string {
@@ -52,6 +53,9 @@ export default function contribute(server: PluginServerContext) {
     port: paseoAgentPort(api),
     store: new VersionedStore({ dir: directory, name: "runs", version: 1, schema: runsState, defaults: () => ({ runs: [] }) }),
     attempts: new AttemptJournal(directory),
+    // Test-only overrides; production keeps the defaults.
+    recheckMs: Number(process.env.ZELQIO_RECHECK_MS) || undefined,
+    defaultWaitMs: Number(process.env.ZELQIO_DEFAULT_WAIT_MS) || undefined,
     readCatalog: async () => {
       const catalog = await readCatalog(paseoSnapshotSource(api()));
       if (catalog.snapshotHash !== catalogHash) {
