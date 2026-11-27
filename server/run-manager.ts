@@ -33,6 +33,8 @@ export interface CreateAgentInput {
   prompt: string;
   title: string;
   metadata: Record<string, string>;
+  /** Paseo agent that delegated this one, so the native parent relation is recorded. */
+  parentAgentId?: string;
   /** Reasoning level chosen for the model, when it has recognizable levels. */
   thinkingOptionId?: string;
 }
@@ -72,6 +74,10 @@ export interface RunManagerDeps {
 }
 
 const MAX_REPLY = 6000;
+/** Capabilities whose agents edit files. Two of them never share a working directory at the same time. */
+const WRITERS = new Set<RunRecord["capability"]>(["implement", "architecture", "ui", "docs"]);
+const TERMINAL = new Set<RunRecord["status"]>(["delivered", "failed", "cancelled"]);
+const MAX_CHILDREN = 8;
 const MAX_HISTORY = 200;
 
 function clip(text: string | null | undefined, size: number): string | null {
@@ -90,6 +96,16 @@ function handoffPrompt(run: RunRecord, activity: string): string {
     "Recent activity of the previous agent (may be incomplete):",
     redactSecrets(activity) || "(not available)",
   ].join("\n");
+}
+
+function childReport(children: RunRecord[]): string {
+  const lines = children.map(child => {
+    const label = child.title ?? clip(child.prompt, 60) ?? child.id;
+    const body = child.status === "delivered" ? clip(child.result, 1500) ?? "(no message)"
+      : child.status === "failed" ? `failed: ${child.error ?? "unknown error"}` : child.status;
+    return `- ${label} [${child.status}]: ${body}`;
+  });
+  return ["The delegated tasks finished. Review their results and finish the work.", ...lines].join("\n");
 }
 
 /**
@@ -144,6 +160,10 @@ export class RunManager {
         pending: null,
         handledError: null,
         userBaseline: null,
+        title: null,
+        parentRunId: null,
+        dependsOn: [],
+        reported: false,
         attention: false,
         result: null,
         error: null,
@@ -173,7 +193,7 @@ export class RunManager {
         id, prompt: clip(prompt, 20_000) ?? ADOPTED_PROMPT, role: input.role ?? "developer", capability: "implement", complexity: null, cwd: input.cwd,
         status: "running",
         current: { agentId: input.agentId, provider: input.provider, model: input.model, startedAt: now },
-        attempts: 1, suspended: {}, resumeAt: null, pending: null, handledError: null, userBaseline: null, attention: false, result: null, error: null,
+        attempts: 1, suspended: {}, resumeAt: null, pending: null, handledError: null, userBaseline: null, title: null, parentRunId: null, dependsOn: [], reported: false, attention: false, result: null, error: null,
         history: [{ at: now, kind: "started", provider: input.provider, model: input.model, agentId: input.agentId, note: "adopted" }],
         createdAt: now, updatedAt: now,
       };
@@ -191,6 +211,68 @@ export class RunManager {
       if (run.status === "delivered" || run.status === "failed" || run.status === "cancelled") return run;
       const next = this.note({ ...run, status: "cancelled", resumeAt: null }, "cancelled");
       await this.save(next);
+      for (const child of (await this.list()).filter(entry => entry.parentRunId === run.id && !TERMINAL.has(entry.status))) {
+        await this.save(this.note({ ...child, status: "cancelled", resumeAt: null }, "cancelled", { note: "the coordinator run was stopped" }));
+      }
+      return next;
+    });
+  }
+
+  /**
+   * A coordinator agent hands one self-contained task to another agent. The model is chosen like for any run, from the
+   * models the user authorized; the coordinator only names the work. Only a root run can delegate, so delegation does
+   * not recurse, and the number of delegated tasks is bounded.
+   */
+  delegate(coordinatorAgentId: string, input: {
+    title: string; prompt: string; role?: string; capability?: RunRecord["capability"];
+    complexity?: RunRecord["complexity"]; dependsOn?: string[];
+  }): Promise<RunRecord> {
+    return this.exclusive(async () => {
+      const runs = await this.list();
+      const parent = runs.find(run => run.current?.agentId === coordinatorAgentId && run.parentRunId === null
+        && (run.status === "running" || run.status === "waiting_quota"));
+      if (!parent) throw new ZelqioError("invalid_input", "Only a coordinator run can delegate tasks.");
+      const children = runs.filter(run => run.parentRunId === parent.id);
+      if (children.length >= MAX_CHILDREN) throw new ZelqioError("invalid_input", `A run can delegate at most ${MAX_CHILDREN} tasks.`);
+      const dependsOn = [...new Set(input.dependsOn ?? [])];
+      for (const id of dependsOn) {
+        if (!children.some(child => child.id === id)) throw new ZelqioError("invalid_input", `Unknown task to depend on: ${id}`);
+      }
+      const role = input.role ?? "developer";
+      if (!resolveRoles({}).some(entry => entry.id === role)) throw new ZelqioError("invalid_input", `Unknown role: ${role}`);
+      const now = this.clock();
+      const child: RunRecord = {
+        id: `run-${randomUUID()}`, prompt: input.prompt, role, capability: input.capability ?? "implement",
+        complexity: input.complexity ?? null, cwd: parent.cwd, status: "queued", current: null, attempts: 0, suspended: {},
+        resumeAt: null, pending: null, handledError: null, userBaseline: null, title: clip(input.title, 120),
+        parentRunId: parent.id, dependsOn, reported: false, attention: false, result: null, error: null,
+        history: [{ at: now, kind: "queued", note: "delegated" }], createdAt: now, updatedAt: now,
+      };
+      await this.save(child, true);
+      await this.startQueued();
+      return (await this.find(child.id)) ?? child;
+    });
+  }
+
+  /** The delegated tasks of the coordinator that owns this agent. */
+  children(coordinatorAgentId: string): Promise<RunRecord[]> {
+    return this.exclusive(async () => {
+      const runs = await this.list();
+      const parent = runs.find(run => run.current?.agentId === coordinatorAgentId && run.parentRunId === null);
+      return parent ? runs.filter(run => run.parentRunId === parent.id) : [];
+    });
+  }
+
+  /** Stops one delegated task of this coordinator. */
+  cancelChild(coordinatorAgentId: string, childId: string): Promise<RunRecord> {
+    return this.exclusive(async () => {
+      const runs = await this.list();
+      const parent = runs.find(run => run.current?.agentId === coordinatorAgentId && run.parentRunId === null);
+      const child = parent ? runs.find(run => run.id === childId && run.parentRunId === parent.id) : undefined;
+      if (!child) throw new ZelqioError("not_found", "Delegated task not found.");
+      if (TERMINAL.has(child.status)) return child;
+      const next = this.note({ ...child, status: "cancelled", resumeAt: null }, "cancelled");
+      await this.save(next);
       return next;
     });
   }
@@ -198,7 +280,8 @@ export class RunManager {
   /** Looks at every active run once. Called on a timer, on agent updates and after a restart. */
   tick(): Promise<void> {
     return this.exclusive(async () => {
-      const runs = await this.list();
+      // Delegated tasks first, so a coordinator sees their outcome in the same pass.
+      const runs = [...(await this.list())].sort((a, b) => Number(b.parentRunId !== null) - Number(a.parentRunId !== null));
       for (const run of runs) {
         const latest = (await this.find(run.id)) ?? run;
         try {
@@ -294,10 +377,27 @@ export class RunManager {
   private async startQueued(): Promise<void> {
     for (;;) {
       const runs = await this.list();
-      const active = runs.filter(run => run.status === "running" || run.status === "waiting_quota").length;
-      const next = runs.find(run => run.status === "queued");
-      if (!next || active >= this.maxConcurrent) return;
-      await this.launch(next, null);
+      const open = (parent: RunRecord) => runs.some(child => child.parentRunId === parent.id && !TERMINAL.has(child.status));
+      // A coordinator waiting for its delegated tasks is idle, so it does not hold a slot.
+      const active = runs.filter(run => (run.status === "running" || run.status === "waiting_quota") && !(run.parentRunId === null && open(run))).length;
+      if (active >= this.maxConcurrent) return;
+      let started = false;
+      for (const next of runs.filter(run => run.status === "queued")) {
+        const blockers = next.dependsOn.map(id => runs.find(run => run.id === id));
+        const broken = blockers.find(dep => !dep || dep.status === "failed" || dep.status === "cancelled");
+        if (broken !== undefined || blockers.some(dep => dep === undefined)) {
+          await this.save(this.note({ ...next, status: "failed", error: "A task it depends on did not finish." }, "failed"));
+          started = true;
+          break;
+        }
+        if (blockers.some(dep => dep?.status !== "delivered")) continue;
+        if (WRITERS.has(next.capability) && runs.some(other => other.id !== next.id && other.cwd === next.cwd
+          && other.parentRunId !== null && WRITERS.has(other.capability) && (other.status === "running" || other.status === "waiting_quota"))) continue;
+        await this.launch(next, null);
+        started = true;
+        break;
+      }
+      if (!started) return;
     }
   }
 
@@ -317,6 +417,9 @@ export class RunManager {
       await this.save(this.note({ ...run, status: "failed", error: `No authorized model is available${reasons ? ` (${reasons})` : ""}.` }, "failed"));
       return;
     }
+    const parentAgentId = run.parentRunId
+      ? (await this.list()).find(entry => entry.id === run.parentRunId)?.current?.agentId
+      : undefined;
     const attempt = retry ? run.attempts : run.attempts + 1;
     const key = `${run.id}-a${attempt}`;
     const reserved = await this.deps.attempts.reserve({ key, task: run.id, attempt, maxConcurrent: this.maxConcurrent + 8 });
@@ -336,8 +439,10 @@ export class RunManager {
     try {
       const created = await this.deps.port.create({
         key, provider: target.provider, model: target.model, cwd: run.cwd,
-        prompt: handoff ?? run.prompt, title: `Zelqio · ${clip(run.prompt, 48)}`,
-        metadata: { "zelqio.run": run.id, "zelqio.attempt": String(attempt) },
+        prompt: handoff ?? (run.parentRunId ? `${run.prompt}\n\n(Delegated task${run.title ? `: ${run.title}` : ""}. Finish with a concise report of what you did.)` : run.prompt),
+        title: `Zelqio · ${run.title ?? clip(run.prompt, 48)}`,
+        metadata: { "zelqio.run": run.id, "zelqio.attempt": String(attempt), ...(run.parentRunId ? { "zelqio.parent": run.parentRunId } : {}) },
+        ...(parentAgentId ? { parentAgentId } : {}),
         ...(thinkingOptionId ? { thinkingOptionId } : {}),
       });
       await this.deps.attempts.confirmLaunch({ key, agentRef: created.id }).catch(() => undefined);
@@ -377,6 +482,15 @@ export class RunManager {
       const limit = limitFromReply(full, this.clock());
       if (limit && full !== run.handledError) {
         await this.exhausted({ ...run, userBaseline: snapshot.lastUserMessageAt }, full ?? "", limit.resetsAt, false, true);
+        return;
+      }
+      const children = (await this.list()).filter(entry => entry.parentRunId === run.id);
+      if (children.some(child => !TERMINAL.has(child.status))) return; // The coordinator is waiting for its delegated tasks.
+      if (children.length > 0 && !run.reported) {
+        // Every delegated task ended: tell the coordinator once so it can integrate the results.
+        const key = `${run.id}-c`;
+        await this.save({ ...run, reported: true, pending: { kind: "resume", key } });
+        await this.deps.port.send(run.current.agentId, childReport(children), key);
         return;
       }
       const reply = clip(full, MAX_REPLY);
