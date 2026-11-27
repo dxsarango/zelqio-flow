@@ -1289,6 +1289,15 @@
           "date": "2026-11-26",
           "notes": "New Workspace and New Agent displayed the supervised choice and preserved the latest manual model and mode in the submitted request. Three requests stopped at the guard and zero sessions existed.",
           "limitations": "Windows web client, synthetic catalog and existing guard. No production control or owner validation."
+        },
+        {
+          "kind": "local",
+          "command": "npm run check (fixture selection-authority)",
+          "result": "PASS",
+          "sha": "439c9cb7c034cc12b82d945c74bbd02bea859487",
+          "date": "2026-11-26",
+          "notes": "383 pruebas; evaluador aislado de hooks integrado en PR 53 tras revision independiente de Claude (1 importante, 4 nits corregidos)",
+          "limitations": "Preparacion: no habilita el efecto. Siguen faltando procedencia de la eleccion nativa, financiacion verificada de la ruta efectiva y la revocacion de la politica permanente en el host"
         }
       ],
       "owner": "orchestrator",
