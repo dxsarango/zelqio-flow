@@ -1,5 +1,7 @@
 # S04 — Políticas de financiación para la selección automática
 
+> **Actualización del 27 de noviembre de 2026.** [R1](R1-orchestration-plugin-on-paseo.md) simplifica la arquitectura: la verificación exhaustiva que describe este documento pasa a ser opcional (modo Estricto) y deja de bloquear el producto. El contenido sigue como referencia.
+
 **Estado: propuesto.** No está aprobado ni implementado. La política **Estricta** sigue siendo la única vigente y por defecto, con todas sus restricciones, hasta que el propietario valide y apruebe este ADR. Ningún efecto cambia con este documento. Complementa [S04 · Autoridad para seleccionar modelos](S04-routing-authority.md) y la [matriz de adaptadores](../evidence/S04-funding-adapters.md). Fuentes, fechas y resultados en la [evidencia](../evidence/S04-funding-policies.md).
 
 ## Contexto

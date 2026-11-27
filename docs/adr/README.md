@@ -8,3 +8,4 @@ Registrar contexto, alternativas, decisión, evidencia POC, consecuencias y esta
 - [S04 · Políticas de financiación](S04-funding-policies.md) (propuesta; Estricta sigue vigente)
 - [S00-T07 · Alternativa verificable para la aprobación humana](S00-T07-human-approval-alternative.md) (propuesta)
 - [S04 · Routing automático y compositor nativo](S04-native-composer-routing.md) (propuesta; efectos deshabilitados)
+- [R1 · Zelqio Flow como plugin de orquestación sobre Paseo](R1-orchestration-plugin-on-paseo.md) (adoptado)
