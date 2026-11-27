@@ -2,7 +2,8 @@ import { draftOrchestration } from "../shared/orchestration";
 import type { ProviderCatalogData } from "../shared/providers";
 import type { ZelqioSettings } from "../shared/settings";
 import type { UsageSnapshot } from "../shared/usage";
-import { deriveModelFacts } from "./model-facts";
+import { chooseEffort } from "./effort";
+import { deriveModelFacts, providerQuotas } from "./model-facts";
 import { resolveRoles } from "./roles";
 import { route } from "./router";
 
@@ -61,6 +62,11 @@ export function automaticRouting(deps: RoutingDeps) {
       const model = catalog.providers.find(provider => provider.id === selected.provider)?.models.find(entry => entry.id === selected.model);
       const thinking = request.config.thinkingOptionId;
       const thinkingValid = Boolean(thinking && model?.thinkingOptions.some(option => option.id === thinking));
+      // The draft prompt is not part of the creation request, so the reasoning level follows the strategy and the quota.
+      const remaining = providerQuotas(usage, clock()).get(selected.provider)?.remainingPct;
+      const effort = thinkingValid ? thinking : chooseEffort(model?.thinkingOptions ?? [], {
+        complexity: "medium", strategy: settings.strategy, quotaLow: remaining !== null && remaining !== undefined && remaining <= 30,
+      });
       // A provider has its own modes, thinking levels and options. Keep them only where they still mean the same thing.
       const { modeId: _mode, thinkingOptionId: _thinking, providerOptions: _options, ...rest } = request.config;
       void _mode; void _thinking; void _options;
@@ -70,7 +76,7 @@ export function automaticRouting(deps: RoutingDeps) {
         model: selected.model,
         ...(sameProvider && request.config.modeId ? { modeId: request.config.modeId } : {}),
         ...(sameProvider && request.config.providerOptions !== undefined ? { providerOptions: request.config.providerOptions } : {}),
-        ...(thinkingValid ? { thinkingOptionId: thinking } : {}),
+        ...(effort ? { thinkingOptionId: effort } : {}),
       };
       return {
         ...request,
