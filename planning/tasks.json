@@ -2206,7 +2206,7 @@
       "role": "Developer",
       "risk": "medium",
       "acceptance": "Reserva slots e intentos idempotentes en fixtures locales; conserva ambigüedad tras reinicio",
-      "status": "done",
+      "status": "in_progress",
       "evidence": [
         {
           "kind": "local",
@@ -2228,7 +2228,7 @@
         }
       ],
       "owner": "orchestrator",
-      "branch": "feat/s05-t09-attempt-journal",
+      "branch": "fix/s05-t09-attempt-recovery",
       "pr": 38,
       "blockers": []
     },
