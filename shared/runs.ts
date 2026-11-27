@@ -18,6 +18,8 @@ export const runRecord = z.strictObject({
   prompt: z.string().min(1).max(20_000),
   role: reference,
   capability,
+  /** How demanding the request is. Null means it is estimated from the request. */
+  complexity: z.enum(["low", "medium", "high"]).nullable(),
   cwd: z.string().min(1),
   status: runStatus,
   /** The agent that currently owns the work. Earlier agents stay in Paseo untouched. */
@@ -60,6 +62,7 @@ export const runSubmitInput = z.strictObject({
   cwd: z.string().min(1),
   role: reference.default("developer"),
   capability: capability.default("implement"),
+  complexity: z.enum(["low", "medium", "high"]).optional(),
 });
 
 export const runsSubmitRpc = defineZelqioRpc({ name: "runs.submit", input: runSubmitInput, data: runRecord });

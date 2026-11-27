@@ -5,6 +5,7 @@ import { runsState, type RunRecord, type RunsState } from "../shared/runs";
 import type { ZelqioSettings } from "../shared/settings";
 import type { UsageSnapshot } from "../shared/usage";
 import type { AttemptJournal } from "./attempt-journal";
+import { chooseEffort, estimateComplexity } from "./effort";
 import { deriveModelFacts, providerQuotas } from "./model-facts";
 import { classifyFailure, limitFromReply, redactSecrets } from "./quota-signal";
 import { resolveRoles } from "./roles";
@@ -30,6 +31,8 @@ export interface CreateAgentInput {
   prompt: string;
   title: string;
   metadata: Record<string, string>;
+  /** Reasoning level chosen for the model, when it has recognizable levels. */
+  thinkingOptionId?: string;
 }
 
 /** The part of Paseo the manager uses. The real implementation wraps the SDK; tests use a fake. */
@@ -121,7 +124,7 @@ export class RunManager {
     return this.deps.store.update(state => ({ result: state.runs }));
   }
 
-  submit(input: { prompt: string; cwd: string; role?: string; capability?: RunRecord["capability"] }): Promise<RunRecord> {
+  submit(input: { prompt: string; cwd: string; role?: string; capability?: RunRecord["capability"]; complexity?: RunRecord["complexity"] }): Promise<RunRecord> {
     return this.exclusive(async () => {
       const now = this.clock();
       const run: RunRecord = {
@@ -129,6 +132,7 @@ export class RunManager {
         prompt: input.prompt,
         role: input.role ?? "developer",
         capability: input.capability ?? "implement",
+        complexity: input.complexity ?? null,
         cwd: input.cwd,
         status: "queued",
         current: null,
@@ -164,7 +168,7 @@ export class RunManager {
       const prompt = input.prompt ?? (await this.deps.port.firstUserMessage(input.agentId).catch(() => null)) ?? ADOPTED_PROMPT;
       const id = `run-${randomUUID()}`;
       const run: RunRecord = {
-        id, prompt: clip(prompt, 20_000) ?? ADOPTED_PROMPT, role: input.role ?? "developer", capability: "implement", cwd: input.cwd,
+        id, prompt: clip(prompt, 20_000) ?? ADOPTED_PROMPT, role: input.role ?? "developer", capability: "implement", complexity: null, cwd: input.cwd,
         status: "running",
         current: { agentId: input.agentId, provider: input.provider, model: input.model, startedAt: now },
         attempts: 1, suspended: {}, resumeAt: null, pending: null, handledError: null, userBaseline: null, attention: false, result: null, error: null,
@@ -313,6 +317,13 @@ export class RunManager {
       await this.save(this.note({ ...run, status: "failed", error: `Could not reserve the attempt (${reserved.reason}).` }, "failed"));
       return;
     }
+    const model = ctx.catalog.providers.find(entry => entry.id === target.provider)?.models.find(entry => entry.id === target.model);
+    const remaining = providerQuotas(ctx.usage, this.clock()).get(target.provider)?.remainingPct;
+    const thinkingOptionId = chooseEffort(model?.thinkingOptions ?? [], {
+      complexity: run.complexity ?? estimateComplexity(run.prompt),
+      strategy: ctx.settings.strategy,
+      quotaLow: remaining !== null && remaining !== undefined && remaining <= 30,
+    });
     let working: RunRecord = { ...run, status: "running", attempts: attempt, pending: { kind: "create", key }, resumeAt: null };
     await this.save(working);
     try {
@@ -320,6 +331,7 @@ export class RunManager {
         key, provider: target.provider, model: target.model, cwd: run.cwd,
         prompt: handoff ?? run.prompt, title: `Zelqio · ${clip(run.prompt, 48)}`,
         metadata: { "zelqio.run": run.id, "zelqio.attempt": String(attempt) },
+        ...(thinkingOptionId ? { thinkingOptionId } : {}),
       });
       await this.deps.attempts.confirmLaunch({ key, agentRef: created.id }).catch(() => undefined);
       working = this.note({
