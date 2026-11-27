@@ -1,5 +1,6 @@
 import { draftOrchestration } from "../shared/orchestration";
 import type { ProviderCatalogData } from "../shared/providers";
+import type { RolesConfig } from "../shared/roles";
 import type { ZelqioSettings } from "../shared/settings";
 import type { UsageSnapshot } from "../shared/usage";
 import { chooseEffort } from "./effort";
@@ -26,6 +27,7 @@ export interface RoutingDeps {
   readCatalog(): Promise<ProviderCatalogData>;
   readUsage(): Promise<UsageSnapshot | null>;
   readSettings(): Promise<ZelqioSettings | null>;
+  readRoles?(): Promise<RolesConfig>;
   clock?: () => number;
 }
 
@@ -45,9 +47,9 @@ export function automaticRouting(deps: RoutingDeps) {
       metadata: { ...metadata, [ROUTING_METADATA_KEY]: { ...value, at: clock() } },
     });
     try {
-      const [settings, catalog, usage] = await Promise.all([deps.readSettings(), deps.readCatalog(), deps.readUsage()]);
+      const [settings, catalog, usage, rolesConfig] = await Promise.all([deps.readSettings(), deps.readCatalog(), deps.readUsage(), deps.readRoles?.().catch(() => ({})) ?? Promise.resolve({})]);
       if (!settings) return note({ status: "unrouted", reason: "settings_unavailable" });
-      const role = resolveRoles({}).find(entry => entry.id === roleId);
+      const role = resolveRoles(rolesConfig).find(entry => entry.id === roleId);
       if (!role) return note({ status: "unrouted", reason: "unknown_role" });
       const decision = route({
         catalog, settings, role, capability: role.capabilities[0],

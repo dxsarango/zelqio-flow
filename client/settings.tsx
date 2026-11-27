@@ -1,5 +1,5 @@
 import type { PluginSurfaceProps } from "@getpaseo/plugin/client";
-import { useRpc, useTranslation } from "@getpaseo/plugin/client";
+import { useRpc, useSettings, useTranslation } from "@getpaseo/plugin/client";
 import {
   SettingsAction,
   SettingsRow,
@@ -9,9 +9,11 @@ import {
 } from "@getpaseo/plugin/client/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, TextInput, View } from "react-native";
 import { unwrapResult } from "../shared/rpc";
-import { rolesListRpc } from "../shared/roles";
+import { addCustomRole, removeCustomRole, setCandidates } from "../server/roles";
+import type { ProviderCatalogData } from "../shared/providers";
+import { capability, rolesConfig, rolesListRpc, rolesSettingsDefinition } from "../shared/roles";
 import {
   FUNDINGS,
   MODES,
@@ -29,21 +31,76 @@ import { messages } from "./translations";
 
 type Props = PluginSurfaceProps;
 
-function RolesList({ theme }: Pick<Props, "theme">) {
+function slug(label: string): string {
+  const base = label.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return /^[a-z]/.test(base) ? base.slice(0, 32) : `r_${base}`.slice(0, 32);
+}
+
+/** Lets the user prefer a provider per role and add or remove their own roles. Roles never create Paseo Agent Profiles. */
+function RolesEditor({ theme, catalog }: { theme: Props["theme"]; catalog: ProviderCatalogData | null }) {
   const { t } = useTranslation(messages);
   const list = useRpc(rolesListRpc);
   const roles = useQuery({ queryKey: ["zelqio.roles"], queryFn: async () => unwrapResult(await list({})) });
+  const store = useSettings(rolesSettingsDefinition);
+  const [name, setName] = useState("");
+  const [skill, setSkill] = useState<(typeof capability.options)[number]>("implement");
+  const [failed, setFailed] = useState(false);
   const muted = { color: theme.colors.foregroundMuted };
-  if (roles.data) {
-    return (
-      <>
-        {roles.data.roles.map((r) => (
-          <SettingsRow key={r.id} label={r.label} hint={r.capabilities.join(", ")} />
-        ))}
-      </>
-    );
+  const providers = catalog?.providers.filter((provider) => provider.enabled && provider.status === "ready") ?? [];
+  if (!roles.data || store.status !== "ready") {
+    return <Text style={muted}>{roles.isError || store.status === "error" ? t("prefs.rolesUnavailable") : t("prefs.rolesLoading")}</Text>;
   }
-  return <Text style={muted}>{roles.isError ? t("prefs.rolesUnavailable") : t("prefs.rolesLoading")}</Text>;
+  const save = (next: Parameters<typeof setCandidates>[0]) => {
+    setFailed(false);
+    store.save(rolesConfig.parse(next), store.revision).then(() => void roles.refetch(), () => setFailed(true));
+  };
+  const options = [{ value: "any", label: t("prefs.anyProvider") }, ...providers.map((provider) => ({ value: provider.id, label: provider.label }))];
+  const id = slug(name);
+  const taken = roles.data.roles.some((role) => role.id === id);
+  return (
+    <>
+      <Text style={muted}>{t("prefs.rolesHint")}</Text>
+      {roles.data.roles.map((role) => (
+        <View key={role.id}>
+          <SettingsSelect
+            label={role.label}
+            hint={role.capabilities.map((entry) => t(`options.capability.${entry}`)).join(", ")}
+            value={role.candidates[0]?.provider ?? "any"}
+            options={options}
+            onValueChange={(value) => save(setCandidates(store.values, role.id, value === "any" ? [] : [{ provider: value }]))}
+          />
+          {role.kind === "custom" ? (
+            <SettingsAction label={role.label} actionLabel={t("prefs.roleRemove")} onPress={() => save(removeCustomRole(store.values, role.id))} />
+          ) : null}
+        </View>
+      ))}
+      <TextInput
+        accessibilityLabel={t("prefs.roleName")}
+        placeholder={t("prefs.roleName")}
+        placeholderTextColor={theme.colors.foregroundMuted}
+        value={name}
+        onChangeText={setName}
+        maxLength={60}
+        style={{ color: theme.colors.foreground, borderWidth: 1, borderColor: theme.colors.foregroundMuted, borderRadius: 6, padding: 8, marginTop: 8 }}
+      />
+      <SettingsSelect
+        label={t("prefs.roleCapability")}
+        value={skill}
+        options={capability.options.map((entry) => ({ value: entry, label: t(`options.capability.${entry}`) }))}
+        onValueChange={(value) => setSkill(capability.parse(value))}
+      />
+      <SettingsAction
+        label={t("prefs.addRole")}
+        actionLabel={t("prefs.roleAdd")}
+        disabled={!name.trim() || taken || store.saving}
+        onPress={() => {
+          save(addCustomRole(store.values, { id, label: name.trim(), capabilities: [skill], candidates: [] }));
+          setName("");
+        }}
+      />
+      {failed ? <Text accessibilityRole="alert" style={{ color: theme.colors.statusDanger }}>{t("prefs.roleSaveFailed")}</Text> : null}
+    </>
+  );
 }
 
 export function SettingsScreen({ theme, layout }: Props) {
@@ -143,8 +200,7 @@ export function SettingsScreen({ theme, layout }: Props) {
       </SettingsSection>
 
       <SettingsSection title={t("prefs.sections.roles")}>
-        <Text style={{ color: c.foregroundMuted }}>{t("prefs.rolesHint")}</Text>
-        <RolesList theme={theme} />
+        <RolesEditor theme={theme} catalog={catalog} />
       </SettingsSection>
 
       <SettingsSection title={t("prefs.sections.modes")}>
