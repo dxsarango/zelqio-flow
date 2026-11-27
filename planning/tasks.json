@@ -2438,10 +2438,10 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Exporta campos permitidos desde fixtures y protege referencias activas al evaluar retención",
-      "status": "todo",
+      "status": "in_progress",
       "evidence": [],
-      "owner": null,
-      "branch": null,
+      "owner": "orchestrator",
+      "branch": "feat/s09-t07-export-retention",
       "pr": null,
       "blockers": []
     },
