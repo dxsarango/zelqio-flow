@@ -7,6 +7,7 @@ import { automaticRouting } from "./server/automatic-routing";
 import { delegationTools, type ChildSummary } from "./server/delegation-tools";
 import { draftOrchestration } from "./shared/orchestration";
 import { paseoAgentPort } from "./server/paseo-agent-port";
+import { platformPowerAdapter, PowerManager } from "./server/power-manager";
 import { paseoSnapshotSource, readCatalog } from "./server/providers";
 import { handleZelqio } from "./server/rpc";
 import { RunManager } from "./server/run-manager";
@@ -83,6 +84,15 @@ export default function contribute(server: PluginServerContext) {
     },
   });
 
+  const power = new PowerManager({
+    adapter: platformPowerAdapter(),
+    enabled: async () => {
+      const saved = await settings.read();
+      return saved.status === "ready" && saved.values.power.preventSleep;
+    },
+  });
+  const syncPower = async () => { await power.sync(await runs.hasWork()); };
+
   let recovered: Promise<void> | undefined;
   const ready = (paseo: PaseoApi) => {
     remember(paseo);
@@ -132,6 +142,7 @@ export default function contribute(server: PluginServerContext) {
   handleZelqio(server, runsListRpc, async (_input, { paseo }) => {
     await ready(paseo);
     await runs.tick();
+    await syncPower().catch(() => undefined);
     return { runs: await runs.list() };
   });
   handleZelqio(server, runsCancelRpc, async (input, { paseo }) => {
@@ -169,12 +180,13 @@ export default function contribute(server: PluginServerContext) {
     await runs.onAgentUpdate(agent.id, outcome.kind === "failed" ? { error: outcome.error } : undefined);
   });
   const timer = setInterval(() => {
-    if (latest) void runs.tick().catch(() => undefined);
+    if (latest) void runs.tick().then(syncPower).catch(() => undefined);
   }, TICK_MS);
   timer.unref?.();
 
   return () => {
     clearInterval(timer);
+    void power.release();
     removeHook();
     removeCreateBefore();
     removeCreateAfter();

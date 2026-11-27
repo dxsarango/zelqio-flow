@@ -35,6 +35,8 @@ export const zelqioSettings = z
     git: z.strictObject({ workflow: gitWorkflow.default("local_only") }).default({ workflow: "local_only" }),
     /** Publication stays denied until the user configures it; per-project grants live in the policy layers. */
     remoteAuthorization: remoteAuthorization.default("denied"),
+    /** Power Management: keep the computer awake only while work is in progress. Off until the user turns it on. */
+    power: z.strictObject({ preventSleep: z.boolean().default(false) }).default({ preventSleep: false }),
   })
   .refine((s) => s.consumptionOptIn || !Object.values(s.providers).some((p) => p.use !== "off" && p.funding === "consumption"), {
     message: "consumption funding requires the explicit consumption opt-in",
@@ -54,6 +56,7 @@ export function defaultSettings(): ZelqioSettings {
     mode: "review_first",
     git: { workflow: "local_only" },
     remoteAuthorization: "denied",
+    power: { preventSleep: false },
   };
 }
 
