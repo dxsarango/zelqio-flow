@@ -2187,10 +2187,10 @@
       "role": "Developer",
       "risk": "medium",
       "acceptance": "Distingue identidad gestionada, intento, estado y permisos mediante snapshots sintéticos",
-      "status": "todo",
+      "status": "in_progress",
       "evidence": [],
-      "owner": null,
-      "branch": null,
+      "owner": "orchestrator",
+      "branch": "feat/s04-t08-agent-lifecycle",
       "pr": null,
       "blockers": []
     },
@@ -2341,10 +2341,10 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Simula los cuatro modos con decisiones tipadas, restricciones y caducidad; sin publicación",
-      "status": "todo",
+      "status": "in_progress",
       "evidence": [],
-      "owner": null,
-      "branch": null,
+      "owner": "orchestrator",
+      "branch": "feat/s07-t08-delivery-decisions",
       "pr": null,
       "blockers": []
     },
@@ -2358,11 +2358,39 @@
       "role": "Developer",
       "risk": "medium",
       "acceptance": "Fixture vincula solicitud, alcance, SHA y política; reinicio, rechazo e invalidación",
-      "status": "in_progress",
-      "evidence": [],
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "review",
+          "command": "revision independiente de Claude (solo lectura) del candidato de S07-T09",
+          "result": "FAIL",
+          "sha": "8f16e7814e8893376892624ca0b684868525f13d",
+          "date": "2026-11-26",
+          "notes": "3 hallazgos importantes: ids duplicados en el esquema, autoaprobacion por mayusculas, decide sin observacion vigente de SHA y politica",
+          "limitations": "Revision estatica; no ejecuto tests. Correcciones aplicadas y verificadas por el coordinador, sin segunda revision"
+        },
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "64588e794f16e9e8354d4ce25f13aaa336368a49",
+          "date": "2026-11-26",
+          "notes": "222 pruebas en main tras la integracion",
+          "limitations": "Fixture local; la identidad del aprobador la verifica el llamador; concurrencia solo dentro de un proceso"
+        },
+        {
+          "kind": "ci",
+          "command": "checks ci (3 sistemas) y planning del PR 44",
+          "result": "PASS",
+          "sha": "21b3392fa730bcf20eda6776942695064cf7d602",
+          "date": "2026-11-26",
+          "notes": "Integrado con squash y match-head-commit tras update-branch",
+          "limitations": ""
+        }
+      ],
       "owner": "orchestrator",
       "branch": "feat/s07-t09-approval-requests",
-      "pr": null,
+      "pr": 44,
       "blockers": []
     },
     {
@@ -2393,10 +2421,10 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Proyecta evidencia y salud de preview ligadas al SHA sin iniciar servicios",
-      "status": "todo",
+      "status": "in_progress",
       "evidence": [],
-      "owner": null,
-      "branch": null,
+      "owner": "orchestrator",
+      "branch": "feat/s08-t08-evidence-preview",
       "pr": null,
       "blockers": []
     },
@@ -2445,11 +2473,30 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Comprueba cobertura de claves y variables en ambos idiomas para estados del producto",
-      "status": "in_progress",
-      "evidence": [],
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "npm run check",
+          "result": "PASS",
+          "sha": "fe837309bd3477b84f0fdb6ea47679f628e91db5",
+          "date": "2026-11-26",
+          "notes": "npm run check verde antes de integrar; registros tipados en i18n-states",
+          "limitations": "Cubre estados de producto actuales; claves nuevas requieren ampliar los registros"
+        },
+        {
+          "kind": "ci",
+          "command": "checks ci (3 sistemas) y planning del PR 43",
+          "result": "PASS",
+          "sha": "537e6c4303069546325e5e48f5932229547c1cbf",
+          "date": "2026-11-26",
+          "notes": "Integrado con squash y match-head-commit tras update-branch",
+          "limitations": "Riesgo bajo; sin revision independiente"
+        }
+      ],
       "owner": "orchestrator",
       "branch": "feat/s09-t09-i18n-coverage",
-      "pr": null,
+      "pr": 43,
       "blockers": []
     }
   ]
