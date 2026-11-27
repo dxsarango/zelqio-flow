@@ -2445,10 +2445,10 @@
       "role": "Developer",
       "risk": "low",
       "acceptance": "Comprueba cobertura de claves y variables en ambos idiomas para estados del producto",
-      "status": "todo",
+      "status": "in_progress",
       "evidence": [],
-      "owner": null,
-      "branch": null,
+      "owner": "orchestrator",
+      "branch": "feat/s09-t09-i18n-coverage",
       "pr": null,
       "blockers": []
     }
