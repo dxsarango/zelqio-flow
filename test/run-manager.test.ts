@@ -49,6 +49,8 @@ class FakePaseo implements AgentPort {
   }
   async lastReply(id: string) { return this.replies.get(id) ?? null; }
   async recentActivity(id: string) { return `activity of ${id}`; }
+  firstMessages = new Map<string, string>();
+  async firstUserMessage(id: string) { return this.firstMessages.get(id) ?? null; }
   finish(id: string, reply: string) { const agent = this.agents.get(id)!; agent.status = "idle"; agent.lastError = null; this.replies.set(id, reply); }
   fail(id: string, message: string) { const agent = this.agents.get(id)!; agent.status = "error"; agent.lastError = message; }
 }
@@ -275,5 +277,23 @@ describe("run manager: real orchestration loop over native agents", () => {
     paseo.finish("agent-1", "late");
     await manager.tick();
     expect((await manager.list())[0].status).toBe("cancelled");
+  });
+
+  it("adopts an agent created natively and then handles its limit like any other run", async () => {
+    use("alpha", "primary");
+    use("beta", "auxiliary");
+    const manager = build();
+    const native = await paseo.create({ key: "native-1", provider: "alpha", model: "alpha-model", cwd: "/work/repo", prompt: "Refactor the parser", title: "t", metadata: {} });
+    paseo.firstMessages.set(native.id, "Refactor the parser");
+    const adopted = await manager.adopt({ agentId: native.id, provider: "alpha", model: "alpha-model", cwd: "/work/repo" });
+    expect(adopted).toMatchObject({ status: "running", prompt: "Refactor the parser" });
+    expect((await manager.adopt({ agentId: native.id, provider: "alpha", model: "alpha-model", cwd: "/work/repo" })).id).toBe(adopted.id);
+    expect(await manager.list()).toHaveLength(1);
+
+    paseo.fail(native.id, "Usage limit reached. Try again in 3 hours.");
+    await manager.tick();
+    const [run] = await manager.list();
+    expect(run.current?.provider).toBe("beta");
+    expect(paseo.created.at(-1)?.prompt).toContain("Refactor the parser");
   });
 });

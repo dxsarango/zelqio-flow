@@ -39,7 +39,12 @@ export interface AgentPort {
   lastReply(agentId: string): Promise<string | null>;
   /** A short transcript tail used to brief a replacement agent. */
   recentActivity(agentId: string): Promise<string>;
+  /** The first message the user sent to the agent, used when an agent created natively is adopted. */
+  firstUserMessage(agentId: string): Promise<string | null>;
 }
+
+/** Stands in for the request of an adopted agent until its first message can be read. */
+export const ADOPTED_PROMPT = "Continue the task described in the previous agent's conversation.";
 
 export interface RunManagerDeps {
   port: AgentPort;
@@ -141,6 +146,32 @@ export class RunManager {
       await this.save(run, true);
       await this.startQueued();
       return (await this.find(run.id)) ?? run;
+    });
+  }
+
+  /**
+   * Brings an agent that Paseo already created (for example from the native New Agent screen with Automatic on) under
+   * the same coordination as a submitted request: its limits are handled, its answer is delivered.
+   */
+  adopt(input: { agentId: string; provider: string; model: string; cwd: string; prompt?: string; role?: string }): Promise<RunRecord> {
+    return this.exclusive(async () => {
+      const existing = (await this.list()).find(run => run.current?.agentId === input.agentId);
+      if (existing) return existing;
+      const now = this.clock();
+      const prompt = input.prompt ?? (await this.deps.port.firstUserMessage(input.agentId).catch(() => null)) ?? ADOPTED_PROMPT;
+      const id = `run-${randomUUID()}`;
+      const run: RunRecord = {
+        id, prompt: clip(prompt, 20_000) ?? ADOPTED_PROMPT, role: input.role ?? "developer", capability: "implement", cwd: input.cwd,
+        status: "running",
+        current: { agentId: input.agentId, provider: input.provider, model: input.model, startedAt: now },
+        attempts: 1, suspended: {}, resumeAt: null, pending: null, handledError: null, attention: false, result: null, error: null,
+        history: [{ at: now, kind: "started", provider: input.provider, model: input.model, agentId: input.agentId, note: "adopted" }],
+        createdAt: now, updatedAt: now,
+      };
+      await this.deps.attempts.reserve({ key: `${id}-a1`, task: id, attempt: 1, maxConcurrent: this.maxConcurrent + 8 }).catch(() => undefined);
+      await this.deps.attempts.confirmLaunch({ key: `${id}-a1`, agentRef: input.agentId }).catch(() => undefined);
+      await this.save(run, true);
+      return run;
     });
   }
 
@@ -339,6 +370,10 @@ export class RunManager {
   private async exhausted(run: RunRecord, message: string, hintedReset: number | undefined, transient: boolean): Promise<void> {
     const current = run.current!;
     const now = this.clock();
+    if (run.prompt === ADOPTED_PROMPT) {
+      const first = await this.deps.port.firstUserMessage(current.agentId).catch(() => null);
+      if (first) run = { ...run, prompt: clip(first, 20_000) ?? run.prompt };
+    }
     let ctx;
     try {
       ctx = await this.context();

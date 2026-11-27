@@ -46,6 +46,12 @@ export function paseoAgentPort(api: () => PaseoApi): AgentPort {
       return replies.length ? (replies[replies.length - 1]?.text ?? null) : null;
     },
 
+    async firstUserMessage(agentId) {
+      const page = await api().agents.ref(agentId).timeline.refetch({ direction: "tail", limit: 200 });
+      const first = entriesOf(page).map(entry => entry.item).find(item => item?.type === "user_message" && item.text);
+      return first?.text ?? null;
+    },
+
     async recentActivity(agentId) {
       const page = await api().agents.ref(agentId).timeline.refetch({ direction: "tail", limit: 40 });
       const lines: string[] = [];

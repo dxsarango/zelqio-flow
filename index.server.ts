@@ -3,6 +3,8 @@ import { join } from "node:path";
 import type { PaseoApi } from "@getpaseo/client";
 import type { PluginServerContext } from "@getpaseo/plugin/server";
 import { AttemptJournal } from "./server/attempt-journal";
+import { automaticRouting } from "./server/automatic-routing";
+import { draftOrchestration } from "./shared/orchestration";
 import { paseoAgentPort } from "./server/paseo-agent-port";
 import { paseoSnapshotSource, readCatalog } from "./server/providers";
 import { handleZelqio } from "./server/rpc";
@@ -65,6 +67,15 @@ export default function contribute(server: PluginServerContext) {
     },
   });
 
+  const routeAutomatically = automaticRouting({
+    readCatalog: async () => readCatalog(paseoSnapshotSource(api())),
+    readUsage: () => usage.read(() => api().providers.listUsage()).catch(() => null),
+    readSettings: async () => {
+      const saved = await settings.read();
+      return saved.status === "ready" ? saved.values : null;
+    },
+  });
+
   let recovered: Promise<void> | undefined;
   const ready = (paseo: PaseoApi) => {
     remember(paseo);
@@ -106,6 +117,21 @@ export default function contribute(server: PluginServerContext) {
     return runs.cancel(input.id);
   });
 
+  // With Automatic on in the native New Agent / New Workspace screens, Zelqio chooses the model at creation.
+  const removeCreateBefore = server.addHook("agent.create.before", async (payload, { paseo }) => {
+    remember(paseo);
+    const routed = await routeAutomatically(payload.request as never);
+    return routed as typeof payload.request;
+  });
+  // ... and keeps looking after that agent: limits are handled and the answer is delivered, like a submitted request.
+  const removeCreateAfter = server.addHook("agent.create.after", async ({ agent }, { paseo }) => {
+    await ready(paseo);
+    if (draftOrchestration(agent.metadata) !== "automatic" || Object.hasOwn(agent.metadata, "zelqio.run")) return;
+    const routing = agent.metadata["zelqio-flow.routing"] as { provider?: string; model?: string } | undefined;
+    const provider = routing?.provider ?? agent.provider;
+    await runs.adopt({ agentId: agent.id, provider, model: routing?.model ?? "", cwd: agent.cwd }).catch(() => undefined);
+  });
+
   // A finished or failed turn is the moment a limit shows up, so react to it right away.
   const removeHook = server.addHook("agent.turn.after", async ({ agent }, { paseo }) => {
     await ready(paseo);
@@ -119,5 +145,7 @@ export default function contribute(server: PluginServerContext) {
   return () => {
     clearInterval(timer);
     removeHook();
+    removeCreateBefore();
+    removeCreateAfter();
   };
 }
