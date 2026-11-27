@@ -1330,7 +1330,7 @@
       "role": "UI Developer",
       "risk": "high",
       "acceptance": "El interruptor Automatic es visible en New Agent y New Workspace y la decisión del modelo se toma al crear; el envío sigue siendo una acción del usuario",
-      "status": "in_progress",
+      "status": "done",
       "evidence": [
         {
           "kind": "poc",
@@ -1367,11 +1367,20 @@
           "date": "2026-11-27",
           "notes": "S04-T01 aporta el interruptor y S11-T02 la decisión al crear; no se escribe en el borrador",
           "limitations": "Pendiente la comprobación con un daemon real (S11-T03)"
+        },
+        {
+          "kind": "local",
+          "command": "node poc/e2e/run.mjs (daemon aislado de Paseo 0.17.6 y 0.17.5, proveedores sinteticos, 0 prompts externos)",
+          "result": "PASS",
+          "sha": "f6d8e9beb15dfc037986ed720c49f9586a6ac17c",
+          "date": "2026-11-27",
+          "notes": "S5: el interruptor Automatic decide al crear y el envio sigue siendo una accion del usuario",
+          "limitations": "No se valido visualmente en la interfaz de Paseo"
         }
       ],
       "owner": "orchestrator",
-      "branch": "feat/run-manager",
-      "pr": null,
+      "branch": "feat/e2e-run-flow-1",
+      "pr": 66,
       "blockers": []
     },
     {
@@ -1432,7 +1441,7 @@
       "role": "Developer",
       "risk": "high",
       "acceptance": "Con Automatic activado el hook elige proveedor y modelo autorizados antes del primer mensaje; sin Automatic no cambia nada; un fallo no bloquea la creación",
-      "status": "in_progress",
+      "status": "done",
       "evidence": [
         {
           "kind": "poc",
@@ -1478,11 +1487,20 @@
           "date": "2026-11-27",
           "notes": "Hook agent.create.before con automatic-routing y pruebas (R1: el consentimiento de Automatic sustituye la procedencia)",
           "limitations": "Pendiente la comprobación con un daemon real (S11-T03)"
+        },
+        {
+          "kind": "local",
+          "command": "node poc/e2e/run.mjs (daemon aislado de Paseo 0.17.6 y 0.17.5, proveedores sinteticos, 0 prompts externos)",
+          "result": "PASS",
+          "sha": "f6d8e9beb15dfc037986ed720c49f9586a6ac17c",
+          "date": "2026-11-27",
+          "notes": "S5: con el marcador Automatic el hook agent.create.before elige el modelo autorizado; sin el marcador el proveedor y modelo pedidos no cambian",
+          "limitations": "Sin proveedores comerciales"
         }
       ],
       "owner": "orchestrator",
-      "branch": "feat/run-manager",
-      "pr": null,
+      "branch": "feat/e2e-run-flow-1",
+      "pr": 66,
       "blockers": []
     },
     {
@@ -1496,11 +1514,21 @@
       "role": "Senior Developer",
       "risk": "high",
       "acceptance": "Registro de ejecuciones de Zelqio Flow (metadata zelqio.run) y no intervención en sesiones que no creó ni adoptó con Automatic",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
-      "pr": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "node poc/e2e/run.mjs (daemon aislado de Paseo 0.17.6 y 0.17.5, proveedores sinteticos, 0 prompts externos)",
+          "result": "PASS",
+          "sha": "f6d8e9beb15dfc037986ed720c49f9586a6ac17c",
+          "date": "2026-11-27",
+          "notes": "Registro de ejecuciones (metadata zelqio.run) y adopcion solo de sesiones creadas con Automatic; S5 y S8 muestran que no se interviene en sesiones ajenas ni con la toma de control del usuario",
+          "limitations": "La metadata la puede escribir otro cliente; no concede autoridad"
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/e2e-run-flow-1",
+      "pr": 66,
       "blockers": []
     },
     {
@@ -1513,11 +1541,21 @@
       "role": "QA",
       "risk": "high",
       "acceptance": "Prueba extremo a extremo real de una sesión nativa con Automatic y con opt-out, sin cambios globales ni perfiles",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
-      "pr": null,
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "node poc/e2e/run.mjs (daemon aislado de Paseo 0.17.6 y 0.17.5, proveedores sinteticos, 0 prompts externos)",
+          "result": "PASS",
+          "sha": "f6d8e9beb15dfc037986ed720c49f9586a6ac17c",
+          "date": "2026-11-27",
+          "notes": "G4: prueba extremo a extremo real de una sesion nativa con Automatic y con control manual",
+          "limitations": "Sin proveedores comerciales; validacion visual pendiente"
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "feat/e2e-run-flow-1",
+      "pr": 66,
       "blockers": []
     },
     {
@@ -2782,11 +2820,21 @@
       "role": "Developer",
       "risk": "medium",
       "acceptance": "Daemon real aislado con proveedores sintéticos: entrega, límite con reasignación, límite sin alternativa con espera y reanudación única, límite en la última respuesta, Automatic nativo, reinicio, sin duplicados y toma de control",
-      "status": "in_progress",
-      "evidence": [],
+      "status": "done",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "node poc/e2e/run.mjs (daemon aislado de Paseo 0.17.6 y 0.17.5, proveedores sinteticos, 0 prompts externos)",
+          "result": "PASS",
+          "sha": "f6d8e9beb15dfc037986ed720c49f9586a6ac17c",
+          "date": "2026-11-27",
+          "notes": "S1 a S8 en 0.17.6 y S1 a S3 en 0.17.5: entrega, reasignacion con brief sin credenciales, espera y reanudacion unica, limite en la ultima respuesta, Automatic nativo con control manual intacto, reinicio durante la espera, concurrencia sin duplicados y toma de control. Cinco defectos reales corregidos",
+          "limitations": "Proveedores sinteticos; cortes durante una creacion o envio en curso y Desktop sin cubrir; tras reiniciar el plugin actua al primer hook o llamada RPC"
+        }
+      ],
       "owner": "orchestrator",
       "branch": "feat/e2e-run-flow-1",
-      "pr": null,
+      "pr": 66,
       "blockers": []
     },
     {
