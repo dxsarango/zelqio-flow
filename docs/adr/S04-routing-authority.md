@@ -44,3 +44,13 @@ La referencia actual de los hooks describe un identificador de workspace. La son
 La recomendación y las sondas o pruebas con efectos deshabilitados son independientes del bloqueo de activación. [Evidencia de autoridad y selección](../evidence/S04-T02-creation-authority.md)
 
 Los adaptadores de financiación pueden usar señales diferentes y entregar el mismo contrato de evidencia. El contrato mantiene los valores declarado, autorizado y verificado separados. El adaptador acredita una identidad de ruta opaca y evita devolver evidencia cuando falten los enlaces requeridos. [Matriz de adaptadores](../evidence/S04-funding-adapters.md) · [Sonda de selección supervisada](../evidence/S04-T06-supervised-selection.md)
+
+## Actualización con Paseo 0.17.5 (27 de noviembre de 2026)
+
+Las sondas aisladas de [Paseo 0.17.5](../evidence/S00-paseo-0.17.5-probes.md) cambian el estado de los bloqueos, sin cambiar las autoridades de la tabla anterior:
+
+- **Alcance de la política.** `agent.create.before` recibe `workspaceId`; dos workspaces con el mismo directorio tienen identificadores distintos y un segundo plugin no puede reasignarlo. Una política puede ligarse a `(host, proyecto, workspaceId)`. Elegir un workspace válido no acredita una autorización humana.
+- **Procedencia de la selección: sigue sin existir.** Una elección explícita y un borrador web preseleccionado producen el mismo payload en el hook. El diseño no puede apoyarse en el hook por sí solo.
+- **Marcadores de identidad.** La metadata y las etiquetas las pueden reproducir y sobrescribir los clientes. La identidad gestionada de S04-T03 necesita un registro propio de Zelqio Flow con autoridad, no marcadores de Paseo.
+- **Reanudación.** El hook `agent.open.before` puede denegar y luego permitir la reanudación del mismo agente persistido.
+- **Alternativas propuestas, sin aprobar:** [routing desde el compositor y lanzador propio](S04-native-composer-routing.md) y [políticas de financiación](S04-funding-policies.md). La selección automática sigue deshabilitada y la política Estricta sigue siendo la única vigente.

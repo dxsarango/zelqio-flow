@@ -414,14 +414,23 @@
           "date": "2026-11-26",
           "notes": "Four controls with dictation and plugin toggles. Correlated both connections per enabled control to Paseo speech-model downloads, none in disabled controls.",
           "limitations": "Original T08 socket unidentifiable, no historical endpoint. Child processes, IPv6, transient sockets and real-state export remain unverified."
+        },
+        {
+          "kind": "local",
+          "command": "run.mjs state/network contra un daemon aislado de Paseo 0.17.5",
+          "result": "FAIL",
+          "sha": "23ea91001636f1cea9a37779efc1f789421b8941",
+          "date": "2026-11-27",
+          "notes": "POC-12: el permiso pendiente se pierde al reiniciar y un envio tardio con el mismo ID llega de nuevo al proveedor; reconciliacion de efectos solo con journal propio; retirada y exportacion de estado real PASS; red: solo descargas de voz de Paseo en cuatro ventanas",
+          "limitations": "Datos sinteticos, 0 prompts de inferencia; destino historico de 0.17.4 y pares UDP remotos sin cubrir"
         }
       ],
       "owner": "orchestrator",
       "branch": "docs/s00-feasibility-recovery",
       "pr": null,
       "blockers": [
-        "Ordered restart of synthetic approvals passed. Active runs, crash/concurrency and effects reconciliation remain unverified.",
-        "Reproduced traffic was attributed to Paseo speech downloads. Historical endpoint, wider traffic scope and real-state export remain unverified."
+        "Paseo 0.17.5 loses pending permissions on restart and can deliver a late duplicate decision; the product must keep its own approval journal and idempotency (S07-T09, S05-T09) before the capability is enabled.",
+        "Historical 0.17.4 speech-download destination and remote UDP peers remain unobserved."
       ]
     },
     {
@@ -1323,14 +1332,23 @@
           "date": "2026-11-26",
           "notes": "383 pruebas; evaluador aislado de hooks integrado en PR 53 tras revision independiente de Claude (1 importante, 4 nits corregidos)",
           "limitations": "Preparacion: no habilita el efecto. Siguen faltando procedencia de la eleccion nativa, financiacion verificada de la ruta efectiva y la revocacion de la politica permanente en el host"
+        },
+        {
+          "kind": "local",
+          "command": "Sondas aisladas de Paseo 0.17.5",
+          "result": "BLOCKED",
+          "sha": "aa6e3a38974441053b28ff7bdeb63416b2b59c9c",
+          "date": "2026-11-27",
+          "notes": "Sin procedencia de la seleccion; la escritura automatica en el borrador nativo queda deshabilitada segun la revision independiente",
+          "limitations": "Depende de la decision sobre el lanzador propio o la peticion a Paseo"
         }
       ],
       "owner": "orchestrator",
       "branch": "feat/s04-supervised-selection",
       "pr": null,
       "blockers": [
-        "Production application requires an effective, verified funding route and current policy for the exact model.",
-        "Verify that the supported native draft binding preserves explicit choices and effective options while authorization is rechecked."
+        "Production application requires an effective, verified funding route and current policy for the exact model (see S04 funding ADR, pending owner approval).",
+        "Native draft writes cannot preserve an explicit choice without host provenance or an atomic apply-and-bind operation; awaiting owner decision on the composer routing ADR."
       ]
     },
     {
@@ -1416,15 +1434,23 @@
           "date": "2026-11-26",
           "notes": "The hook exposes config, env and metadata, with paseo and signal in context. The catalog and quota projection do not establish verified financing per model.",
           "limitations": "Paseo 0.17.4 on Windows. Production routing stays disabled."
+        },
+        {
+          "kind": "local",
+          "command": "Sondas aisladas de Paseo 0.17.5 y ADR propuestos",
+          "result": "BLOCKED",
+          "sha": "aa6e3a38974441053b28ff7bdeb63416b2b59c9c",
+          "date": "2026-11-27",
+          "notes": "workspaceId disponible; procedencia de la seleccion sigue ausente (payload identico entre eleccion explicita y borrador preseleccionado); marcadores de identidad falsificables",
+          "limitations": "Alternativas en docs/adr/S04-native-composer-routing.md y S04-funding-policies.md, sin aprobar"
         }
       ],
       "owner": "orchestrator",
       "branch": "feat/s04-routing-recommendations",
       "pr": null,
       "blockers": [
-        "Verify a standing policy with trusted provenance, revocation, and effective project and host binding.",
-        "Verify exact-model billing and usable quota on the effective account or endpoint, including no paid fallback.",
-        "Verify the native flows preserve explicit model choice and effective permissions and options before an automatic change."
+        "Awaiting owner decision on docs/adr/S04-native-composer-routing.md (launcher or Paseo feature request) and docs/adr/S04-funding-policies.md; Paseo 0.17.5 still exposes no provenance of the model selection.",
+        "Standing policy with trusted provenance, revocation and effective workspace binding must be verified; workspaceId is now available in agent.create.before."
       ]
     },
     {
