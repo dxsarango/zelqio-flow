@@ -12,6 +12,28 @@ const historyKind = z.enum(["queued", "started", "exhausted", "reassigned", "wai
 
 const target = z.strictObject({ agentId: reference, provider: z.string().min(1), model: z.string().min(1), startedAt: epoch });
 
+export const runGitPlan = z.strictObject({
+  repository: z.string().min(1),
+  source: z.string().min(1),
+  baseRef: z.string().startsWith("refs/heads/"),
+  baseSha: z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/),
+  branch: z.string().min(1),
+  cwd: z.string().min(1).optional(),
+  workspaceId: z.string().min(1).optional(),
+});
+export type RunGitPlan = z.infer<typeof runGitPlan>;
+
+const runDelivery = z.strictObject({
+  state: z.enum(["pending", "no_changes", "local", "remote_denied", "review", "checks", "merged", "direct", "integrated", "blocked", "unmanaged"]),
+  sha: z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/).optional(),
+  prUrl: z.url({ protocol: /^https$/, hostname: /^github\.com$/ }).optional(),
+  reason: z.string().max(200).optional(),
+  nextAt: epoch.optional(),
+  retired: z.boolean().optional(),
+  retained: z.boolean().optional(),
+});
+export type RunDelivery = z.infer<typeof runDelivery>;
+
 /** One user request coordinated across native Paseo agents. The prompt stays local, in the plugin's own state. */
 export const runRecord = z.strictObject({
   id: reference,
@@ -43,6 +65,8 @@ export const runRecord = z.strictObject({
   dependsOn: z.array(reference).max(10).default([]),
   /** The coordinator was told that its delegated tasks finished. */
   reported: z.boolean().default(false),
+  gitPlan: runGitPlan.optional(),
+  delivery: runDelivery.optional(),
   attention: z.boolean(),
   result: z.string().nullable(),
   error: z.string().nullable(),
@@ -67,6 +91,7 @@ export type RunsState = z.infer<typeof runsState>;
 
 export const runSubmitInput = z.strictObject({
   prompt: z.string().trim().min(1).max(20_000),
+  title: z.string().trim().min(1).max(100).optional(),
   cwd: z.string().min(1),
   role: reference.default("developer"),
   capability: capability.default("implement"),

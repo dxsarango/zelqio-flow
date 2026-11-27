@@ -3,7 +3,7 @@ import { useRpc, useTranslation } from "@getpaseo/plugin/client";
 import { SettingsAction, SettingsRow, SettingsSection, SettingsSelect } from "@getpaseo/plugin/client/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Linking, ScrollView, Text, View } from "react-native";
 import type { CatalogProvider } from "../shared/providers";
 import { unwrapResult } from "../shared/rpc";
 import { STRATEGIES, type ZelqioSettings } from "../shared/settings";
@@ -164,12 +164,20 @@ function RunsSection() {
       {runs.isError ? <SettingsRow label={t("runs.unavailable")} /> : null}
       {runs.data && list.length === 0 ? <SettingsRow label={t("runs.empty")} /> : null}
       {list.map((run) => {
+        const prUrl = run.delivery?.prUrl;
         const using = run.current ? t("runs.using", { provider: run.current.provider, model: run.current.model }) : "";
         const waiting = run.status === "waiting_quota" && run.resumeAt !== null
           ? t("runs.waitingUntil", { at: dates.format(new Date(run.resumeAt)) })
           : "";
         const detail = run.status === "delivered" ? (run.result ?? "") : run.status === "failed" ? (run.error ?? "") : "";
-        const hint = [t(`runs.status.${run.status}`), using, waiting, run.attention ? t("runs.takeover") : "", detail.slice(0, 200)]
+        const gitHint = [
+          run.gitPlan ? t("runs.git.branch", { branch: run.gitPlan.branch }) : "",
+          run.delivery?.sha ? run.delivery.sha.slice(0, 12) : "",
+          run.delivery?.reason === "review_deferred" ? t("runs.git.deferred") : run.delivery ? t(`runs.git.${run.delivery.state}`) : "",
+          run.delivery?.retained ? t("runs.git.retained") : "",
+          prUrl,
+        ].filter(Boolean).join(" · ");
+        const hint = [t(`runs.status.${run.status}`), using, waiting, run.attention ? t("runs.takeover") : "", gitHint, detail.slice(0, 200)]
           .filter(Boolean).join(" · ");
         const active = run.status === "queued" || run.status === "running" || run.status === "waiting_quota";
         return active ? (
@@ -183,6 +191,9 @@ function RunsSection() {
               stop({ id: run.id }).then((result) => { unwrapResult(result); void runs.refetch(); }, () => setFailed(true));
             }}
           />
+        ) : prUrl ? (
+          <SettingsAction key={run.id} label={run.title ?? run.prompt.slice(0, 80)} hint={hint}
+            actionLabel={t("runs.git.open")} onPress={() => { void Linking.openURL(prUrl).catch(() => undefined); }} />
         ) : (
           <SettingsRow key={run.id} label={run.prompt.slice(0, 80)} hint={hint} />
         );

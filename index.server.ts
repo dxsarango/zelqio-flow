@@ -6,6 +6,7 @@ import { AttemptJournal } from "./server/attempt-journal";
 import { automaticRouting } from "./server/automatic-routing";
 import { delegationTools, type ChildSummary } from "./server/delegation-tools";
 import { draftOrchestration } from "./shared/orchestration";
+import { GitDelivery } from "./server/git-delivery";
 import { paseoAgentPort } from "./server/paseo-agent-port";
 import { paseoSnapshotSource, readCatalog } from "./server/providers";
 import { handleZelqio } from "./server/rpc";
@@ -50,12 +51,17 @@ export default function contribute(server: PluginServerContext) {
 
   const settings = registerZelqioSettings(server);
   server.registerSettings(draftPreference);
+  const readSettings = async () => {
+    const saved = await settings.read();
+    return saved.status === "ready" ? saved.values : null;
+  };
 
   const directory = stateDirectory();
   const runs = new RunManager({
     port: paseoAgentPort(api),
     store: new VersionedStore({ dir: directory, name: "runs", version: 1, schema: runsState, defaults: () => ({ runs: [] }) }),
     attempts: new AttemptJournal(directory),
+    git: new GitDelivery(directory, undefined, undefined, undefined, readSettings),
     // Test-only overrides; production keeps the defaults.
     recheckMs: Number(process.env.ZELQIO_RECHECK_MS) || undefined,
     defaultWaitMs: Number(process.env.ZELQIO_DEFAULT_WAIT_MS) || undefined,
@@ -68,19 +74,13 @@ export default function contribute(server: PluginServerContext) {
       return catalog;
     },
     readUsage: () => usage.read(() => api().providers.listUsage()).catch(() => null),
-    readSettings: async () => {
-      const saved = await settings.read();
-      return saved.status === "ready" ? saved.values : null;
-    },
+    readSettings,
   });
 
   const routeAutomatically = automaticRouting({
     readCatalog: async () => readCatalog(paseoSnapshotSource(api())),
     readUsage: () => usage.read(() => api().providers.listUsage()).catch(() => null),
-    readSettings: async () => {
-      const saved = await settings.read();
-      return saved.status === "ready" ? saved.values : null;
-    },
+    readSettings,
   });
 
   let recovered: Promise<void> | undefined;

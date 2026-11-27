@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { ZelqioError } from "../shared/errors";
 import type { ProviderCatalogData } from "../shared/providers";
-import { runsState, type RunRecord, type RunsState } from "../shared/runs";
+import { runsState, type RunGitPlan, type RunRecord, type RunsState } from "../shared/runs";
 import type { ZelqioSettings } from "../shared/settings";
 import type { UsageSnapshot } from "../shared/usage";
 import type { AttemptJournal } from "./attempt-journal";
 import { chooseEffort, estimateComplexity } from "./effort";
+import type { GitDelivery } from "./git-delivery";
 import { deriveModelFacts, providerQuotas } from "./model-facts";
 import { classifyFailure, limitFromReply, redactSecrets } from "./quota-signal";
 import { resolveRoles } from "./roles";
@@ -37,6 +38,7 @@ export interface CreateAgentInput {
   parentAgentId?: string;
   /** Reasoning level chosen for the model, when it has recognizable levels. */
   thinkingOptionId?: string;
+  workspaceId?: string;
 }
 
 /** The part of Paseo the manager uses. The real implementation wraps the SDK; tests use a fake. */
@@ -50,6 +52,9 @@ export interface AgentPort {
   recentActivity(agentId: string): Promise<string>;
   /** The first message the user sent to the agent, used when an agent created natively is adopted. */
   firstUserMessage(agentId: string): Promise<string | null>;
+  /** Create an empty native workspace so Git can verify placement before the provider starts. */
+  createWorktree?(input: RunGitPlan & { key: string }): Promise<{ cwd: string; workspaceId: string }>;
+  worktreeInactive?(workspaceId: string, cwd: string, owners: readonly string[]): Promise<boolean>;
 }
 
 /** Stands in for the request of an adopted agent until its first message can be read. */
@@ -59,6 +64,7 @@ export interface RunManagerDeps {
   port: AgentPort;
   store: VersionedStore<RunsState>;
   attempts: AttemptJournal;
+  git?: GitDelivery;
   readCatalog(): Promise<ProviderCatalogData>;
   readUsage(): Promise<UsageSnapshot | null>;
   readSettings(): Promise<ZelqioSettings | null>;
@@ -75,7 +81,7 @@ export interface RunManagerDeps {
 
 const MAX_REPLY = 6000;
 /** Capabilities whose agents edit files. Two of them never share a working directory at the same time. */
-const WRITERS = new Set<RunRecord["capability"]>(["implement", "architecture", "ui", "docs"]);
+const WRITERS = new Set<RunRecord["capability"]>(["implement", "architecture", "ui", "docs", "test", "coordinate"]);
 const TERMINAL = new Set<RunRecord["status"]>(["delivered", "failed", "cancelled"]);
 const MAX_CHILDREN = 8;
 const MAX_HISTORY = 200;
@@ -142,7 +148,7 @@ export class RunManager {
     return this.deps.store.update(state => ({ result: state.runs }));
   }
 
-  submit(input: { prompt: string; cwd: string; role?: string; capability?: RunRecord["capability"]; complexity?: RunRecord["complexity"] }): Promise<RunRecord> {
+  submit(input: { prompt: string; cwd: string; title?: string; role?: string; capability?: RunRecord["capability"]; complexity?: RunRecord["complexity"] }): Promise<RunRecord> {
     return this.exclusive(async () => {
       const now = this.clock();
       const run: RunRecord = {
@@ -160,7 +166,7 @@ export class RunManager {
         pending: null,
         handledError: null,
         userBaseline: null,
-        title: null,
+        title: input.title ?? clip(input.prompt.split(/\r?\n/, 1)[0], 100),
         parentRunId: null,
         dependsOn: [],
         reported: false,
@@ -194,6 +200,7 @@ export class RunManager {
         status: "running",
         current: { agentId: input.agentId, provider: input.provider, model: input.model, startedAt: now },
         attempts: 1, suspended: {}, resumeAt: null, pending: null, handledError: null, userBaseline: null, title: null, parentRunId: null, dependsOn: [], reported: false, attention: false, result: null, error: null,
+        ...(this.deps.git ? { delivery: { state: "unmanaged" as const } } : {}),
         history: [{ at: now, kind: "started", provider: input.provider, model: input.model, agentId: input.agentId, note: "adopted" }],
         createdAt: now, updatedAt: now,
       };
@@ -214,7 +221,8 @@ export class RunManager {
       for (const child of (await this.list()).filter(entry => entry.parentRunId === run.id && !TERMINAL.has(entry.status))) {
         await this.save(this.note({ ...child, status: "cancelled", resumeAt: null }, "cancelled", { note: "the coordinator run was stopped" }));
       }
-      return next;
+      await this.advanceDelivery(next);
+      return (await this.find(id)) ?? next;
     });
   }
 
@@ -243,7 +251,7 @@ export class RunManager {
       const now = this.clock();
       const child: RunRecord = {
         id: `run-${randomUUID()}`, prompt: input.prompt, role, capability: input.capability ?? "implement",
-        complexity: input.complexity ?? null, cwd: parent.cwd, status: "queued", current: null, attempts: 0, suspended: {},
+        complexity: input.complexity ?? null, cwd: parent.gitPlan?.cwd ?? parent.cwd, status: "queued", current: null, attempts: 0, suspended: {},
         resumeAt: null, pending: null, handledError: null, userBaseline: null, title: clip(input.title, 120),
         parentRunId: parent.id, dependsOn, reported: false, attention: false, result: null, error: null,
         history: [{ at: now, kind: "queued", note: "delegated" }], createdAt: now, updatedAt: now,
@@ -273,7 +281,8 @@ export class RunManager {
       if (TERMINAL.has(child.status)) return child;
       const next = this.note({ ...child, status: "cancelled", resumeAt: null }, "cancelled");
       await this.save(next);
-      return next;
+      await this.advanceDelivery(next);
+      return (await this.find(childId)) ?? next;
     });
   }
 
@@ -287,6 +296,7 @@ export class RunManager {
         try {
           if (latest.status === "running") await this.reconcile(latest);
           else if (latest.status === "waiting_quota" && latest.resumeAt !== null && this.clock() >= latest.resumeAt) await this.recover(latest);
+          else if (TERMINAL.has(latest.status)) await this.advanceDelivery(latest);
         } catch (error) {
           // One broken run must not stop the others. It is retried on the next pass.
           void error;
@@ -305,9 +315,13 @@ export class RunManager {
     return this.exclusive(async () => {
       await this.deps.attempts.recoverAfterRestart();
       for (const run of await this.list()) {
+        if (TERMINAL.has(run.status)) {
+          await this.advanceDelivery(run).catch(() => undefined);
+          continue;
+        }
         if (run.status !== "running" && run.status !== "waiting_quota") continue;
         try {
-          if (run.pending?.kind === "create" && !run.current) await this.launch(run, null, undefined, true);
+          if (run.pending?.kind === "create") await this.launch(run, null, undefined, true);
           const entry = (await this.deps.attempts.read()).entries.find(item => item.key === `${run.id}-a${run.attempts}`);
           if (entry?.status === "ambiguous") {
             await this.deps.attempts.resolveAmbiguous({ key: entry.key, outcome: entry.agentRef ? "failed" : "not_launched", evidenceRef: "restart-reconciled" }).catch(() => undefined);
@@ -383,6 +397,12 @@ export class RunManager {
       if (active >= this.maxConcurrent) return;
       let started = false;
       for (const next of runs.filter(run => run.status === "queued")) {
+        const parent = next.parentRunId ? runs.find(run => run.id === next.parentRunId) : undefined;
+        if (parent && TERMINAL.has(parent.status)) {
+          await this.save(this.note({ ...next, status: "cancelled", error: "The coordinator run has stopped." }, "cancelled"));
+          started = true;
+          break;
+        }
         const blockers = next.dependsOn.map(id => runs.find(run => run.id === id));
         const broken = blockers.find(dep => !dep || dep.status === "failed" || dep.status === "cancelled");
         if (broken !== undefined || blockers.some(dep => dep === undefined)) {
@@ -391,9 +411,30 @@ export class RunManager {
           break;
         }
         if (blockers.some(dep => dep?.status !== "delivered")) continue;
-        if (WRITERS.has(next.capability) && runs.some(other => other.id !== next.id && other.cwd === next.cwd
-          && other.parentRunId !== null && WRITERS.has(other.capability) && (other.status === "running" || other.status === "waiting_quota"))) continue;
-        await this.launch(next, null);
+        if (blockers.some(dep => dep?.gitPlan && !["integrated", "no_changes"].includes(dep.delivery?.state ?? ""))) continue;
+        let prepared = next;
+        if (this.deps.git && this.deps.port.createWorktree && WRITERS.has(next.capability) && !next.gitPlan) {
+          try {
+            const gitPlan = await this.deps.git.plan(next.cwd, next);
+            if (gitPlan) {
+              prepared = { ...next, gitPlan, delivery: { state: "pending" } };
+              await this.save(prepared);
+            }
+          } catch {
+            await this.save(this.note({ ...next, status: "failed", delivery: { state: "blocked", reason: "isolation_unverified" } }, "failed"));
+            started = true;
+            break;
+          }
+        }
+        if (!prepared.gitPlan && WRITERS.has(next.capability) && runs.some(other =>
+          other.id !== next.id && !other.gitPlan && other.cwd === next.cwd && WRITERS.has(other.capability)
+          && (this.deps.git ? other.id !== next.parentRunId : other.parentRunId !== null)
+          && (other.status === "running" || other.status === "waiting_quota"))) continue;
+        if (this.deps.git && !prepared.gitPlan && WRITERS.has(next.capability) && parent?.current) {
+          const coordinator = await this.deps.port.snapshot(parent.current.agentId);
+          if (!coordinator || coordinator.status === "running" || coordinator.status === "initializing" || coordinator.pendingPermissions) continue;
+        }
+        await this.launch(prepared, null);
         started = true;
         break;
       }
@@ -437,9 +478,20 @@ export class RunManager {
     let working: RunRecord = { ...run, status: "running", attempts: attempt, pending: { kind: "create", key }, resumeAt: null };
     await this.save(working);
     try {
+      if (working.gitPlan && !working.gitPlan.cwd) {
+        const plan = working.gitPlan;
+        const native = await this.deps.port.createWorktree!({ ...plan, key: run.id });
+        const attached = await this.deps.git!.attach(plan, native.cwd, native.workspaceId);
+        working = { ...working, gitPlan: attached };
+        await this.save(working);
+      }
+      const delegatedReader = Boolean(run.parentRunId && this.deps.git && !WRITERS.has(run.capability));
       const created = await this.deps.port.create({
-        key, provider: target.provider, model: target.model, cwd: run.cwd,
-        prompt: handoff ?? (run.parentRunId ? `${run.prompt}\n\n(Delegated task${run.title ? `: ${run.title}` : ""}. Finish with a concise report of what you did.)` : run.prompt),
+        key, provider: target.provider, model: target.model, cwd: working.gitPlan?.cwd ?? run.cwd,
+        workspaceId: working.gitPlan?.workspaceId,
+        prompt: (handoff ?? (run.parentRunId ? `${run.prompt}\n\n(Delegated task${run.title ? `: ${run.title}` : ""}. Finish with a concise report of what you did.)` : run.prompt)) +
+          (delegatedReader ? "\n\nRead-only task: inspect and report. Do not modify files, Git state, or remotes." : working.gitPlan
+            ? "\n\nWork in the assigned checkout. Leave commits and remote publication to Zelqio Flow. Keep the checkout clean before delegating work that needs your changes." : ""),
         title: `Zelqio · ${run.title ?? clip(run.prompt, 48)}`,
         metadata: { "zelqio.run": run.id, "zelqio.attempt": String(attempt), ...(run.parentRunId ? { "zelqio.parent": run.parentRunId } : {}) },
         ...(parentAgentId ? { parentAgentId } : {}),
@@ -454,7 +506,10 @@ export class RunManager {
       await this.save(working);
     } catch (error) {
       await this.deps.attempts.settle({ key, outcome: "failed", evidenceRef: "create-failed" }).catch(() => undefined);
-      await this.save(this.note({ ...working, status: "failed", pending: null, error: clip(error instanceof Error ? error.message : "Could not create the agent.", 300) }, "failed"));
+      await this.save(this.note({ ...working, status: "failed", pending: null,
+        ...(working.gitPlan ? { delivery: { state: "blocked" as const, reason: "isolation_unverified", retained: true } } : {}),
+        error: working.gitPlan ? "Could not create the agent in its verified worktree." :
+          clip(error instanceof Error ? error.message : "Could not create the agent.", 300) }, "failed"));
     }
   }
 
@@ -473,7 +528,10 @@ export class RunManager {
     }
     if (run.pending?.kind === "resume") {
       // The resume was recorded but the agent is not running: send it again with the same message id.
-      await this.deps.port.send(run.current.agentId, "The usage limit was restored. Continue the task from where you stopped.", run.pending.key);
+      const message = run.pending.key === run.id + "-c"
+        ? childReport((await this.list()).filter(child => child.parentRunId === run.id))
+        : "The usage limit was restored. Continue the task from where you stopped.";
+      await this.deps.port.send(run.current.agentId, message, run.pending.key);
       await this.confirmResume(run);
       return;
     }
@@ -484,7 +542,29 @@ export class RunManager {
         await this.exhausted({ ...run, userBaseline: snapshot.lastUserMessageAt }, full ?? "", limit.resetsAt, false, true);
         return;
       }
-      const children = (await this.list()).filter(entry => entry.parentRunId === run.id);
+      let children = (await this.list()).filter(entry => entry.parentRunId === run.id);
+      if (this.deps.git && run.gitPlan && !run.reported) {
+        if (children.some(child => !WRITERS.has(child.capability) && child.status === "running")) return;
+        for (const child of children) {
+          if (!child.gitPlan || child.status !== "delivered") continue;
+          if (child.delivery?.state === "pending") await this.advanceDelivery(child);
+          const fresh = (await this.find(child.id)) ?? child;
+          if (fresh.delivery?.state === "no_changes" || fresh.delivery?.state === "integrated") continue;
+          const outcome = fresh.delivery?.state === "local" ? await this.deps.git.integrate(fresh, run) : fresh.delivery;
+          if (outcome) {
+            const delivered = { ...fresh, delivery: outcome };
+            await this.save(delivered);
+            if (outcome.state === "integrated") await this.advanceDelivery(delivered);
+          }
+          if (outcome?.state === "blocked") {
+            await this.save(this.note({ ...run, status: "failed", attention: true,
+              delivery: { state: "blocked", reason: outcome.reason, retained: true },
+              error: "Delegated Git integration stopped. Review the child and coordinator branches." }, "failed"));
+            return;
+          }
+        }
+        children = (await this.list()).filter(entry => entry.parentRunId === run.id);
+      }
       if (children.some(child => !TERMINAL.has(child.status))) return; // The coordinator is waiting for its delegated tasks.
       if (children.length > 0 && !run.reported) {
         // Every delegated task ended: tell the coordinator once so it can integrate the results.
@@ -495,7 +575,10 @@ export class RunManager {
       }
       const reply = clip(full, MAX_REPLY);
       await this.deps.attempts.settle({ key: `${run.id}-a${run.attempts}`, outcome: "succeeded", evidenceRef: "agent-idle" }).catch(() => undefined);
-      await this.save(this.note({ ...run, status: "delivered", result: reply ?? "The agent finished without a final message.", attention: false, pending: null }, "delivered", { agentId: run.current.agentId }));
+      const delivered = this.note({ ...run, status: "delivered", result: reply ?? "The agent finished without a final message.",
+        attention: false, pending: null, ...(run.gitPlan ? { userBaseline: snapshot.lastUserMessageAt } : {}) }, "delivered", { agentId: run.current.agentId });
+      await this.save(delivered);
+      await this.advanceDelivery(delivered);
       return;
     }
     const message = snapshot.lastError ?? hint?.error?.message ?? "The agent reported an error.";
@@ -507,6 +590,42 @@ export class RunManager {
       return;
     }
     await this.exhausted({ ...run, userBaseline: snapshot.lastUserMessageAt }, message, signal.resetsAt, signal.kind === "rate_limit");
+  }
+
+  private async advanceDelivery(run: RunRecord): Promise<void> {
+    const git = this.deps.git;
+    if (!git || !run.gitPlan?.cwd) return;
+    let delivery = run.delivery;
+    if (run.status === "delivered" && (delivery?.state === "pending" ||
+        delivery?.nextAt !== undefined && this.clock() >= delivery.nextAt)) {
+      const previous = delivery;
+      const snapshot = run.current && await this.deps.port.snapshot(run.current.agentId);
+      if (snapshot && (snapshot.lastUserMessageAt ?? 0) > (run.userBaseline ?? 0)) {
+        await this.save({ ...run, delivery: { ...previous, state: "blocked", reason: "checkout_taken_over", nextAt: undefined } });
+        return;
+      }
+      if (run.current && (!snapshot || snapshot.status === "running" || snapshot.status === "initializing" || snapshot.pendingPermissions)) return;
+      const settings = await this.deps.readSettings();
+      if (!settings) return;
+      delivery = await git.deliver(run, settings);
+      await this.save({ ...run, delivery });
+    }
+    const local = delivery?.state === "no_changes" || delivery?.state === "remote_denied" || delivery?.state === "integrated" ||
+      delivery?.state === "local" && !run.parentRunId;
+    if (!delivery?.retired && (local || delivery?.state === "direct" || delivery?.state === "merged" ||
+        run.status === "cancelled" && !run.pending && delivery?.reason !== "checkout_taken_over") && this.deps.port.worktreeInactive) {
+      const retired = await git.retire({ ...run, delivery }, async () => {
+        const tasks = await this.list();
+        if (tasks.some(entry => entry.id !== run.id && !TERMINAL.has(entry.status) &&
+            (entry.gitPlan?.cwd === run.gitPlan!.cwd || entry.cwd === run.gitPlan!.cwd))) return false;
+        const owners = run.history.flatMap(event => event.agentId ? [event.agentId] : []);
+        if (run.current) owners.push(run.current.agentId);
+        return this.deps.port.worktreeInactive!(run.gitPlan!.workspaceId!, run.gitPlan!.cwd!, owners);
+      });
+      if (retired || !delivery?.retained) {
+        await this.save({ ...run, delivery: { state: "pending", ...delivery, retired, retained: !retired } });
+      }
+    }
   }
 
   /** The provider of the current agent reached a limit: keep the work, then reassign or wait. */
@@ -555,7 +674,9 @@ export class RunManager {
     // Older runs, and native prompts sent without a message ID, may have no user timestamp at exhaustion.
     const baseline = run.userBaseline ?? run.history.findLast(event => event.kind === "exhausted")?.at ?? run.createdAt;
     if (snapshot.lastUserMessageAt === null || snapshot.lastUserMessageAt <= baseline) return false;
-    await this.save(this.note({ ...run, status: "cancelled", resumeAt: null }, "cancelled", { agentId: snapshot.id, note: "the user took over" }));
+    await this.save(this.note({ ...run, status: "cancelled", resumeAt: null,
+      ...(run.gitPlan ? { delivery: { state: "blocked" as const, reason: "checkout_taken_over", retained: true } } : {}) },
+    "cancelled", { agentId: snapshot.id, note: "the user took over" }));
     return true;
   }
 
