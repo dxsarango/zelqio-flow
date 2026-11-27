@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { ZelqioError } from "../shared/errors";
 import type { ProviderCatalogData } from "../shared/providers";
+import type { RolesConfig } from "../shared/roles";
 import { runsState, type RunRecord, type RunsState } from "../shared/runs";
 import type { ZelqioSettings } from "../shared/settings";
 import type { UsageSnapshot } from "../shared/usage";
@@ -62,6 +63,8 @@ export interface RunManagerDeps {
   readCatalog(): Promise<ProviderCatalogData>;
   readUsage(): Promise<UsageSnapshot | null>;
   readSettings(): Promise<ZelqioSettings | null>;
+  /** The user's role edits and custom roles. Built-in roles apply when absent. */
+  readRoles?(): Promise<RolesConfig>;
   clock?: () => number;
   /** Runs that may be active at once. The rest wait in the queue. */
   maxConcurrent?: number;
@@ -176,7 +179,7 @@ export class RunManager {
         createdAt: now,
         updatedAt: now,
       };
-      if (!resolveRoles({}).some(role => role.id === run.role)) throw new ZelqioError("invalid_input", `Unknown role: ${run.role}`);
+      if (!resolveRoles(await this.roles()).some(role => role.id === run.role)) throw new ZelqioError("invalid_input", `Unknown role: ${run.role}`);
       await this.save(run, true);
       await this.startQueued();
       return (await this.find(run.id)) ?? run;
@@ -244,7 +247,7 @@ export class RunManager {
         if (!children.some(child => child.id === id)) throw new ZelqioError("invalid_input", `Unknown task to depend on: ${id}`);
       }
       const role = input.role ?? "developer";
-      if (!resolveRoles({}).some(entry => entry.id === role)) throw new ZelqioError("invalid_input", `Unknown role: ${role}`);
+      if (!resolveRoles(await this.roles()).some(entry => entry.id === role)) throw new ZelqioError("invalid_input", `Unknown role: ${role}`);
       const now = this.clock();
       const child: RunRecord = {
         id: `run-${randomUUID()}`, prompt: input.prompt, role, capability: input.capability ?? "implement",
@@ -357,10 +360,14 @@ export class RunManager {
     return { ...run, history: [...run.history, { at: this.clock(), kind, ...extra }] };
   }
 
+  private async roles(): Promise<RolesConfig> {
+    return (await this.deps.readRoles?.().catch(() => ({}))) ?? {};
+  }
+
   private async context() {
-    const [settings, catalog, usage] = await Promise.all([this.deps.readSettings(), this.deps.readCatalog(), this.deps.readUsage()]);
+    const [settings, catalog, usage, roles] = await Promise.all([this.deps.readSettings(), this.deps.readCatalog(), this.deps.readUsage(), this.roles()]);
     if (!settings) throw new ZelqioError("unavailable", "Zelqio settings are unavailable.");
-    return { settings, catalog, usage };
+    return { settings, catalog, usage, roles };
   }
 
   private choose(
@@ -368,7 +375,7 @@ export class RunManager {
     ctx: Awaited<ReturnType<RunManager["context"]>>,
     options: { continuity?: RoutingTarget; suspended?: RunRecord["suspended"] } = {},
   ) {
-    const role = resolveRoles({}).find(entry => entry.id === run.role);
+    const role = resolveRoles(ctx.roles).find(entry => entry.id === run.role);
     if (!role) throw new ZelqioError("invalid_input", `Unknown role: ${run.role}`);
     const models = deriveModelFacts({
       catalog: ctx.catalog, settings: ctx.settings, usage: ctx.usage, now: this.clock(), suspended: options.suspended ?? run.suspended,

@@ -19,7 +19,7 @@ import { VersionedStore } from "./server/store";
 import { UsageCache } from "./server/usage";
 import { providersListRpc } from "./shared/providers";
 import { draftPreference } from "./shared/orchestration";
-import { rolesListRpc } from "./shared/roles";
+import { rolesListRpc, rolesSettingsDefinition } from "./shared/roles";
 import { runsCancelRpc, runsListRpc, runsState, runsSubmitRpc } from "./shared/runs";
 import { statusRpc } from "./shared/status";
 import { usageListRpc } from "./shared/usage";
@@ -51,12 +51,18 @@ export default function contribute(server: PluginServerContext) {
 
   const settings = registerZelqioSettings(server);
   server.registerSettings(draftPreference);
+  const rolesStore = server.registerSettings(rolesSettingsDefinition);
+  const readRoles = async () => {
+    const saved = await rolesStore.read();
+    return saved.status === "ready" ? saved.values : {};
+  };
 
   const directory = stateDirectory();
   const runs = new RunManager({
     port: paseoAgentPort(api),
     store: new VersionedStore({ dir: directory, name: "runs", version: 1, schema: runsState, defaults: () => ({ runs: [] }) }),
     attempts: new AttemptJournal(directory),
+    readRoles,
     // Test-only overrides; production keeps the defaults.
     recheckMs: Number(process.env.ZELQIO_RECHECK_MS) || undefined,
     defaultWaitMs: Number(process.env.ZELQIO_DEFAULT_WAIT_MS) || undefined,
@@ -76,6 +82,7 @@ export default function contribute(server: PluginServerContext) {
   });
 
   const routeAutomatically = automaticRouting({
+    readRoles,
     readCatalog: async () => readCatalog(paseoSnapshotSource(api())),
     readUsage: () => usage.read(() => api().providers.listUsage()).catch(() => null),
     readSettings: async () => {
@@ -131,9 +138,9 @@ export default function contribute(server: PluginServerContext) {
     const saved = await settings.read();
     if (saved.status !== "ready") throw new ZelqioError("unavailable", "Routing preferences are unavailable.");
     const catalog = await readCatalog(paseoSnapshotSource(paseo));
-    return previewRouting(input, catalog, saved.values, Date.now());
+    return previewRouting(input, catalog, saved.values, Date.now(), await readRoles());
   });
-  handleZelqio(server, rolesListRpc, () => ({ roles: resolveRoles({}) }));
+  handleZelqio(server, rolesListRpc, async () => ({ roles: resolveRoles(await readRoles()) }));
 
   handleZelqio(server, runsSubmitRpc, async (input, { paseo }) => {
     await ready(paseo);

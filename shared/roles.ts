@@ -1,3 +1,4 @@
+import { defineSettings } from "@getpaseo/plugin";
 import { z } from "zod";
 import { defineZelqioRpc } from "./rpc";
 
@@ -51,3 +52,6 @@ export const rolesListRpc = defineZelqioRpc({
   input: z.object({}),
   data: z.object({ roles: z.array(roleDefinition) }),
 });
+
+/** Where the user's role edits live. Host scope, like the general settings. */
+export const rolesSettingsDefinition = defineSettings({ id: "roles", scope: "host", version: 1, schema: rolesConfig });
