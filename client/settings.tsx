@@ -102,6 +102,41 @@ function RolesEditor({ theme, catalog }: { theme: Props["theme"]; catalog: Provi
   );
 }
 
+/** Chooses which models of a provider Zelqio Flow may use. The order in which they are turned on is the order of preference. */
+function ModelChooser({ provider, authorized, onChange }: {
+  provider: ProviderCatalogData["providers"][number];
+  authorized: string[] | undefined;
+  onChange: (models: string[]) => void;
+}) {
+  const { t } = useTranslation(messages);
+  const [open, setOpen] = useState(false);
+  const selectable = provider.models.filter((model) => model.selectable);
+  const effective = authorized ?? selectable.filter((model) => model.isDefault).map((model) => model.id);
+  return (
+    <View>
+      <SettingsAction
+        label={t("prefs.models", { provider: provider.label })}
+        hint={t("prefs.modelsCount", { count: effective.length })}
+        actionLabel={t(open ? "prefs.modelsHide" : "prefs.modelsChoose")}
+        onPress={() => setOpen(!open)}
+      />
+      {open ? (
+        <>
+          <SettingsRow label={t("prefs.modelsHint", { provider: provider.label })} />
+          {selectable.map((model) => (
+            <SettingsSwitch
+              key={model.id}
+              label={model.label || model.id}
+              value={effective.includes(model.id)}
+              onValueChange={(on) => onChange(on ? [...effective, model.id] : effective.filter((id) => id !== model.id))}
+            />
+          ))}
+        </>
+      ) : null}
+    </View>
+  );
+}
+
 export function SettingsScreen({ theme, layout }: Props) {
   const { t } = useTranslation(messages);
   const store = useZelqioSettings();
@@ -184,6 +219,9 @@ export function SettingsScreen({ theme, layout }: Props) {
                   options={FUNDINGS.map((f) => ({ value: f, label: t(`options.funding.${f}`) }))}
                   onValueChange={(funding) => setProvider(id, { funding })}
                 />
+              ) : null}
+              {cur.use !== "off" && entry ? (
+                <ModelChooser provider={entry} authorized={cur.models} onChange={(models) => setProvider(id, { models })} />
               ) : null}
             </View>
           );

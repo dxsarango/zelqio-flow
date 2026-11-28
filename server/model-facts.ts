@@ -66,9 +66,13 @@ export function deriveModelFacts(input: {
     if (!setting || setting.use === "off") continue;
     const quota = quotas.get(provider.id);
     const byModel = new Map<string, RoutingModelFacts>();
+    const authorized = setting.models;
     for (const model of provider.models) {
+      const position = authorized ? authorized.indexOf(model.id) : model.isDefault ? 0 : -1;
       byModel.set(model.id, {
-        permitted: true,
+        // Only models the user authorized are candidates. With no list, only Paseo's default model for the provider.
+        permitted: position >= 0,
+        order: position >= 0 ? position : undefined,
         funding: setting.funding,
         spendPermitted: input.settings.consumptionOptIn,
         quota: quota ? { status: quota.status, remainingPct: quota.remainingPct, observedAt: quota.observedAt } : undefined,
