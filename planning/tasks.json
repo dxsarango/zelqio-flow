@@ -2098,7 +2098,7 @@
       ],
       "role": "UI Developer",
       "risk": "medium",
-      "acceptance": "Resultado funcional o bloqueo honesto, preview/PR/diff según modo",
+      "acceptance": "Resultado funcional o bloqueo honesto, preview/PR/diff según modo. Etapa de revisión integral de la interfaz: navegación (Resumen, Ejecuciones, Agentes, Recursos, Ajustes), dashboard compacto, cuotas visuales, historial expandible, estados diferenciados, Markdown, traducciones, menos desplazamiento y compatibilidad compacta, de escritorio y con los temas de Paseo. Sin diseño aprobado: primero una propuesta visual integral para la revisión del propietario (docs/UX-BACKLOG.md)",
       "status": "todo",
       "evidence": [],
       "owner": null,
