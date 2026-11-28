@@ -150,7 +150,8 @@ export class GitDelivery {
     private readonly run: GitRunner = runGitCommand(),
     private readonly readGrant = readGitProjectGrants(directory),
     private readonly clock = Date.now,
-    private readonly readSettings?: () => Promise<GitSettings | null>,
+    /** The current values for this run: the settings its scopes resolve to, not only the global ones. */
+    private readonly readSettings?: (run: RunRecord) => Promise<GitSettings | null>,
   ) {
     this.journal = new GitOperationJournal(directory);
     this.plans = new VersionedStore({
@@ -389,10 +390,10 @@ export class GitDelivery {
     return sha.parse(object);
   }
 
-  private async revalidate(plan: RunGitPlan, candidate: string, settings: GitSettings, expected: Destination) {
+  private async revalidate(run: RunRecord, plan: RunGitPlan, candidate: string, settings: GitSettings, expected: Destination) {
     const tree = await this.managed(plan);
     if (tree.head !== candidate || tree.operation || tree.tracked.length || tree.untracked.length) return block("worktree_changed");
-    const now = this.readSettings ? await this.readSettings() : settings;
+    const now = this.readSettings ? await this.readSettings(run) : settings;
     if (!now || now.git.workflow !== settings.git.workflow || now.mode !== settings.mode ||
         now.remoteAuthorization !== settings.remoteAuthorization) return block("delivery_settings_changed");
     const fresh = await this.destination(tree, now);
@@ -408,7 +409,7 @@ export class GitDelivery {
     const intent = await this.effect(run.id + "-push", {
       repository: remoteIdentity(plan.repository, target), targetRef: ref, previousSha: before ?? absent, expectedSha: candidate,
     }, observe, async pending => {
-      await this.revalidate(plan, candidate, settings, target);
+      await this.revalidate(run, plan, candidate, settings, target);
       if (!this.allowed(target, "git.push", branch) || await observe() !== pending.previousSha) block("remote_changed");
       await this.git(cwd, "push", "--porcelain", "--no-follow-tags", "--recurse-submodules=no", "--", target.url, candidate + ":" + ref);
     });
@@ -568,7 +569,7 @@ export class GitDelivery {
         await this.effect(run.id + "-pr", { repository: remoteIdentity(tree.repository, target), targetRef: ref, previousSha: before, expectedSha: candidate },
           async () => await this.exactPull(cwd, target, plan.branch, candidate!) ? candidate! : before,
           async () => {
-            await this.revalidate(plan, candidate!, settings, target);
+            await this.revalidate(run, plan, candidate!, settings, target);
             if (!this.allowed(target, "pr.create", target.base) ||
                 await this.remoteSha(cwd, target.url, branchRef(plan.branch)) !== candidate) block("remote_changed");
             const { type, subject } = gitLabel(run.title, run.capability);
@@ -645,7 +646,7 @@ export class GitDelivery {
     }, "pr.merge");
     if (decision.status !== "allowed") return review(decision.reasons[0]);
     await this.effect(run.id + "-merge", { ...proposed, deferred: decision.review === "deferred" ? true : undefined }, observe, async () => {
-      await this.revalidate(plan, candidate, settings, target);
+      await this.revalidate(run, plan, candidate, settings, target);
       const [fresh, current, queue] = await Promise.all([
         this.prEvidence(cwd, target, candidate),
         this.api(cwd, pull, "repos/" + target.repository + "/pulls/" + pr.number),

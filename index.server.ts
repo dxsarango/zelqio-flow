@@ -6,6 +6,7 @@ import { AttemptJournal } from "./server/attempt-journal";
 import { automaticRouting } from "./server/automatic-routing";
 import { delegationTools, type ChildSummary } from "./server/delegation-tools";
 import { draftOrchestration } from "./shared/orchestration";
+import { normalizeProjectKey, settingsForRun } from "./shared/scoped-settings";
 import { GitDelivery } from "./server/git-delivery";
 import { paseoAgentPort } from "./server/paseo-agent-port";
 import { platformPowerAdapter, PowerManager } from "./server/power-manager";
@@ -15,6 +16,7 @@ import { RunManager } from "./server/run-manager";
 import { previewRouting } from "./server/routing-preview";
 import { resolveRoles } from "./server/roles";
 import { registerZelqioSettings } from "./server/settings";
+import { deleteLocalState, exportRuns, purgeFinished } from "./server/retention";
 import { getStatus } from "./server/status";
 import { VersionedStore } from "./server/store";
 import { UsageCache } from "./server/usage";
@@ -22,6 +24,7 @@ import { providersListRpc } from "./shared/providers";
 import { draftPreference } from "./shared/orchestration";
 import { rolesListRpc, rolesSettingsDefinition } from "./shared/roles";
 import { runsCancelRpc, runsListRpc, runsState, runsSubmitRpc } from "./shared/runs";
+import { projectsListRpc, stateDeleteRpc, stateExportRpc, statePurgeRpc } from "./shared/local-state";
 import { statusRpc } from "./shared/status";
 import { usageListRpc } from "./shared/usage";
 import { routingPreviewRpc } from "./shared/routing-preview";
@@ -31,6 +34,8 @@ import { ZelqioError } from "./shared/errors";
 const DELEGATION_GUIDANCE = "Zelqio Flow can run parts of this work on other agents. Use zelqio_delegate for a self-contained task (name its role; Zelqio Flow picks the authorized model), zelqio_wait to wait for results and zelqio_status to review them. Delegated agents cannot delegate again. Do not delegate trivial work.";
 
 const TICK_MS = Math.max(250, Number(process.env.ZELQIO_TICK_MS) || 30_000);
+/** How often finished runs are checked against the retention policy. */
+const PURGE_MS = Math.max(1_000, Number(process.env.ZELQIO_PURGE_MS) || 6 * 60 * 60_000);
 
 /** Where the plugin keeps its own run state. Local only, never sent anywhere. */
 function stateDirectory(): string {
@@ -63,11 +68,16 @@ export default function contribute(server: PluginServerContext) {
   };
 
   const directory = stateDirectory();
+  const runStore = new VersionedStore({ dir: directory, name: "runs", version: 1, schema: runsState, defaults: () => ({ runs: [] }) });
+  const attempts = new AttemptJournal(directory);
   const runs = new RunManager({
     port: paseoAgentPort(api),
-    store: new VersionedStore({ dir: directory, name: "runs", version: 1, schema: runsState, defaults: () => ({ runs: [] }) }),
-    attempts: new AttemptJournal(directory),
-    git: new GitDelivery(directory, undefined, undefined, undefined, readSettings),
+    store: runStore,
+    attempts,
+    git: new GitDelivery(directory, undefined, undefined, undefined, async run => {
+      const saved = await readSettings();
+      return saved ? settingsForRun(saved, run) : null;
+    }),
     readRoles,
     // Test-only overrides; production keeps the defaults.
     recheckMs: Number(process.env.ZELQIO_RECHECK_MS) || undefined,
@@ -97,10 +107,23 @@ export default function contribute(server: PluginServerContext) {
   });
   const syncPower = async () => { await power.sync(await runs.hasWork()); };
 
+  /** Applies the retention policy from the settings. Runs between the manager's own mutations, never during one. */
+  const purgeNow = async () => {
+    const saved = await readSettings();
+    if (!saved) throw new ZelqioError("unavailable", "Zelqio settings are unavailable.");
+    return runs.maintain(() => purgeFinished({ store: runStore, attempts, policy: saved.retention, now: Date.now() }));
+  };
+  let lastPurge = 0;
+  const purgeWhenDue = async () => {
+    if (Date.now() - lastPurge < PURGE_MS) return;
+    lastPurge = Date.now();
+    await purgeNow().catch(() => undefined);
+  };
+
   let recovered: Promise<void> | undefined;
   const ready = (paseo: PaseoApi) => {
     remember(paseo);
-    recovered ??= runs.recoverAfterRestart().catch(() => undefined);
+    recovered ??= runs.recoverAfterRestart().then(purgeWhenDue).catch(() => undefined);
     return recovered;
   };
 
@@ -154,6 +177,30 @@ export default function contribute(server: PluginServerContext) {
     return runs.cancel(input.id);
   });
 
+  handleZelqio(server, stateExportRpc, async (_input, { paseo }) => {
+    await ready(paseo);
+    return exportRuns(await runs.list());
+  });
+  handleZelqio(server, statePurgeRpc, async (_input, { paseo }) => {
+    await ready(paseo);
+    return purgeNow();
+  });
+  handleZelqio(server, stateDeleteRpc, async (_input, { paseo }) => {
+    await ready(paseo);
+    return runs.maintain(() => deleteLocalState({ directory, store: runStore, attempts }));
+  });
+  handleZelqio(server, projectsListRpc, async (_input, { paseo }) => {
+    await ready(paseo);
+    const known = new Map<string, string | null>();
+    for (const run of await runs.list()) known.set(run.projectKey ?? normalizeProjectKey(run.cwd), null);
+    // Paseo's own projects add a readable name; if it cannot be asked, the projects of earlier runs still show.
+    for (const entry of await paseo.workspaces.list().then(result => result.entries, () => [])) {
+      known.set(normalizeProjectKey(entry.projectRootPath), entry.projectDisplayName);
+    }
+    const projects = [...known].filter(([key]) => key.length <= 400).sort(([a], [b]) => a.localeCompare(b)).slice(0, 200);
+    return { projects: projects.map(([key, name]) => ({ key, name })) };
+  });
+
   // With Automatic on in the native New Agent / New Workspace screens, Zelqio chooses the model at creation.
   const removeCreateBefore = server.addHook("agent.create.before", async (payload, { paseo }) => {
     remember(paseo);
@@ -184,7 +231,7 @@ export default function contribute(server: PluginServerContext) {
     await runs.onAgentUpdate(agent.id, outcome.kind === "failed" ? { error: outcome.error } : undefined);
   });
   const timer = setInterval(() => {
-    if (latest) void runs.tick().then(syncPower).catch(() => undefined);
+    if (latest) void runs.tick().then(syncPower).then(purgeWhenDue).catch(() => undefined);
   }, TICK_MS);
   timer.unref?.();
 

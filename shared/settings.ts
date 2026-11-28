@@ -28,6 +28,44 @@ export const remoteAuthorization = z.enum(REMOTE_AUTHORIZATIONS);
  */
 export const providerSetting = z.strictObject({ use: providerUse, funding, models: z.array(z.string().min(1)).max(50).optional() });
 
+/**
+ * Key of a project: the workspace directory as Paseo reports it, normalized by `normalizeProjectKey`
+ * (separators, trailing slash and, for Windows paths, letter case). It is not the Git root: a Git root needs
+ * file access and differs between a checkout and its worktrees, while the workspace directory is what a run
+ * is submitted with.
+ */
+export const projectKey = z.string().min(1).max(400).refine((value) => [...value].every((character) => character.charCodeAt(0) >= 32), "invalid project key");
+
+/**
+ * Overrides of one project. Only these fields may differ from the global values. Consumption opt-in is not here on
+ * purpose: it can never be granted below the global scope. Remote authorization may only tighten (see
+ * `resolveSettings`). An elevated mode only counts once the project confirmed it explicitly.
+ */
+export const projectOverride = z.strictObject({
+  strategy: strategy.optional(),
+  mode: workMode.optional(),
+  git: z.strictObject({ workflow: gitWorkflow.optional() }).optional(),
+  remoteAuthorization: remoteAuthorization.optional(),
+  elevatedConfirmed: z.boolean().default(false),
+});
+export type ProjectOverride = z.infer<typeof projectOverride>;
+
+/** Overrides one run (session) is submitted with. A session may change the strategy and the mode, nothing else. */
+export const sessionOverride = z.strictObject({ strategy: strategy.optional(), mode: workMode.optional() });
+export type SessionOverride = z.infer<typeof sessionOverride>;
+
+/**
+ * How long finished runs stay in the plugin's own state directory. Prompts and results never leave the machine;
+ * this only bounds how long they stay on it. `resultDays: 0` clears the result text as soon as the run is delivered.
+ */
+export const retentionPolicy = z.strictObject({
+  finishedDays: z.int().min(1).max(3650).default(30),
+  resultDays: z.int().min(0).max(3650).default(30),
+  maxFinishedRuns: z.int().min(1).max(10_000).default(200),
+});
+export type RetentionPolicy = z.infer<typeof retentionPolicy>;
+export const DEFAULT_RETENTION: RetentionPolicy = { finishedDays: 30, resultDays: 30, maxFinishedRuns: 200 };
+
 export const zelqioSettings = z
   .strictObject({
     onboardingCompleted: z.boolean().default(false),
@@ -41,6 +79,10 @@ export const zelqioSettings = z
     remoteAuthorization: remoteAuthorization.default("denied"),
     /** Power Management: keep the computer awake only while work is in progress. Off until the user turns it on. */
     power: z.strictObject({ preventSleep: z.boolean().default(false) }).default({ preventSleep: false }),
+    /** Per-project overrides of strategy, mode, workflow and remote authorization, keyed by `normalizeProjectKey`. */
+    projects: z.record(projectKey, projectOverride).refine((all) => Object.keys(all).length <= 200, "too many projects").default({}),
+    /** How long finished runs and their results stay on this machine. */
+    retention: retentionPolicy.default({ ...DEFAULT_RETENTION }),
   })
   .refine((s) => s.consumptionOptIn || !Object.values(s.providers).some((p) => p.use !== "off" && p.funding === "consumption"), {
     message: "consumption funding requires the explicit consumption opt-in",
@@ -61,6 +103,8 @@ export function defaultSettings(): ZelqioSettings {
     git: { workflow: "local_only" },
     remoteAuthorization: "denied",
     power: { preventSleep: false },
+    projects: {},
+    retention: { ...DEFAULT_RETENTION },
   };
 }
 

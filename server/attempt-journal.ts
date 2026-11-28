@@ -95,6 +95,20 @@ export class AttemptJournal {
       input.outcome === "not_launched" && item.status === "ambiguous" && item.agentRef !== undefined ? null : settled(item, input.outcome, input.evidenceRef));
   }
 
+  /**
+   * Removes the entries of tasks that `forgettable` accepts, but only when every entry of the task is settled: an
+   * attempt that still holds a slot or is ambiguous is never dropped. Returns how many entries were removed.
+   * Removing all of a task's entries keeps the journal consistent (no gaps in attempt numbers).
+   */
+  forget(forgettable: (task: string) => boolean): Promise<number> {
+    return this.store.update(current => {
+      const live = new Set(current.entries.filter(holdsSlot).map(item => item.task));
+      const entries = current.entries.filter(item => live.has(item.task) || !forgettable(item.task));
+      const removed = current.entries.length - entries.length;
+      return removed ? { result: removed, next: { entries } } : { result: 0 };
+    });
+  }
+
   /** Call once after a restart: every unsettled attempt keeps its slot as ambiguous, without verifying the host. */
   recoverAfterRestart(): Promise<number> {
     return this.store.update(current => {
