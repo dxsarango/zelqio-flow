@@ -10,7 +10,7 @@ const epoch = z.number().int().nonnegative();
 export const runStatus = z.enum(["queued", "running", "waiting_quota", "delivered", "failed", "cancelled"]);
 export type RunStatus = z.infer<typeof runStatus>;
 
-const historyKind = z.enum(["queued", "started", "exhausted", "reassigned", "waiting", "resumed", "delivered", "failed", "cancelled"]);
+const historyKind = z.enum(["queued", "started", "exhausted", "reassigned", "waiting", "resumed", "delivered", "failed", "cancelled", "stalled", "progress"]);
 
 const target = z.strictObject({ agentId: reference, provider: z.string().min(1), model: z.string().min(1), startedAt: epoch });
 
@@ -26,15 +26,28 @@ export const runGitPlan = z.strictObject({
 export type RunGitPlan = z.infer<typeof runGitPlan>;
 
 const runDelivery = z.strictObject({
-  state: z.enum(["pending", "no_changes", "local", "remote_denied", "review", "checks", "merged", "direct", "integrated", "blocked", "unmanaged"]),
+  state: z.enum(["pending", "no_changes", "local", "remote_denied", "review", "checks", "merged", "direct", "integrated", "blocked", "unmanaged", "manual"]),
   sha: z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/).optional(),
   prUrl: z.url({ protocol: /^https$/, hostname: /^github\.com$/ }).optional(),
   reason: z.string().max(200).optional(),
+  /** For a manual delivery: the exact commands the owner can run in the agent's checkout. */
+  next: z.string().max(400).optional(),
   nextAt: epoch.optional(),
   retired: z.boolean().optional(),
   retained: z.boolean().optional(),
 });
 export type RunDelivery = z.infer<typeof runDelivery>;
+
+/** What an adopted agent's checkout looked like when Zelqio Flow started coordinating it. */
+export const runAdoption = z.strictObject({
+  repository: z.string().min(1),
+  head: z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/),
+  /** The branch ref checked out at adoption; empty when HEAD was detached. */
+  ref: z.string().max(300),
+  /** Files that were already modified or untracked at adoption (at most the first 50). */
+  dirty: z.array(z.string().max(300)).max(50),
+});
+export type RunAdoption = z.infer<typeof runAdoption>;
 
 /** One user request coordinated across native Paseo agents. The prompt stays local, in the plugin's own state. */
 export const runRecord = z.strictObject({
@@ -75,6 +88,10 @@ export const runRecord = z.strictObject({
   effective: effectiveValues.optional(),
   gitPlan: runGitPlan.optional(),
   delivery: runDelivery.optional(),
+  /** Baseline of the checkout of an agent created natively and adopted, so its changes can be attributed to the run. */
+  adopted: runAdoption.optional(),
+  /** Set while the agent reports running but has made no progress for a long time. Cleared when progress resumes. */
+  stall: z.strictObject({ lastProgressAt: epoch }).optional(),
   attention: z.boolean(),
   result: z.string().nullable(),
   error: z.string().nullable(),

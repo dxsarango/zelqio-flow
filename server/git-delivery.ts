@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
-import { lstat, readFile, realpath } from "node:fs/promises";
-import { isAbsolute, join } from "node:path";
+import { lstat, mkdir, readFile, realpath, rm } from "node:fs/promises";
+import { dirname, isAbsolute, join } from "node:path";
 import { z } from "zod";
 import type { DeliveryDecisionInput } from "../shared/delivery-decision";
 import { policyLayers, type ActionId } from "../shared/policy";
-import type { RunDelivery, RunGitPlan, RunRecord } from "../shared/runs";
+import type { RunAdoption, RunDelivery, RunGitPlan, RunRecord } from "../shared/runs";
 import type { ZelqioSettings } from "../shared/settings";
 import { evaluateDeliveryDecision } from "./delivery-decision";
 import { GitOperationJournal } from "./git-operation-journal";
@@ -146,7 +146,7 @@ export class GitDelivery {
   private readonly plans: VersionedStore<z.infer<typeof effectPlans>>;
 
   constructor(
-    directory: string,
+    private readonly directory: string,
     private readonly run: GitRunner = runGitCommand(),
     private readonly readGrant = readGitProjectGrants(directory),
     private readonly clock = Date.now,
@@ -165,6 +165,12 @@ export class GitDelivery {
       "-c", "core.fsmonitor=false",
       "-c", "protocol.allow=never", "-c", "protocol.https.allow=always", "-c", "protocol.ssh.allow=always",
       "-c", "protocol.file.allow=always", ...args], cwd);
+  }
+
+  /** Runs Git with a private index so the checkout's own staging area is never touched. */
+  private gitIndex(cwd: string, index: string, ...args: string[]) {
+    return this.run("git", ["--no-replace-objects", "-c", "core.hooksPath=" + (process.platform === "win32" ? "NUL" : "/dev/null"),
+      "-c", "core.fsmonitor=false", ...args], cwd, { GIT_INDEX_FILE: index });
   }
 
   private async api<T>(cwd: string, schema: z.ZodType<T>, route: string, ...args: string[]): Promise<T> {
@@ -230,6 +236,94 @@ export class GitDelivery {
       operation: checkout.operation ? "in_progress" : "none",
     });
     if (result.status !== "snapshot_ready") block(result.status);
+  }
+
+  /** Records HEAD and the files already modified when an agent created natively is adopted. Never changes the checkout. */
+  async baseline(cwd: string): Promise<RunAdoption | null> {
+    try {
+      if ((await this.git(cwd, "rev-parse", "--is-inside-work-tree")).trim() !== "true") return null;
+      const tree = await this.checkout(cwd);
+      const changed = nul(await this.git(tree.cwd, "--no-optional-locks", "diff", "--no-renames", "--name-only", "-z", "HEAD", "--"));
+      return { repository: tree.repository, head: tree.head, ref: tree.ref, dirty: [...new Set([...changed, ...tree.untracked])].slice(0, 50) };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Delivers the work of an adopted agent without moving its checkout. Only a linked worktree whose changes are
+   * attributable to the run (clean at adoption, still on the recorded history) is committed, on a new branch created
+   * from the exact tree with a private index. A new worktree checks that branch out for publication. The user's main
+   * checkout is never committed to or published from: the result is a manual delivery with the exact next step.
+   */
+  async adopt(run: RunRecord, title: string | null): Promise<{ plan?: RunGitPlan; delivery: RunDelivery }> {
+    const baseline = run.adopted!;
+    const { type, subject } = gitLabel(title, run.capability);
+    const slug = subject.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40).replace(/^-|-$/g, "");
+    let branch = type + "/" + (slug || "task") + "-" + run.id.replace(/^run-/, "");
+    const manual = (reason: string, dirty: boolean): { delivery: RunDelivery } => ({ delivery: { state: "manual", reason,
+      next: dirty ? `git switch -c ${branch} && git add -A && git commit -m "${type}: ${subject}"` : `git branch ${branch}` } });
+    const id = run.id + "-adopt";
+    try {
+      const tree = await this.checkout(run.cwd);
+      if (tree.repository !== baseline.repository) return manual("checkout_moved", false);
+      const saved = await this.plans.update(state => ({ result: state.plans[id] }));
+      let candidate = saved?.expectedSha;
+      if (saved) branch = saved.targetRef.slice("refs/heads/".length);
+      else {
+        if (tree.operation) return { delivery: { state: "blocked", reason: "operation_in_progress", nextAt: this.clock() + 60_000 } };
+        const dirty = tree.tracked.length > 0 || tree.untracked.length > 0;
+        if (!dirty && tree.head === baseline.head) return { delivery: { state: "no_changes", sha: tree.head } };
+        if (samePath(tree.gitDir, tree.commonDir)) return manual("main_checkout", dirty);
+        if (baseline.dirty.length) return manual("baseline_dirty", dirty);
+        if (!await this.ancestor(tree.cwd, baseline.head, tree.head)) return manual("checkout_moved", dirty);
+        candidate = tree.head;
+        if (dirty) {
+          const changed = [...tree.untracked, ...nul(await this.git(tree.cwd, "diff", "--no-renames", "--name-only", "-z", "HEAD", "--"))];
+          if (changed.some(path => privatePath.test(path))) block("sensitive_content");
+          const index = join(tree.gitDir, "zelqio-" + run.id + ".index");
+          try {
+            await this.gitIndex(tree.cwd, index, "read-tree", tree.head);
+            await this.gitIndex(tree.cwd, index, "--literal-pathspecs", "add", "-A", "--", ".");
+            const contents = sha.parse((await this.gitIndex(tree.cwd, index, "write-tree")).trim());
+            if ((await this.scan(tree.cwd, [tree.head, contents], false)).length) {
+              candidate = sha.parse((await this.git(tree.cwd, "commit-tree", contents, "-p", tree.head, "-m", type + ": " + subject)).trim());
+            }
+          } finally {
+            await rm(index, { force: true });
+          }
+        }
+        if (candidate === baseline.head) return { delivery: { state: "no_changes", sha: candidate } };
+      }
+      const ref = branchRef(branch);
+      const absent = opaque("absent " + ref, candidate!);
+      const intent = await this.effect(id, { repository: tree.repository, targetRef: ref, previousSha: absent, expectedSha: candidate! },
+        async () => this.revision(tree.cwd, ref).catch(() => absent),
+        async operation => {
+          await this.git(tree.cwd, "update-ref", "-m", "deliver run", ref, operation.expectedSha, "0".repeat(operation.expectedSha.length));
+        });
+      if (await this.revision(tree.cwd, ref) !== intent.expectedSha) block("worktree_changed");
+
+      const path = join(this.directory, "adopted", run.id);
+      const registered = nul(await this.git(tree.cwd, "worktree", "list", "--porcelain", "-z"))
+        .some(line => line.startsWith("worktree ") && samePath(line.slice(9).replaceAll("\\", "/"), path.replaceAll("\\", "/")));
+      if (!registered) {
+        await mkdir(dirname(path), { recursive: true });
+        await this.git(tree.cwd, "worktree", "add", "--", path, branch).catch(() => block("isolation_unverified"));
+      }
+      const delivery = await this.checkout(path);
+      if (delivery.repository !== tree.repository || delivery.ref !== ref || delivery.head !== intent.expectedSha ||
+          samePath(delivery.cwd, tree.cwd) || samePath(delivery.gitDir, delivery.commonDir) ||
+          delivery.operation || delivery.tracked.length || delivery.untracked.length) block("isolation_unverified");
+      return {
+        plan: { repository: tree.repository, source: tree.cwd, baseRef: baseline.ref.startsWith("refs/heads/") ? baseline.ref : ref,
+          baseSha: baseline.head, branch, cwd: delivery.cwd, workspaceId: "adopted-" + run.id },
+        delivery: { state: "pending", sha: intent.expectedSha },
+      };
+    } catch (error) {
+      const reason = error instanceof DeliveryBlocked ? error.message : "git_evidence_unavailable";
+      return { delivery: { state: "blocked", reason, ...(["operation_uncertain", "git_evidence_unavailable"].includes(reason) ? { nextAt: this.clock() + 60_000 } : {}) } };
+    }
   }
 
   async attach(plan: RunGitPlan, path: string, workspaceId: string): Promise<RunGitPlan> {

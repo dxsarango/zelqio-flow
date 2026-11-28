@@ -79,6 +79,8 @@ export function paseoAgentPort(api: () => PaseoApi): AgentPort {
         archived: Boolean(agent.archivedAt),
         restorable: Boolean(agent.persistence) && !agent.providerUnavailable,
         lastUserMessageAt: typeof agent.lastUserMessageAt === "string" ? Date.parse(agent.lastUserMessageAt) || null : null,
+        updatedAt: typeof agent.updatedAt === "string" ? Date.parse(agent.updatedAt) || null : null,
+        turnStartedAt: typeof agent.activeTurn?.startedAt === "string" ? Date.parse(agent.activeTurn.startedAt) || null : null,
       };
     },
 

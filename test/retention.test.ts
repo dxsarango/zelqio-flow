@@ -368,7 +368,8 @@ describe("privacy of the local state", () => {
       const imported = [...item.text.matchAll(/import\s*\{([^}]*)\}\s*from\s*"node:fs(?:\/promises)?"/g)].flatMap(match => match[1].split(",").map(part => part.trim().split(/\s+as\s+/)[0]));
       return imported.some(entry => WRITES.has(entry)) || /import\s+\*\s+as\s+\w+\s+from\s*"node:fs/.test(item.text);
     }).map(item => name(item.file)).sort();
-    expect(writers).toEqual(["server/retention.ts", "server/store.ts"]);
+    // git-delivery.ts only creates the directory of a Git worktree and removes its own temporary Git index; it never stores prompts or results.
+    expect(writers).toEqual(["server/git-delivery.ts", "server/retention.ts", "server/store.ts"]);
   });
 
   it("has no telemetry or analytics, except the sentence that says there is none", async () => {

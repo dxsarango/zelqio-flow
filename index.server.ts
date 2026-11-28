@@ -82,6 +82,7 @@ export default function contribute(server: PluginServerContext) {
     // Test-only overrides; production keeps the defaults.
     recheckMs: Number(process.env.ZELQIO_RECHECK_MS) || undefined,
     defaultWaitMs: Number(process.env.ZELQIO_DEFAULT_WAIT_MS) || undefined,
+    stallMs: Number(process.env.ZELQIO_STALL_MS) || undefined,
     readCatalog: async () => {
       const catalog = await readCatalog(paseoSnapshotSource(api()));
       if (catalog.snapshotHash !== catalogHash) {

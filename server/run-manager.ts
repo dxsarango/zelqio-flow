@@ -25,6 +25,10 @@ export interface AgentSnapshot {
   restorable: boolean;
   /** When the user last wrote to the agent, in epoch milliseconds. Used to notice that a person took over. */
   lastUserMessageAt: number | null;
+  /** When Paseo last updated the agent, in epoch milliseconds. Absent when the source cannot say. */
+  updatedAt?: number | null;
+  /** When the turn in progress started, in epoch milliseconds. */
+  turnStartedAt?: number | null;
 }
 
 export interface CreateAgentInput {
@@ -82,6 +86,8 @@ export interface RunManagerDeps {
   defaultWaitMs?: number;
   /** How soon to look again when Paseo has not yet reported recovered quota. */
   recheckMs?: number;
+  /** How long a running agent may go without any update before the run is flagged as stalled. Zero turns it off. */
+  stallMs?: number;
 }
 
 const MAX_REPLY = 6000;
@@ -90,6 +96,7 @@ const WRITERS = new Set<RunRecord["capability"]>(["implement", "architecture", "
 const TERMINAL = new Set<RunRecord["status"]>(["delivered", "failed", "cancelled"]);
 const MAX_CHILDREN = 8;
 const MAX_HISTORY = 200;
+const DEFAULT_STALL_MS = 45 * 60_000;
 
 function clip(text: string | null | undefined, size: number): string | null {
   if (!text) return null;
@@ -132,6 +139,7 @@ export class RunManager {
   private readonly maxAttempts: number;
   private readonly defaultWaitMs: number;
   private readonly recheckMs: number;
+  private readonly stallMs: number;
   private chain: Promise<unknown> = Promise.resolve();
 
   constructor(private readonly deps: RunManagerDeps) {
@@ -140,6 +148,7 @@ export class RunManager {
     this.maxAttempts = deps.maxAttempts ?? 5;
     this.defaultWaitMs = deps.defaultWaitMs ?? 30 * 60_000;
     this.recheckMs = deps.recheckMs ?? 5 * 60_000;
+    this.stallMs = deps.stallMs ?? DEFAULT_STALL_MS;
   }
 
   /** Runs every mutation one at a time so a run is never processed twice at once. */
@@ -213,6 +222,8 @@ export class RunManager {
       const now = this.clock();
       const prompt = input.prompt ?? (await this.deps.port.firstUserMessage(input.agentId).catch(() => null)) ?? ADOPTED_PROMPT;
       const id = `run-${randomUUID()}`;
+      // The checkout stays where Paseo put it. Its state now is the baseline that tells the run's changes from others.
+      const adopted = (await this.deps.git?.baseline(input.cwd)) ?? undefined;
       const global = await this.deps.readSettings().catch(() => null);
       const run: RunRecord = {
         id, prompt: clip(prompt, 20_000) ?? ADOPTED_PROMPT, role: input.role ?? "developer", capability: "implement", complexity: null, cwd: input.cwd,
@@ -220,7 +231,7 @@ export class RunManager {
         current: { agentId: input.agentId, provider: input.provider, model: input.model, startedAt: now },
         attempts: 1, suspended: {}, resumeAt: null, pending: null, handledError: null, userBaseline: null, title: null, parentRunId: null, projectKey: normalizeProjectKey(input.cwd), dependsOn: [], reported: false, attention: false, result: null, error: null,
         ...(global ? { effective: recordedValues(resolveSettings(global, { project: input.cwd })) } : {}),
-        ...(this.deps.git ? { delivery: { state: "unmanaged" as const } } : {}),
+        ...(adopted ? { adopted, delivery: { state: "pending" as const } } : this.deps.git ? { delivery: { state: "unmanaged" as const } } : {}),
         history: [{ at: now, kind: "started", provider: input.provider, model: input.model, agentId: input.agentId, note: "adopted" }],
         createdAt: now, updatedAt: now,
       };
@@ -373,7 +384,7 @@ export class RunManager {
       await this.deps.port.stop(run.current.agentId);
     }
     const unconfirmedPlacement = run.gitPlan && run.pending?.kind === "create";
-    const next = this.note({ ...run, status: "cancelled", resumeAt: null, pending: null, attention: false,
+    const next = this.note({ ...run, status: "cancelled", resumeAt: null, pending: null, attention: false, stall: undefined,
       ...(unconfirmedPlacement ? { delivery: { state: "blocked" as const, reason: "operation_uncertain", retained: true } } : {}),
     }, "cancelled", { note });
     await this.save(next);
@@ -562,13 +573,25 @@ export class RunManager {
     const needsReport = children.length > 0 && (!run.reported || pendingReport);
     const canRestoreForReport = snapshot?.status === "closed" && snapshot.restorable && needsReport;
     if (!snapshot || snapshot.archived || (snapshot.status === "closed" && !canRestoreForReport)) {
-      await this.save(this.note({ ...run, status: "failed", error: "The agent is no longer available." }, "failed", { agentId: run.current.agentId }));
+      await this.save(this.note({ ...run, status: "failed", error: "The agent is no longer available.", attention: false, stall: undefined }, "failed", { agentId: run.current.agentId }));
       return;
     }
     if (snapshot.status === "initializing" || snapshot.status === "running") {
-      const attention = snapshot.pendingPermissions > 0;
       const confirmed = run.pending?.kind === "resume" && !pendingReport ? { ...run, pending: null } : run;
-      if (attention !== run.attention || confirmed !== run) await this.save({ ...confirmed, attention });
+      // A stall is flagged for the person, never acted on: the agent is not stopped, resent to or replaced.
+      const lastProgressAt = this.stalledSince(snapshot);
+      const attention = snapshot.pendingPermissions > 0 || lastProgressAt !== undefined;
+      const stallChanged = (lastProgressAt !== undefined) !== (run.stall !== undefined);
+      if (attention !== run.attention || confirmed !== run || stallChanged) {
+        let next: RunRecord = { ...confirmed, attention, stall: lastProgressAt === undefined ? undefined : { lastProgressAt } };
+        if (stallChanged) {
+          next = lastProgressAt === undefined
+            ? this.note(next, "progress", { agentId: run.current.agentId, ...(snapshot.pendingPermissions > 0 ? { note: "waiting for a permission" } : {}) })
+            : this.note(next, "stalled", { agentId: run.current.agentId,
+              note: `no progress for ${Math.floor((this.clock() - lastProgressAt) / 60_000)} minutes` });
+        }
+        await this.save(next);
+      }
       return;
     }
     if (pendingReport) {
@@ -599,7 +622,7 @@ export class RunManager {
       const reply = clip(full, MAX_REPLY);
       await this.deps.attempts.settle({ key: `${run.id}-a${run.attempts}`, outcome: "succeeded", evidenceRef: "agent-idle" }).catch(() => undefined);
       const delivered = this.note({ ...run, status: "delivered", result: reply ?? "The agent finished without a final message.",
-        attention: false, pending: null, ...(run.gitPlan ? { userBaseline: snapshot.lastUserMessageAt } : {}) }, "delivered", { agentId: run.current.agentId });
+        attention: false, stall: undefined, pending: null, ...(run.gitPlan || run.adopted ? { userBaseline: snapshot.lastUserMessageAt } : {}) }, "delivered", { agentId: run.current.agentId });
       await this.save(delivered);
       await this.advanceDelivery(delivered);
       return;
@@ -609,10 +632,20 @@ export class RunManager {
     const signal = classifyFailure(message, this.clock(), hint?.error?.code);
     if (signal.kind === "other") {
       await this.deps.attempts.settle({ key: `${run.id}-a${run.attempts}`, outcome: "failed", evidenceRef: "agent-error" }).catch(() => undefined);
-      await this.save(this.note({ ...run, status: "failed", error: clip(redactSecrets(message), 300), handledError: redactSecrets(message), attention: false }, "failed", { agentId: run.current.agentId }));
+      await this.save(this.note({ ...run, status: "failed", error: clip(redactSecrets(message), 300), handledError: redactSecrets(message), attention: false, stall: undefined }, "failed", { agentId: run.current.agentId }));
       return;
     }
     await this.exhausted({ ...run, userBaseline: snapshot.lastUserMessageAt }, message, signal.resetsAt, signal.kind === "rate_limit");
+  }
+
+  /**
+   * The last time a running agent made progress, when it has been quiet for longer than the threshold. An agent that
+   * waits for a permission, is not running, or has no known update time is never reported as stalled.
+   */
+  private stalledSince(snapshot: AgentSnapshot): number | undefined {
+    if (this.stallMs <= 0 || snapshot.status !== "running" || snapshot.pendingPermissions > 0) return undefined;
+    const last = Math.max(snapshot.updatedAt ?? 0, snapshot.turnStartedAt ?? 0);
+    return last > 0 && this.clock() - last > this.stallMs ? last : undefined;
   }
 
   private async integrateChildren(run: RunRecord, children: RunRecord[]): Promise<RunRecord[] | null> {
@@ -644,10 +677,16 @@ export class RunManager {
     await this.save({ ...run, reported: true, pending: null });
   }
 
-  private async advanceDelivery(run: RunRecord): Promise<void> {
+  private async advanceDelivery(original: RunRecord): Promise<void> {
     const git = this.deps.git;
-    if (!git || !run.gitPlan?.cwd) return;
+    let run = original;
+    if (!git || !run.gitPlan?.cwd && !run.adopted) return;
     let delivery = run.delivery;
+    // An adopted run that ended without an answer leaves its checkout to the person: there is nothing to deliver.
+    if (run.adopted && !run.gitPlan && (run.status === "failed" || run.status === "cancelled") && delivery?.state === "pending") {
+      await this.save({ ...run, delivery: { state: "unmanaged" } });
+      return;
+    }
     if (run.status === "delivered" && (delivery?.state === "pending" ||
         delivery?.nextAt !== undefined && this.clock() >= delivery.nextAt)) {
       const previous = delivery;
@@ -659,6 +698,17 @@ export class RunManager {
       if (run.current && (!snapshot || snapshot.status === "running" || snapshot.status === "initializing" || snapshot.pendingPermissions)) return;
       const settings = await this.deps.readSettings();
       if (!settings) return;
+      if (run.adopted && !run.gitPlan?.cwd) {
+        // The agent's own checkout is only read. Delivery happens from a separate worktree of the same repository.
+        const first = run.prompt === ADOPTED_PROMPT ? null : (run.prompt.split(/\r?\n/, 1)[0] ?? null);
+        const prepared = await git.adopt(run, run.title ?? first);
+        if (!prepared.plan) {
+          await this.save({ ...run, delivery: prepared.delivery });
+          return;
+        }
+        run = { ...run, gitPlan: prepared.plan, delivery: prepared.delivery };
+        await this.save(run);
+      }
       delivery = await git.deliver(run, settingsForRun(settings, run));
       await this.save({ ...run, delivery });
     }
@@ -666,12 +716,14 @@ export class RunManager {
       delivery?.state === "local" && !run.parentRunId;
     const cancelled = run.status === "cancelled" && !run.pending &&
       delivery?.reason !== "checkout_taken_over" && delivery?.reason !== "operation_uncertain";
-    if (!delivery?.retired && (local || delivery?.state === "direct" || delivery?.state === "merged" || cancelled) &&
-        this.deps.port.worktreeInactive) {
+    if (run.gitPlan?.cwd && !delivery?.retired && (local || delivery?.state === "direct" || delivery?.state === "merged" || cancelled) &&
+        (this.deps.port.worktreeInactive || run.adopted)) {
       const retired = await git.retire({ ...run, delivery }, async () => {
         const tasks = await this.list();
         if (tasks.some(entry => entry.id !== run.id && !TERMINAL.has(entry.status) &&
             (entry.gitPlan?.cwd === run.gitPlan!.cwd || entry.cwd === run.gitPlan!.cwd))) return false;
+        // The delivery worktree of an adopted run is created by Zelqio Flow and has no agent or Paseo workspace.
+        if (run.adopted) return true;
         const owners = run.history.flatMap(event => event.agentId ? [event.agentId] : []);
         if (run.current) owners.push(run.current.agentId);
         return this.deps.port.worktreeInactive!(run.gitPlan!.workspaceId!, run.gitPlan!.cwd!, owners);
@@ -712,13 +764,13 @@ export class RunManager {
       const alternative = decision.selected;
       if (alternative && alternative.provider !== current.provider) {
         const activity = (await this.deps.port.recentActivity(current.agentId).catch(() => "")) ?? "";
-        working = { ...working, handledError: null, attention: false };
+        working = { ...working, handledError: null, attention: false, stall: undefined };
         await this.save(working);
         await this.launch(working, handoffPrompt(run, activity), alternative);
         return;
       }
     }
-    working = this.note({ ...working, status: "waiting_quota", resumeAt, attention: false }, "waiting", {
+    working = this.note({ ...working, status: "waiting_quota", resumeAt, attention: false, stall: undefined }, "waiting", {
       provider: current.provider, model: current.model, agentId: current.agentId, note: `until ${new Date(resumeAt).toISOString()}`,
     });
     await this.save(working);
