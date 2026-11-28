@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { automaticRouting } from "../server/automatic-routing";
+import { automaticRouting, type CreationRequest } from "../server/automatic-routing";
 import { AttemptJournal } from "../server/attempt-journal";
 import type { GitDelivery } from "../server/git-delivery";
 import { RunManager, type AgentPort, type AgentSnapshot, type CreateAgentInput } from "../server/run-manager";
@@ -307,7 +307,7 @@ describe("the effective values drive runs, delivery and routing", () => {
   it("automatic routing of a native creation follows the project of its directory", async () => {
     saved = settings({ providers, strategy: "quality_first", projects: { [WORK]: project({ strategy: "economy" }) } });
     const rewrite = automaticRouting({ readCatalog: async () => catalog, readUsage: async () => null, readSettings: async () => saved, clock: () => 1 });
-    const request = (cwd: string) => ({
+    const request = (cwd: string): CreationRequest => ({
       config: { provider: "alpha", model: "alpha-model", cwd },
       metadata: { ...orchestrationMetadataPatch("automatic") },
     });

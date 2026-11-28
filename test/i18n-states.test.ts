@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { resources } from "../client/resources";
 import { maturityLevel } from "../shared/status";
 import { providerStatus } from "../shared/providers";
+import type { ResolutionNoteCode, Scope } from "../shared/scoped-settings";
 import type { IssueCode } from "../shared/settings";
 import type { UsageStatus } from "../shared/usage";
 
@@ -21,7 +22,11 @@ const issueCodes: Record<IssueCode, true> = {
   no_provider: true, no_primary: true, provider_missing: true, provider_not_ready: true,
   provider_disabled: true, consumption_requires_opt_in: true, remote_denied: true, mode_effect_inactive: true,
 };
+const noteCodes: Record<ResolutionNoteCode, true> = { remote_denied_above: true, elevated_unconfirmed: true, session_elevation_blocked: true };
+const scopes: Record<Scope, true> = { global: true, project: true, session: true };
 const states: Record<string, readonly string[]> = {
+  "prefs.scopes.notes": Object.keys(noteCodes),
+  "prefs.scopes.source": Object.keys(scopes),
   "status.level": maturityLevel.options,
   "providers.status": providerStatus.options,
   "resources.status": Object.keys(usageStatuses),

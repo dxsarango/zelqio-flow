@@ -177,7 +177,8 @@ function RunsSection() {
           run.delivery?.retained ? t("runs.git.retained") : "",
           prUrl,
         ].filter(Boolean).join(" · ");
-        const hint = [t(`runs.status.${run.status}`), using, waiting, run.attention ? t("runs.takeover") : "", gitHint, detail.slice(0, 200)]
+        const effective = run.effective ? t("runs.effective", { mode: t(`options.mode.${run.effective.mode}`), strategy: t(`options.strategy.${run.effective.strategy}`) }) : "";
+        const hint = [t(`runs.status.${run.status}`), effective, using, waiting, run.attention ? t("runs.takeover") : "", gitHint, detail.slice(0, 200)]
           .filter(Boolean).join(" · ");
         const active = run.status === "queued" || run.status === "running" || run.status === "waiting_quota";
         return active ? (
