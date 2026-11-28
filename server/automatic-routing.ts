@@ -70,7 +70,7 @@ export function automaticRouting(deps: RoutingDeps) {
       // The draft prompt is not part of the creation request, so the reasoning level follows the strategy and the quota.
       const remaining = providerQuotas(usage, clock()).get(selected.provider)?.remainingPct;
       const effort = thinkingValid ? thinking : chooseEffort(model?.thinkingOptions ?? [], {
-        complexity: "medium", strategy: settings.strategy, quotaLow: remaining !== null && remaining !== undefined && remaining <= 30,
+        complexity: settings.automaticEffort ?? "medium", strategy: settings.strategy, quotaLow: remaining !== null && remaining !== undefined && remaining <= 30,
       });
       // A provider has its own modes, thinking levels and options. Keep them only where they still mean the same thing.
       const { modeId: _mode, thinkingOptionId: _thinking, providerOptions: _options, ...rest } = request.config;

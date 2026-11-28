@@ -57,6 +57,8 @@ export interface AgentPort {
   lastReply(agentId: string): Promise<string | null>;
   /** A short transcript tail used to brief a replacement agent. */
   recentActivity(agentId: string): Promise<string>;
+  /** Zelqio tools whose last call in the agent's final turn failed. Optional: absent means it cannot be told. */
+  failedTools?(agentId: string): Promise<string[]>;
   /** The first message the user sent to the agent, used when an agent created natively is adopted. */
   firstUserMessage(agentId: string): Promise<string | null>;
   /** Create an empty native workspace so Git can verify placement before the provider starts. */
@@ -196,7 +198,7 @@ export class RunManager {
         projectKey: normalizeProjectKey(input.cwd),
         ...(overrides ? { overrides } : {}),
         dependsOn: [],
-        reported: false,
+        reported: false, outcome: null,
         attention: false,
         result: null,
         error: null,
@@ -229,7 +231,7 @@ export class RunManager {
         id, prompt: clip(prompt, 20_000) ?? ADOPTED_PROMPT, role: input.role ?? "developer", capability: "implement", complexity: null, cwd: input.cwd,
         status: "running",
         current: { agentId: input.agentId, provider: input.provider, model: input.model, startedAt: now },
-        attempts: 1, suspended: {}, resumeAt: null, pending: null, handledError: null, userBaseline: null, title: null, parentRunId: null, projectKey: normalizeProjectKey(input.cwd), dependsOn: [], reported: false, attention: false, result: null, error: null,
+        attempts: 1, suspended: {}, resumeAt: null, pending: null, handledError: null, userBaseline: null, title: null, parentRunId: null, projectKey: normalizeProjectKey(input.cwd), dependsOn: [], reported: false, outcome: null, attention: false, result: null, error: null,
         ...(global ? { effective: recordedValues(resolveSettings(global, { project: input.cwd })) } : {}),
         ...(adopted ? { adopted, delivery: { state: "pending" as const } } : this.deps.git ? { delivery: { state: "unmanaged" as const } } : {}),
         history: [{ at: now, kind: "started", provider: input.provider, model: input.model, agentId: input.agentId, note: "adopted" }],
@@ -281,7 +283,7 @@ export class RunManager {
         id: `run-${randomUUID()}`, prompt: input.prompt, role, capability: input.capability ?? "implement",
         complexity: input.complexity ?? null, cwd: parent.gitPlan?.cwd ?? parent.cwd, status: "queued", current: null, attempts: 0, suspended: {},
         resumeAt: null, pending: null, handledError: null, userBaseline: null, title: clip(input.title, 120),
-        parentRunId: parent.id, dependsOn, reported: false, attention: false, result: null, error: null,
+        parentRunId: parent.id, dependsOn, reported: false, outcome: null, attention: false, result: null, error: null,
         projectKey: parent.projectKey ?? normalizeProjectKey(parent.cwd), ...(parent.overrides ? { overrides: parent.overrides } : {}),
         history: [{ at: now, kind: "queued", note: "delegated" }], createdAt: now, updatedAt: now,
       };
@@ -461,7 +463,16 @@ export class RunManager {
         if (blockers.some(dep => dep?.status !== "delivered")) continue;
         if (blockers.some(dep => dep?.gitPlan && !["integrated", "no_changes"].includes(dep.delivery?.state ?? ""))) continue;
         let prepared = next;
-        if (this.deps.git && this.deps.port.createWorktree && WRITERS.has(next.capability) && !next.gitPlan) {
+        // A trivial request does not need its own worktree: it runs in place, with a baseline that tells its changes apart.
+        const trivial = next.parentRunId === null && (next.complexity ?? estimateComplexity(next.prompt)) === "low";
+        if (this.deps.git && WRITERS.has(next.capability) && !next.gitPlan && !next.adopted && trivial) {
+          const baseline = await this.deps.git.baseline(next.cwd).catch(() => null);
+          if (baseline) {
+            prepared = { ...next, adopted: baseline, delivery: { state: "pending" } };
+            await this.save(prepared);
+          }
+        }
+        if (this.deps.git && this.deps.port.createWorktree && WRITERS.has(next.capability) && !prepared.gitPlan && !prepared.adopted) {
           try {
             const gitPlan = await this.deps.git.plan(next.cwd, next);
             if (gitPlan) {
@@ -563,6 +574,18 @@ export class RunManager {
     }
   }
 
+  /** Finishing is not meeting the goal: look for signs, in what Zelqio Flow can see, that part of the work failed. */
+  private async assessOutcome(run: RunRecord, children: RunRecord[]): Promise<RunRecord["outcome"]> {
+    const notes: string[] = [];
+    for (const child of children) {
+      if (child.status === "failed") notes.push(clip(`A delegated task failed: ${child.title ?? child.prompt}`, 190) ?? "A delegated task failed.");
+      else if (child.status === "cancelled") notes.push(clip(`A delegated task was stopped: ${child.title ?? child.prompt}`, 190) ?? "A delegated task was stopped.");
+    }
+    const failed = run.current ? await this.deps.port.failedTools?.(run.current.agentId).catch(() => []) ?? [] : [];
+    for (const name of failed) notes.push(clip(`The tool ${name} failed in the last turn`, 190) ?? "A tool failed.");
+    return notes.length ? { state: "needs_review", notes: notes.slice(0, 5) } : { state: "ok", notes: [] };
+  }
+
   /** An agent created natively has its first message only after creation: keep it so a handoff can carry the task. */
   private async capturePrompt(run: RunRecord): Promise<RunRecord> {
     if (run.prompt !== ADOPTED_PROMPT || !run.current) return run;
@@ -631,7 +654,8 @@ export class RunManager {
       }
       const reply = clip(full, MAX_REPLY);
       await this.deps.attempts.settle({ key: `${run.id}-a${run.attempts}`, outcome: "succeeded", evidenceRef: "agent-idle" }).catch(() => undefined);
-      const delivered = this.note({ ...run, status: "delivered", result: reply ?? "The agent finished without a final message.",
+      const outcome = await this.assessOutcome(run, reportedChildren ?? children);
+      const delivered = this.note({ ...run, outcome, status: "delivered", result: reply ?? "The agent finished without a final message.",
         attention: false, stall: undefined, pending: null, ...(run.gitPlan || run.adopted ? { userBaseline: snapshot.lastUserMessageAt } : {}) }, "delivered", { agentId: run.current.agentId });
       await this.save(delivered);
       await this.advanceDelivery(delivered);

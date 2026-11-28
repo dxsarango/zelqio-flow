@@ -406,6 +406,13 @@ export function SettingsScreen({ theme, layout }: Props) {
 
       <SettingsSection title={t("prefs.sections.general")}>
         <SettingsRow label={t(saved.onboardingCompleted ? "prefs.setupDone" : "prefs.setupPending")} hint={t("prefs.setupHint")} />
+        <SettingsSelect
+          label={t("prefs.automaticEffort")}
+          hint={t("prefs.automaticEffortHint")}
+          value={draft.automaticEffort}
+          options={(["low", "medium", "high"] as const).map((level) => ({ value: level, label: t(`options.effort.${level}`) }))}
+          onValueChange={(automaticEffort) => set({ automaticEffort })}
+        />
         <SettingsSwitch label={t("prefs.preventSleep")} hint={t("prefs.preventSleepHint")} value={draft.power.preventSleep} onValueChange={(preventSleep) => set({ power: { preventSleep } })} />
       </SettingsSection>
 

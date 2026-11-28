@@ -31,6 +31,7 @@ describe("defaults", () => {
       git: { workflow: "local_only" },
       remoteAuthorization: "denied",
       power: { preventSleep: false },
+      automaticEffort: "medium",
       projects: {},
       retention: { finishedDays: 30, resultDays: 30, maxFinishedRuns: 200 },
     });
