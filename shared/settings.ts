@@ -30,7 +30,7 @@ export const providerSetting = z.strictObject({ use: providerUse, funding });
  * file access and differs between a checkout and its worktrees, while the workspace directory is what a run
  * is submitted with.
  */
-export const projectKey = z.string().min(1).max(400).refine((value) => !/[\u0000-\u001f]/.test(value), "invalid project key");
+export const projectKey = z.string().min(1).max(400).refine((value) => [...value].every((character) => character.charCodeAt(0) >= 32), "invalid project key");
 
 /**
  * Overrides of one project. Only these fields may differ from the global values. Consumption opt-in is not here on
