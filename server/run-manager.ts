@@ -3,7 +3,8 @@ import { ZelqioError } from "../shared/errors";
 import type { ProviderCatalogData } from "../shared/providers";
 import type { RolesConfig } from "../shared/roles";
 import { runsState, type RunGitPlan, type RunRecord, type RunsState } from "../shared/runs";
-import type { ZelqioSettings } from "../shared/settings";
+import { normalizeProjectKey, recordedValues, resolveSettings, settingsForRun } from "../shared/scoped-settings";
+import type { SessionOverride, ZelqioSettings } from "../shared/settings";
 import type { UsageSnapshot } from "../shared/usage";
 import type { AttemptJournal } from "./attempt-journal";
 import { chooseEffort, estimateComplexity } from "./effort";
@@ -166,9 +167,15 @@ export class RunManager {
     return this.deps.store.update(state => ({ result: state.runs }));
   }
 
-  submit(input: { prompt: string; cwd: string; title?: string; role?: string; capability?: RunRecord["capability"]; complexity?: RunRecord["complexity"] }): Promise<RunRecord> {
+  /** Runs a maintenance step (retention, deleting local state) between the mutations of this manager, never during one. */
+  maintain<T>(work: () => Promise<T>): Promise<T> {
+    return this.exclusive(work);
+  }
+
+  submit(input: { prompt: string; cwd: string; title?: string; role?: string; capability?: RunRecord["capability"]; complexity?: RunRecord["complexity"] } & SessionOverride): Promise<RunRecord> {
     return this.exclusive(async () => {
       const now = this.clock();
+      const overrides = input.strategy || input.mode ? { ...(input.strategy ? { strategy: input.strategy } : {}), ...(input.mode ? { mode: input.mode } : {}) } : undefined;
       const run: RunRecord = {
         id: `run-${randomUUID()}`,
         prompt: input.prompt,
@@ -186,6 +193,8 @@ export class RunManager {
         userBaseline: null,
         title: input.title ?? clip(input.prompt.split(/\r?\n/, 1)[0], 100),
         parentRunId: null,
+        projectKey: normalizeProjectKey(input.cwd),
+        ...(overrides ? { overrides } : {}),
         dependsOn: [],
         reported: false,
         attention: false,
@@ -215,11 +224,13 @@ export class RunManager {
       const id = `run-${randomUUID()}`;
       // The checkout stays where Paseo put it. Its state now is the baseline that tells the run's changes from others.
       const adopted = (await this.deps.git?.baseline(input.cwd)) ?? undefined;
+      const global = await this.deps.readSettings().catch(() => null);
       const run: RunRecord = {
         id, prompt: clip(prompt, 20_000) ?? ADOPTED_PROMPT, role: input.role ?? "developer", capability: "implement", complexity: null, cwd: input.cwd,
         status: "running",
         current: { agentId: input.agentId, provider: input.provider, model: input.model, startedAt: now },
-        attempts: 1, suspended: {}, resumeAt: null, pending: null, handledError: null, userBaseline: null, title: null, parentRunId: null, dependsOn: [], reported: false, attention: false, result: null, error: null,
+        attempts: 1, suspended: {}, resumeAt: null, pending: null, handledError: null, userBaseline: null, title: null, parentRunId: null, projectKey: normalizeProjectKey(input.cwd), dependsOn: [], reported: false, attention: false, result: null, error: null,
+        ...(global ? { effective: recordedValues(resolveSettings(global, { project: input.cwd })) } : {}),
         ...(adopted ? { adopted, delivery: { state: "pending" as const } } : this.deps.git ? { delivery: { state: "unmanaged" as const } } : {}),
         history: [{ at: now, kind: "started", provider: input.provider, model: input.model, agentId: input.agentId, note: "adopted" }],
         createdAt: now, updatedAt: now,
@@ -271,6 +282,7 @@ export class RunManager {
         complexity: input.complexity ?? null, cwd: parent.gitPlan?.cwd ?? parent.cwd, status: "queued", current: null, attempts: 0, suspended: {},
         resumeAt: null, pending: null, handledError: null, userBaseline: null, title: clip(input.title, 120),
         parentRunId: parent.id, dependsOn, reported: false, attention: false, result: null, error: null,
+        projectKey: parent.projectKey ?? normalizeProjectKey(parent.cwd), ...(parent.overrides ? { overrides: parent.overrides } : {}),
         history: [{ at: now, kind: "queued", note: "delegated" }], createdAt: now, updatedAt: now,
       };
       await this.save(child, true);
@@ -414,11 +426,12 @@ export class RunManager {
   ) {
     const role = resolveRoles(ctx.roles).find(entry => entry.id === run.role);
     if (!role) throw new ZelqioError("invalid_input", `Unknown role: ${run.role}`);
+    const settings = settingsForRun(ctx.settings, run);
     const models = deriveModelFacts({
-      catalog: ctx.catalog, settings: ctx.settings, usage: ctx.usage, now: this.clock(), suspended: options.suspended ?? run.suspended,
+      catalog: ctx.catalog, settings, usage: ctx.usage, now: this.clock(), suspended: options.suspended ?? run.suspended,
     });
     return route({
-      catalog: ctx.catalog, settings: ctx.settings, role, capability: run.capability, models,
+      catalog: ctx.catalog, settings, role, capability: run.capability, models,
       continuity: options.continuity, allowUnknownQuota: true,
     });
   }
@@ -507,10 +520,12 @@ export class RunManager {
     const remaining = providerQuotas(ctx.usage, this.clock()).get(target.provider)?.remainingPct;
     const thinkingOptionId = chooseEffort(model?.thinkingOptions ?? [], {
       complexity: run.complexity ?? estimateComplexity(run.prompt),
-      strategy: ctx.settings.strategy,
+      strategy: settingsForRun(ctx.settings, run).strategy,
       quotaLow: remaining !== null && remaining !== undefined && remaining <= 30,
     });
-    let working: RunRecord = { ...run, status: "running", attempts: attempt, pending: { kind: "create", key }, resumeAt: null };
+    // The values the run starts with stay recorded, even if the settings change later.
+    const effective = run.effective ?? recordedValues(resolveSettings(ctx.settings, { project: run.projectKey ?? run.cwd, session: run.overrides }));
+    let working: RunRecord = { ...run, status: "running", attempts: attempt, pending: { kind: "create", key }, resumeAt: null, effective };
     await this.save(working);
     try {
       if (working.gitPlan && !working.gitPlan.cwd) {
@@ -544,7 +559,7 @@ export class RunManager {
       await this.save(this.note({ ...working, status: "failed", pending: null,
         ...(working.gitPlan ? { delivery: { state: "blocked" as const, reason: "isolation_unverified", retained: true } } : {}),
         error: working.gitPlan ? "Could not create the agent in its verified worktree." :
-          clip(error instanceof Error ? error.message : "Could not create the agent.", 300) }, "failed"));
+          clip(redactSecrets(error instanceof Error ? error.message : "Could not create the agent."), 300) }, "failed"));
     }
   }
 
@@ -592,7 +607,7 @@ export class RunManager {
     if ((snapshot.status === "idle" || canRestoreForReport) && !snapshot.lastError && !hint?.error) {
       const full = await this.deps.port.lastReply(run.current.agentId);
       const limit = limitFromReply(full, this.clock());
-      if (limit && full !== run.handledError) {
+      if (limit && (full === null ? null : redactSecrets(full)) !== run.handledError) {
         await this.exhausted({ ...run, userBaseline: snapshot.lastUserMessageAt }, full ?? "", limit.resetsAt, false, true);
         return;
       }
@@ -613,11 +628,11 @@ export class RunManager {
       return;
     }
     const message = snapshot.lastError ?? hint?.error?.message ?? "The agent reported an error.";
-    if (message === run.handledError) return;
+    if (redactSecrets(message) === run.handledError) return;
     const signal = classifyFailure(message, this.clock(), hint?.error?.code);
     if (signal.kind === "other") {
       await this.deps.attempts.settle({ key: `${run.id}-a${run.attempts}`, outcome: "failed", evidenceRef: "agent-error" }).catch(() => undefined);
-      await this.save(this.note({ ...run, status: "failed", error: clip(message, 300), handledError: message, attention: false, stall: undefined }, "failed", { agentId: run.current.agentId }));
+      await this.save(this.note({ ...run, status: "failed", error: clip(redactSecrets(message), 300), handledError: redactSecrets(message), attention: false, stall: undefined }, "failed", { agentId: run.current.agentId }));
       return;
     }
     await this.exhausted({ ...run, userBaseline: snapshot.lastUserMessageAt }, message, signal.resetsAt, signal.kind === "rate_limit");
@@ -694,7 +709,7 @@ export class RunManager {
         run = { ...run, gitPlan: prepared.plan, delivery: prepared.delivery };
         await this.save(run);
       }
-      delivery = await git.deliver(run, settings);
+      delivery = await git.deliver(run, settingsForRun(settings, run));
       await this.save({ ...run, delivery });
     }
     const local = delivery?.state === "no_changes" || delivery?.state === "remote_denied" || delivery?.state === "integrated" ||
@@ -739,7 +754,7 @@ export class RunManager {
     // A short margin after the reset, so the first request is not sent at the very second the window opens.
     const resumeAt = base + (hintedReset !== undefined || reportedReset !== undefined ? 30_000 : 0);
     const suspended = { ...run.suspended, [current.provider]: now };
-    let working = this.note({ ...run, suspended, handledError: message }, "exhausted", {
+    let working = this.note({ ...run, suspended, handledError: redactSecrets(message) }, "exhausted", {
       provider: current.provider, model: current.model, agentId: current.agentId, ...(fromReply ? { note: "from the last reply" } : {}),
     });
     await this.deps.attempts.settle({ key: `${run.id}-a${run.attempts}`, outcome: "failed", evidenceRef: "quota" }).catch(() => undefined);
@@ -821,7 +836,7 @@ export class RunManager {
       try {
         await this.deps.port.send(current.agentId, "The usage limit was restored. Continue the task from where you stopped.", key);
       } catch (error) {
-        await this.save(this.note({ ...marked, status: "waiting_quota", pending: null, resumeAt: now + this.recheckMs }, "waiting", { note: clip(error instanceof Error ? error.message : "resume failed", 120) ?? undefined }));
+        await this.save(this.note({ ...marked, status: "waiting_quota", pending: null, resumeAt: now + this.recheckMs }, "waiting", { note: clip(redactSecrets(error instanceof Error ? error.message : "resume failed"), 120) ?? undefined }));
         return;
       }
       await this.confirmResume(marked);

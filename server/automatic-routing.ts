@@ -1,6 +1,7 @@
 import { draftOrchestration } from "../shared/orchestration";
 import type { ProviderCatalogData } from "../shared/providers";
 import type { RolesConfig } from "../shared/roles";
+import { settingsForDirectory } from "../shared/scoped-settings";
 import type { ZelqioSettings } from "../shared/settings";
 import type { UsageSnapshot } from "../shared/usage";
 import { chooseEffort } from "./effort";
@@ -47,8 +48,10 @@ export function automaticRouting(deps: RoutingDeps) {
       metadata: { ...metadata, [ROUTING_METADATA_KEY]: { ...value, at: clock() } },
     });
     try {
-      const [settings, catalog, usage, rolesConfig] = await Promise.all([deps.readSettings(), deps.readCatalog(), deps.readUsage(), deps.readRoles?.().catch(() => ({})) ?? Promise.resolve({})]);
-      if (!settings) return note({ status: "unrouted", reason: "settings_unavailable" });
+      const [global, catalog, usage, rolesConfig] = await Promise.all([deps.readSettings(), deps.readCatalog(), deps.readUsage(), deps.readRoles?.().catch(() => ({})) ?? Promise.resolve({})]);
+      if (!global) return note({ status: "unrouted", reason: "settings_unavailable" });
+      // The project the agent is created in may have its own strategy; a native creation has no session override.
+      const settings = typeof request.config.cwd === "string" ? settingsForDirectory(global, request.config.cwd) : global;
       const role = resolveRoles(rolesConfig).find(entry => entry.id === roleId);
       if (!role) return note({ status: "unrouted", reason: "unknown_role" });
       const decision = route({

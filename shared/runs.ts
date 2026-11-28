@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { capability } from "./roles";
 import { defineZelqioRpc } from "./rpc";
+import { effectiveValues } from "./scoped-settings";
+import { projectKey, sessionOverride } from "./settings";
 
 const reference = z.string().regex(/^[A-Za-z0-9_.-]{1,128}$/);
 const epoch = z.number().int().nonnegative();
@@ -78,6 +80,12 @@ export const runRecord = z.strictObject({
   dependsOn: z.array(reference).max(10).default([]),
   /** The coordinator was told that its delegated tasks finished. */
   reported: z.boolean().default(false),
+  /** Canonical key of the project the run belongs to (see `normalizeProjectKey`). Absent on older runs. */
+  projectKey: projectKey.optional(),
+  /** Strategy and mode this run was submitted with. They are a request: the effective values still obey the safety limits. */
+  overrides: sessionOverride.optional(),
+  /** The values this run resolved to when it started (global, project and session scopes combined). */
+  effective: effectiveValues.optional(),
   gitPlan: runGitPlan.optional(),
   delivery: runDelivery.optional(),
   /** Baseline of the checkout of an agent created natively and adopted, so its changes can be attributed to the run. */
@@ -113,6 +121,9 @@ export const runSubmitInput = z.strictObject({
   role: reference.default("developer"),
   capability: capability.default("implement"),
   complexity: z.enum(["low", "medium", "high"]).optional(),
+  /** Session overrides for this run only. A mode more elevated than the project's is ignored. */
+  strategy: sessionOverride.shape.strategy,
+  mode: sessionOverride.shape.mode,
 });
 
 export const runsSubmitRpc = defineZelqioRpc({ name: "runs.submit", input: runSubmitInput, data: runRecord });
