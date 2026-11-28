@@ -157,6 +157,10 @@ function RunsSection() {
     retry: false,
   });
   const dates = new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" });
+  const manualReason = (reason: string | undefined) =>
+    reason === "main_checkout" ? t("runs.git.reasons.main_checkout")
+      : reason === "baseline_dirty" ? t("runs.git.reasons.baseline_dirty")
+        : reason === "checkout_moved" ? t("runs.git.reasons.checkout_moved") : "";
   const stalledHint = (run: { status: string; attention: boolean; stall?: { lastProgressAt: number } }) =>
     run.status === "running" && run.stall
       ? t("runs.stalled", { minutes: Math.max(1, Math.floor((Date.now() - run.stall.lastProgressAt) / 60_000)) })
@@ -178,7 +182,7 @@ function RunsSection() {
           run.gitPlan ? t("runs.git.branch", { branch: run.gitPlan.branch }) : "",
           run.delivery?.sha ? run.delivery.sha.slice(0, 12) : "",
           run.delivery?.reason === "review_deferred" ? t("runs.git.deferred") : run.delivery ? t(`runs.git.${run.delivery.state}`) : "",
-          run.delivery?.state === "manual" && run.delivery.reason ? t(`runs.git.reasons.${run.delivery.reason}`) : "",
+          run.delivery?.state === "manual" ? manualReason(run.delivery.reason) : "",
           run.delivery?.state === "manual" && run.delivery.next ? t("runs.git.next", { command: run.delivery.next }) : "",
           run.delivery?.retained ? t("runs.git.retained") : "",
           prUrl,

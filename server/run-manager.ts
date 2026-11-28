@@ -213,12 +213,14 @@ export class RunManager {
       const now = this.clock();
       const prompt = input.prompt ?? (await this.deps.port.firstUserMessage(input.agentId).catch(() => null)) ?? ADOPTED_PROMPT;
       const id = `run-${randomUUID()}`;
+      // The checkout stays where Paseo put it. Its state now is the baseline that tells the run's changes from others.
+      const adopted = (await this.deps.git?.baseline(input.cwd)) ?? undefined;
       const run: RunRecord = {
         id, prompt: clip(prompt, 20_000) ?? ADOPTED_PROMPT, role: input.role ?? "developer", capability: "implement", complexity: null, cwd: input.cwd,
         status: "running",
         current: { agentId: input.agentId, provider: input.provider, model: input.model, startedAt: now },
         attempts: 1, suspended: {}, resumeAt: null, pending: null, handledError: null, userBaseline: null, title: null, parentRunId: null, dependsOn: [], reported: false, attention: false, result: null, error: null,
-        ...(this.deps.git ? { delivery: { state: "unmanaged" as const } } : {}),
+        ...(adopted ? { adopted, delivery: { state: "pending" as const } } : this.deps.git ? { delivery: { state: "unmanaged" as const } } : {}),
         history: [{ at: now, kind: "started", provider: input.provider, model: input.model, agentId: input.agentId, note: "adopted" }],
         createdAt: now, updatedAt: now,
       };
@@ -660,9 +662,10 @@ export class RunManager {
     await this.save({ ...run, reported: true, pending: null });
   }
 
-  private async advanceDelivery(run: RunRecord): Promise<void> {
+  private async advanceDelivery(original: RunRecord): Promise<void> {
     const git = this.deps.git;
-    if (!git || !run.gitPlan?.cwd) return;
+    let run = original;
+    if (!git || !run.gitPlan?.cwd && !run.adopted) return;
     let delivery = run.delivery;
     if (run.status === "delivered" && (delivery?.state === "pending" ||
         delivery?.nextAt !== undefined && this.clock() >= delivery.nextAt)) {
@@ -675,6 +678,17 @@ export class RunManager {
       if (run.current && (!snapshot || snapshot.status === "running" || snapshot.status === "initializing" || snapshot.pendingPermissions)) return;
       const settings = await this.deps.readSettings();
       if (!settings) return;
+      if (run.adopted && !run.gitPlan?.cwd) {
+        // The agent's own checkout is only read. Delivery happens from a separate worktree of the same repository.
+        const first = run.prompt === ADOPTED_PROMPT ? null : (run.prompt.split(/\r?\n/, 1)[0] ?? null);
+        const prepared = await git.adopt(run, run.title ?? first);
+        if (!prepared.plan) {
+          await this.save({ ...run, delivery: prepared.delivery });
+          return;
+        }
+        run = { ...run, gitPlan: prepared.plan, delivery: prepared.delivery };
+        await this.save(run);
+      }
       delivery = await git.deliver(run, settings);
       await this.save({ ...run, delivery });
     }
@@ -682,12 +696,14 @@ export class RunManager {
       delivery?.state === "local" && !run.parentRunId;
     const cancelled = run.status === "cancelled" && !run.pending &&
       delivery?.reason !== "checkout_taken_over" && delivery?.reason !== "operation_uncertain";
-    if (!delivery?.retired && (local || delivery?.state === "direct" || delivery?.state === "merged" || cancelled) &&
-        this.deps.port.worktreeInactive) {
+    if (run.gitPlan?.cwd && !delivery?.retired && (local || delivery?.state === "direct" || delivery?.state === "merged" || cancelled) &&
+        (this.deps.port.worktreeInactive || run.adopted)) {
       const retired = await git.retire({ ...run, delivery }, async () => {
         const tasks = await this.list();
         if (tasks.some(entry => entry.id !== run.id && !TERMINAL.has(entry.status) &&
             (entry.gitPlan?.cwd === run.gitPlan!.cwd || entry.cwd === run.gitPlan!.cwd))) return false;
+        // The delivery worktree of an adopted run is created by Zelqio Flow and has no agent or Paseo workspace.
+        if (run.adopted) return true;
         const owners = run.history.flatMap(event => event.agentId ? [event.agentId] : []);
         if (run.current) owners.push(run.current.agentId);
         return this.deps.port.worktreeInactive!(run.gitPlan!.workspaceId!, run.gitPlan!.cwd!, owners);
