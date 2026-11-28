@@ -2975,10 +2975,20 @@
       "role": "QA",
       "risk": "medium",
       "acceptance": "Una tarea corta con proveedores reales del usuario recorre el flujo y entrega su resultado, con el consumo mínimo y sin cambios de cuenta ni créditos",
-      "status": "todo",
-      "evidence": [],
-      "owner": null,
-      "branch": null,
+      "status": "in_progress",
+      "evidence": [
+        {
+          "kind": "local",
+          "command": "paseo plugin install en modo desarrollo; node live/t1..t3 contra el daemon habitual 0.17.4",
+          "result": "PASS",
+          "sha": "e34dd7e400ce4480c028eebcec8dd0a414f917fc",
+          "date": "2026-11-28",
+          "notes": "Instalado sin reiniciar el daemon ni cambiar otros plugins; seleccion, creacion de agentes nativos, Automatic al crear, sesion normal intacta, persistencia ante recarga y consulta de cuotas verificados con Claude, Codex y OpenCode reales; la delegacion espera la aprobacion de permisos del propietario. Ver docs/evidence/S11-T08-real-daemon.md",
+          "limitations": "Pendiente la validacion visual en iOS y un agotamiento natural de cuota"
+        }
+      ],
+      "owner": "orchestrator",
+      "branch": "docs/s11-t08-real-daemon",
       "pr": null,
       "blockers": []
     }
