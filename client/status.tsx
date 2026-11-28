@@ -189,7 +189,8 @@ function RunsSection() {
           prUrl,
         ].filter(Boolean).join(" · ");
         const effective = run.effective ? t("runs.effective", { mode: t(`options.mode.${run.effective.mode}`), strategy: t(`options.strategy.${run.effective.strategy}`) }) : "";
-        const hint = [t(`runs.status.${run.status}`), effective, using, waiting, stalledHint(run), gitHint, detail.slice(0, 200)]
+        const review = run.status === "delivered" && run.outcome?.state === "needs_review" ? t("runs.review", { notes: run.outcome.notes.join("; ") }) : "";
+        const hint = [review || t(`runs.status.${run.status}`), effective, using, waiting, stalledHint(run), gitHint, detail.slice(0, 200)]
           .filter(Boolean).join(" · ");
         const active = run.status === "queued" || run.status === "running" || run.status === "waiting_quota";
         return active ? (

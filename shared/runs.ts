@@ -92,6 +92,14 @@ export const runRecord = z.strictObject({
   adopted: runAdoption.optional(),
   /** Set while the agent reports running but has made no progress for a long time. Cleared when progress resumes. */
   stall: z.strictObject({ lastProgressAt: epoch }).optional(),
+  /**
+   * Finishing a session is not the same as meeting its goal. The run is delivered when its agent finishes; the outcome
+   * says whether Zelqio Flow saw signs that the goal was not fully met. Absent signs it stays "ok", which is not a proof.
+   */
+  outcome: z.strictObject({
+    state: z.enum(["ok", "needs_review"]),
+    notes: z.array(z.string().max(200)).max(5),
+  }).nullable().default(null),
   attention: z.boolean(),
   result: z.string().nullable(),
   error: z.string().nullable(),

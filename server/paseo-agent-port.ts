@@ -103,6 +103,17 @@ export function paseoAgentPort(api: () => PaseoApi): AgentPort {
       return replies.length ? (replies[replies.length - 1]?.text ?? null) : null;
     },
 
+    async failedTools(agentId) {
+      const page = await api().agents.ref(agentId).timeline.refetch({ direction: "tail", limit: 80 });
+      const items = entriesOf(page).map(entry => entry.item as { type?: string; name?: string; status?: string } | undefined);
+      const start = items.map(item => item?.type).lastIndexOf("user_message");
+      const last = new Map<string, string | undefined>();
+      for (const item of items.slice(start + 1)) {
+        if (item?.type === "tool_call" && item.name && /zelqio_/.test(item.name)) last.set(item.name, item.status);
+      }
+      return [...last].filter(([, status]) => status === "failed").map(([name]) => name.replace(/^mcp__[^_]*__/, ""));
+    },
+
     async firstUserMessage(agentId) {
       const page = await api().agents.ref(agentId).timeline.refetch({ direction: "tail", limit: 200 });
       const first = entriesOf(page).map(entry => entry.item).find(item => item?.type === "user_message" && item.text);

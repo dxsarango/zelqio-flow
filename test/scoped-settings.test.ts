@@ -251,7 +251,7 @@ describe("the effective values drive runs, delivery and routing", () => {
       providers, remoteAuthorization: "per_project",
       projects: { [WORK]: project({ strategy: "economy", mode: "smart_review", git: { workflow: "pull_request" } }) },
     });
-    const run = await manager.submit({ prompt: "Do it", cwd: `${WORK}/`, mode: "review_first" });
+    const run = await manager.submit({ complexity: "medium", prompt: "Do it", cwd: `${WORK}/`, mode: "review_first" });
     expect(run).toMatchObject({
       projectKey: WORK, overrides: { mode: "review_first" },
       effective: { strategy: "economy", mode: "review_first", workflow: "pull_request", remoteAuthorization: "per_project" },
@@ -263,7 +263,7 @@ describe("the effective values drive runs, delivery and routing", () => {
   });
 
   it("a run without overrides records no session overrides and the global values", async () => {
-    const run = await manager.submit({ prompt: "Do it", cwd: WORK });
+    const run = await manager.submit({ complexity: "medium", prompt: "Do it", cwd: WORK });
     expect(run.overrides).toBeUndefined();
     expect(run.effective).toEqual({ strategy: "balanced", mode: "review_first", workflow: "local_only", remoteAuthorization: "denied" });
   });
@@ -281,7 +281,7 @@ describe("the effective values drive runs, delivery and routing", () => {
       providers, remoteAuthorization: "per_project",
       projects: { [WORK]: project({ mode: "smart_review", git: { workflow: "pull_request" } }) },
     });
-    await manager.submit({ prompt: "Do it", cwd: WORK });
+    await manager.submit({ complexity: "medium", prompt: "Do it", cwd: WORK });
     await finish();
     expect(delivered).toHaveLength(1);
     expect(delivered[0]).toMatchObject({ mode: "smart_review", git: { workflow: "pull_request" }, remoteAuthorization: "per_project" });
@@ -292,14 +292,14 @@ describe("the effective values drive runs, delivery and routing", () => {
       providers, remoteAuthorization: "denied",
       projects: { [WORK]: project({ git: { workflow: "pull_request" }, remoteAuthorization: "per_project" }) },
     });
-    await manager.submit({ prompt: "Do it", cwd: WORK });
+    await manager.submit({ complexity: "medium", prompt: "Do it", cwd: WORK });
     await finish();
     expect(delivered[0]).toMatchObject({ remoteAuthorization: "denied", git: { workflow: "pull_request" } });
   });
 
   it("a delegated task inherits the project and the session overrides of its coordinator", async () => {
     saved = settings({ providers, projects: { [WORK]: project({ strategy: "economy" }) } });
-    const parent = await manager.submit({ prompt: "Coordinate", cwd: WORK, mode: "smart_review" });
+    const parent = await manager.submit({ complexity: "medium", prompt: "Coordinate", cwd: WORK, mode: "smart_review" });
     const child = await manager.delegate(parent.current!.agentId, { title: "Part", prompt: "Do a part", capability: "review" });
     expect(child).toMatchObject({ projectKey: WORK, overrides: { mode: "smart_review" } });
   });

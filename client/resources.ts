@@ -7,7 +7,8 @@ export const resources = {
       control: "Orchestration · {{mode}}",
       disabled: "Disabled",
       automatic: "Automatic",
-      inactive: "This marks the draft. Automatic model selection is still disabled.",
+      hintDisabled: "Turn on Automatic and Zelqio Flow chooses the provider, model and reasoning level among the ones you authorized when you send.",
+      hintAutomatic: "Zelqio Flow chooses the provider, model and reasoning level when you send. Turn it off to keep your own choice.",
       saveFailed: "Could not update the draft.",
       remember: "Remember this choice on this host",
       rememberedAutomatic: "Saved preference: Automatic. Use the switch to apply it to this draft.",
@@ -62,6 +63,7 @@ export const resources = {
       using: "{{provider}} · {{model}}",
       waitingUntil: "Waiting for the limit to reset, check at {{at}}",
       takeover: "Needs your attention in Paseo",
+      review: "Finished, but check it: {{notes}}",
       stalled: "No progress for {{minutes}} minutes: check this agent in Paseo",
       effective: "Mode {{mode}} · strategy {{strategy}}",
       git: {
@@ -127,6 +129,7 @@ export const resources = {
       },
     },
     options: {
+      effort: { low: "Low", medium: "Medium", high: "High" },
       capability: {
         plan: "Plan",
         coordinate: "Coordinate",
@@ -237,6 +240,8 @@ export const resources = {
     },
     prefs: {
       title: "Zelqio Flow",
+      automaticEffort: "Automatic reasoning level",
+      automaticEffortHint: "Zelqio Flow cannot see your request when it picks the model in a new agent, so it uses this level. Requests sent from Zelqio Flow itself are judged from their text.",
       preventSleep: "Prevent sleep while working",
       preventSleepHint: "While Zelqio Flow has work in progress the computer does not go to sleep. The screen can still turn off and your power plan is not changed. It lets go as soon as the work ends.",
       sections: {
@@ -335,7 +340,8 @@ export const resources = {
       control: "Orquestación · {{mode}}",
       disabled: "Desactivada",
       automatic: "Automática",
-      inactive: "Esto marca el borrador. La selección automática de modelos sigue desactivada.",
+      hintDisabled: "Activa Automatic y Zelqio Flow elige el proveedor, el modelo y el nivel de razonamiento entre los que autorizaste al enviar.",
+      hintAutomatic: "Zelqio Flow elige el proveedor, el modelo y el nivel de razonamiento al enviar. Desactívalo para conservar tu elección.",
       saveFailed: "No se pudo actualizar el borrador.",
       remember: "Recordar esta elección en este host",
       rememberedAutomatic: "Preferencia guardada de modo automático. Usa el selector para aplicarla a este borrador.",
@@ -390,6 +396,7 @@ export const resources = {
       using: "{{provider}} · {{model}}",
       waitingUntil: "Esperando a que se restablezca el límite, se comprobará a las {{at}}",
       takeover: "Requiere tu atención en Paseo",
+      review: "Terminó, pero revísala: {{notes}}",
       stalled: "Sin progreso desde hace {{minutes}} minutos: revisa este agente en Paseo",
       effective: "Modo {{mode}} · estrategia {{strategy}}",
       git: {
@@ -455,6 +462,7 @@ export const resources = {
       },
     },
     options: {
+      effort: { low: "Bajo", medium: "Medio", high: "Alto" },
       capability: {
         plan: "Planificar",
         coordinate: "Coordinar",
@@ -565,6 +573,8 @@ export const resources = {
     },
     prefs: {
       title: "Zelqio Flow",
+      automaticEffort: "Nivel de razonamiento de Automatic",
+      automaticEffortHint: "Zelqio Flow no ve tu solicitud al elegir el modelo en un agente nuevo, así que usa este nivel. Las solicitudes enviadas desde Zelqio Flow se valoran por su texto.",
       preventSleep: "Evitar la suspensión mientras trabaja",
       preventSleepHint: "Mientras Zelqio Flow tiene trabajo en curso el equipo no se suspende. La pantalla puede apagarse y tu plan de energía no cambia. Se libera en cuanto termina el trabajo.",
       sections: {

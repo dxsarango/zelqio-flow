@@ -41,7 +41,7 @@ export function DraftOrchestrationControl({ theme }: PluginComposerItemProps) {
         testID="zelqio-orchestration-draft"
         accessibilityRole="switch"
         accessibilityLabel={t("orchestration.title")}
-        accessibilityHint={t("orchestration.inactive")}
+        accessibilityHint={t(automatic ? "orchestration.hintAutomatic" : "orchestration.hintDisabled")}
         accessibilityState={{ checked: automatic, disabled: saving }}
         aria-checked={automatic}
         disabled={saving}
@@ -64,7 +64,7 @@ export function DraftOrchestrationControl({ theme }: PluginComposerItemProps) {
       </Pressable>
       {automatic || failed ? (
         <Text accessibilityRole={failed ? "alert" : undefined} style={{ color: failed ? colors.statusDanger : colors.foregroundMuted, fontSize: 12, marginTop: 3 }}>
-          {t(failed ? "orchestration.saveFailed" : "orchestration.inactive")}
+          {t(failed ? "orchestration.saveFailed" : "orchestration.hintAutomatic")}
         </Text>
       ) : null}
       {!automatic && remembered === "automatic" ? (

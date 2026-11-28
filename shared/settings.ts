@@ -79,6 +79,8 @@ export const zelqioSettings = z
     remoteAuthorization: remoteAuthorization.default("denied"),
     /** Power Management: keep the computer awake only while work is in progress. Off until the user turns it on. */
     power: z.strictObject({ preventSleep: z.boolean().default(false) }).default({ preventSleep: false }),
+    /** Reasoning level Automatic uses when it cannot see the request (the creation hook gets no prompt). */
+    automaticEffort: z.enum(["low", "medium", "high"]).default("medium"),
     /** Per-project overrides of strategy, mode, workflow and remote authorization, keyed by `normalizeProjectKey`. */
     projects: z.record(projectKey, projectOverride).refine((all) => Object.keys(all).length <= 200, "too many projects").default({}),
     /** How long finished runs and their results stay on this machine. */
@@ -103,6 +105,7 @@ export function defaultSettings(): ZelqioSettings {
     git: { workflow: "local_only" },
     remoteAuthorization: "denied",
     power: { preventSleep: false },
+    automaticEffort: "medium",
     projects: {},
     retention: { ...DEFAULT_RETENTION },
   };
