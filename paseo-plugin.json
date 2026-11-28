@@ -1,7 +1,7 @@
 {
   "id": "zelqio-flow",
   "name": "Zelqio Flow",
-  "description": "Intelligent routing and multi-agent orchestration for Paseo. Foundation scaffold: no effects are enabled.",
+  "description": "Orchestration on top of Paseo: picks among the models you authorize, coordinates native agents, reassigns or waits when a provider reaches its limit, and delivers through Git.",
   "requirements": {
     "paseo": ">=0.17.4 <0.18.0"
   }
