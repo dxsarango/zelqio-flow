@@ -64,7 +64,7 @@ describe("run manager: real orchestration loop over native agents", () => {
   let settings: ZelqioSettings;
   let catalog: ProviderCatalogData;
 
-  const build = (extra: { maxConcurrent?: number; maxAttempts?: number; roles?: import("../shared/roles").RolesConfig } = {}) => new RunManager({
+  const build = (extra: { maxConcurrent?: number; maxAttempts?: number; stallMs?: number; roles?: import("../shared/roles").RolesConfig } = {}) => new RunManager({
     port: paseo,
     store: new VersionedStore({ dir: directory, name: "runs", version: 1, schema: runsState, defaults: () => ({ runs: [] }) }),
     attempts: new AttemptJournal(directory, () => now),
@@ -76,6 +76,7 @@ describe("run manager: real orchestration loop over native agents", () => {
     recheckMs: 5 * 60_000,
     maxConcurrent: extra.maxConcurrent,
     maxAttempts: extra.maxAttempts,
+    stallMs: extra.stallMs,
   });
   const use = (id: string, use: "primary" | "auxiliary", funding: "subscription" | "free" | "consumption" = "subscription") => {
     settings = { ...settings, providers: { ...settings.providers, [id]: { use, funding } } };
@@ -449,5 +450,129 @@ describe("run manager: real orchestration loop over native agents", () => {
     await manager.submit({ prompt: "Write the docs", cwd: "/work/repo", role: "doc_writer", capability: "docs" });
     expect(paseo.created.map(item => item.provider)).toEqual(["beta", "alpha"]);
     await expect(manager.submit({ prompt: "x", cwd: "/work/repo", role: "nobody" })).rejects.toThrow(/Unknown role/);
+  });
+  describe("stall detection", () => {
+    const MINUTE = 60_000;
+    const quiet = (id: string, since: number) => { paseo.agents.get(id)!.updatedAt = since; };
+
+    it("flags a running agent that made no progress for a long time, once, without touching it", async () => {
+      use("alpha", "primary");
+      const manager = build();
+      await submit(manager);
+      quiet("agent-1", now);
+      now += 44 * MINUTE;
+      await manager.tick();
+      expect((await manager.list())[0]).toMatchObject({ status: "running", attention: false });
+      now += 2 * MINUTE;
+      await manager.tick();
+      await manager.tick();
+      const [run] = await manager.list();
+      expect(run).toMatchObject({ status: "running", attention: true, stall: { lastProgressAt: START } });
+      expect(run.history.filter(event => event.kind === "stalled")).toEqual([
+        expect.objectContaining({ agentId: "agent-1", note: "no progress for 46 minutes" }),
+      ]);
+      expect(paseo.created).toHaveLength(1);
+      expect(paseo.agents.get("agent-1")).toMatchObject({ status: "running", sent: [] });
+    });
+
+    it("clears the flag when the agent makes progress again", async () => {
+      use("alpha", "primary");
+      const manager = build();
+      await submit(manager);
+      quiet("agent-1", now);
+      now += 60 * MINUTE;
+      await manager.tick();
+      expect((await manager.list())[0].stall).toBeDefined();
+      quiet("agent-1", now - MINUTE);
+      await manager.tick();
+      const [run] = await manager.list();
+      expect(run).toMatchObject({ attention: false });
+      expect(run).not.toHaveProperty("stall");
+      expect(run.history.map(event => event.kind).slice(-2)).toEqual(["stalled", "progress"]);
+    });
+
+    it("uses the turn start when the agent has no later update, and a configured threshold", async () => {
+      use("alpha", "primary");
+      const manager = build({ stallMs: 10 * MINUTE });
+      await submit(manager);
+      paseo.agents.get("agent-1")!.turnStartedAt = now;
+      now += 11 * MINUTE;
+      await manager.tick();
+      expect((await manager.list())[0]).toMatchObject({ attention: true, stall: { lastProgressAt: START } });
+    });
+
+    it("never flags an agent that waits for a permission the user must answer", async () => {
+      use("alpha", "primary");
+      const manager = build();
+      await submit(manager);
+      quiet("agent-1", now);
+      paseo.agents.get("agent-1")!.pendingPermissions = 1;
+      now += 3 * HOUR;
+      await manager.tick();
+      const [run] = await manager.list();
+      expect(run).toMatchObject({ attention: true });
+      expect(run).not.toHaveProperty("stall");
+      expect(run.history.some(event => event.kind === "stalled")).toBe(false);
+    });
+
+    it("replaces the stall flag with the permission request when one appears", async () => {
+      use("alpha", "primary");
+      const manager = build();
+      await submit(manager);
+      quiet("agent-1", now);
+      now += HOUR;
+      await manager.tick();
+      expect((await manager.list())[0].stall).toBeDefined();
+      paseo.agents.get("agent-1")!.pendingPermissions = 1;
+      await manager.tick();
+      const [run] = await manager.list();
+      expect(run).toMatchObject({ attention: true });
+      expect(run).not.toHaveProperty("stall");
+    });
+
+    it("does not confuse a stall with waiting for quota", async () => {
+      use("alpha", "primary");
+      const manager = build();
+      await submit(manager);
+      quiet("agent-1", now);
+      now += HOUR;
+      await manager.tick();
+      expect((await manager.list())[0].stall).toBeDefined();
+      paseo.fail("agent-1", "Usage limit reached. Try again in 1 hour.");
+      await manager.tick();
+      const waiting = (await manager.list())[0];
+      expect(waiting).toMatchObject({ status: "waiting_quota", attention: false });
+      expect(waiting).not.toHaveProperty("stall");
+      now += 5 * HOUR;
+      await manager.tick();
+      expect((await manager.list())[0].history.filter(event => event.kind === "stalled")).toHaveLength(1);
+    });
+
+    it("does not flag an agent without a known update time or when the check is off", async () => {
+      use("alpha", "primary");
+      const manager = build();
+      await submit(manager);
+      now += 5 * HOUR;
+      await manager.tick();
+      expect((await manager.list())[0]).toMatchObject({ attention: false });
+      expect((await manager.list())[0]).not.toHaveProperty("stall");
+      const off = build({ stallMs: 0 });
+      quiet("agent-1", START);
+      await off.tick();
+      expect((await off.list())[0]).not.toHaveProperty("stall");
+    });
+
+    it("clears the flag when the run delivers its answer", async () => {
+      use("alpha", "primary");
+      const manager = build();
+      await submit(manager);
+      quiet("agent-1", now);
+      now += HOUR;
+      await manager.tick();
+      paseo.finish("agent-1", "Done.");
+      await manager.tick();
+      expect((await manager.list())[0]).toMatchObject({ status: "delivered", attention: false });
+      expect((await manager.list())[0]).not.toHaveProperty("stall");
+    });
   });
 });

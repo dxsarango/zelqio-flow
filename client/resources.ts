@@ -62,6 +62,7 @@ export const resources = {
       using: "{{provider}} · {{model}}",
       waitingUntil: "Waiting for the limit to reset, check at {{at}}",
       takeover: "Needs your attention in Paseo",
+      stalled: "No progress for {{minutes}} minutes: check this agent in Paseo",
       git: {
         branch: "Branch {{branch}}",
         pending: "Preparing Git delivery",
@@ -76,6 +77,13 @@ export const resources = {
         integrated: "Integrated into the coordinator branch",
         blocked: "Git delivery stopped. Inspect the branch and any open pull request.",
         unmanaged: "Native session. Review and deliver changes in its workspace.",
+        manual: "Manual delivery needed",
+        next: "Next step: {{command}}",
+        reasons: {
+          main_checkout: "The agent works in your main checkout, so Zelqio Flow does not commit or publish there.",
+          baseline_dirty: "The checkout already had uncommitted changes when the agent started, so its changes cannot be told apart from yours.",
+          checkout_moved: "The checkout no longer follows the history it had when the agent started.",
+        },
         retained: "Worktree retained",
         open: "Open pull request",
       },
@@ -329,6 +337,7 @@ export const resources = {
       using: "{{provider}} · {{model}}",
       waitingUntil: "Esperando a que se restablezca el límite, se comprobará a las {{at}}",
       takeover: "Requiere tu atención en Paseo",
+      stalled: "Sin progreso desde hace {{minutes}} minutos: revisa este agente en Paseo",
       git: {
         branch: "Rama {{branch}}",
         pending: "Preparando la entrega Git",
@@ -343,6 +352,13 @@ export const resources = {
         integrated: "Integrado en la rama del coordinador",
         blocked: "Entrega Git detenida. Revisa la rama y el pull request si está abierto.",
         unmanaged: "Sesión nativa. Revisa y entrega los cambios en su espacio de trabajo.",
+        manual: "Requiere entrega manual",
+        next: "Siguiente paso: {{command}}",
+        reasons: {
+          main_checkout: "El agente trabaja en tu checkout principal, así que Zelqio Flow no hace commits ni publica allí.",
+          baseline_dirty: "El checkout ya tenía cambios sin confirmar cuando el agente empezó, por lo que no se pueden distinguir de los tuyos.",
+          checkout_moved: "El checkout ya no sigue el historial que tenía cuando el agente empezó.",
+        },
         retained: "Worktree conservado",
         open: "Abrir pull request",
       },
