@@ -310,6 +310,14 @@ describe("the run manager delivers adopted sessions", { timeout: 120_000 }, () =
     expect(await git(source, "branch", "--list")).toBe("* main");
   });
 
+  it("leaves the checkout to the person when an adopted run is stopped", async () => {
+    const { state, linked, delivery } = await fixture();
+    const cwd = await linked("stopped");
+    const runs = await manager(delivery, state, new Port());
+    const run = await runs.adopt({ agentId: "agent-4", provider: "alpha", model: "m", cwd });
+    expect((await runs.cancel(run.id)).delivery).toEqual({ state: "unmanaged" });
+  });
+
   it("keeps non-repository agents unmanaged and old stored runs readable", async () => {
     const { root, state, delivery } = await fixture();
     const plain = join(root, "plain");

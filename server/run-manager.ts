@@ -667,6 +667,11 @@ export class RunManager {
     let run = original;
     if (!git || !run.gitPlan?.cwd && !run.adopted) return;
     let delivery = run.delivery;
+    // An adopted run that ended without an answer leaves its checkout to the person: there is nothing to deliver.
+    if (run.adopted && !run.gitPlan && (run.status === "failed" || run.status === "cancelled") && delivery?.state === "pending") {
+      await this.save({ ...run, delivery: { state: "unmanaged" } });
+      return;
+    }
     if (run.status === "delivered" && (delivery?.state === "pending" ||
         delivery?.nextAt !== undefined && this.clock() >= delivery.nextAt)) {
       const previous = delivery;
