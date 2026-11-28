@@ -22,7 +22,11 @@ export const workMode = z.enum(MODES);
 export const gitWorkflow = z.enum(WORKFLOWS);
 export const remoteAuthorization = z.enum(REMOTE_AUTHORIZATIONS);
 
-export const providerSetting = z.strictObject({ use: providerUse, funding });
+/**
+ * Per provider: how it is used, how it is funded and which models the user authorizes. The order of `models` is the
+ * order of preference. Without a list only the provider's default model in Paseo is authorized, never every model it offers.
+ */
+export const providerSetting = z.strictObject({ use: providerUse, funding, models: z.array(z.string().min(1)).max(50).optional() });
 
 export const zelqioSettings = z
   .strictObject({

@@ -19,6 +19,8 @@ export interface RoutingModelFacts {
   suspendedSince?: number;
   reservePct?: number;
   lastSelectedAt?: number;
+  /** Position in the user's list of authorized models for the provider; earlier is preferred when scores tie. */
+  order?: number;
 }
 
 export interface RoutingRequest {
@@ -131,14 +133,18 @@ export function route(request: RoutingRequest): RoutingDecision {
       if (!fresh && (!allowUnknownQuota || reserve > 0 || remaining === 0)) { exclude("quota_unknown"); continue; }
       if (!validPercent(reserve) || (fresh && remaining <= reserve)) { exclude("quota_reserved"); continue; }
 
-      const score = prioritization(settings.strategy, {
+      const score = [...prioritization(settings.strategy, {
         // Compare coarse pressure levels, never raw percentages across providers.
         pressure: fresh ? (remaining <= 30 ? 1 : 0) : 2,
         continuity: continuity?.provider === provider.id && continuity.model === model.id ? 0 : 1,
         quality: facts.quality !== undefined && Number.isFinite(facts.quality) ? -facts.quality : Infinity,
         funding: fundingRank[facts.funding],
         preference: Math.max(0, preference),
-      });
+      }),
+        // Ties: a primary provider before an auxiliary one, then the user's own order of authorized models.
+        setting.use === "primary" ? 0 : 1,
+        facts.order ?? 0,
+      ];
       ranked.push({
         target,
         score: [
