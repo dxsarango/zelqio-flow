@@ -575,4 +575,16 @@ describe("run manager: real orchestration loop over native agents", () => {
       expect((await manager.list())[0]).not.toHaveProperty("stall");
     });
   });
+
+  it("keeps the first message of an adopted agent once it exists, so a handoff can carry the task", async () => {
+    use("alpha", "primary");
+    use("beta", "auxiliary");
+    const manager = build();
+    const native = await paseo.create({ key: "native-2", provider: "alpha", model: "alpha-model", cwd: "/work/repo", prompt: "x", title: "t", metadata: {} });
+    const adopted = await manager.adopt({ agentId: native.id, provider: "alpha", model: "alpha-model", cwd: "/work/repo" });
+    expect(adopted.prompt).toMatch(/previous agent's conversation/);
+    paseo.firstMessages.set(native.id, "Document the parser");
+    await manager.tick();
+    expect((await manager.list())[0].prompt).toBe("Document the parser");
+  });
 });
