@@ -10,6 +10,7 @@ import { STRATEGIES, type ZelqioSettings } from "../shared/settings";
 import { runsCancelRpc, runsListRpc } from "../shared/runs";
 import { statusRpc } from "../shared/status";
 import { displayedUsageStatus, usageListRpc } from "../shared/usage";
+import { dateFormatter } from "./format";
 import { useCatalog, useZelqioSettings } from "./settings-common";
 import { messages } from "./translations";
 
@@ -102,7 +103,7 @@ function UsageSection() {
   }, []);
   const reports = usage.data?.reports ?? [];
   const unavailable = usage.isError || usage.data?.status === "unavailable";
-  const dates = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
+  const dates = dateFormatter(locale, "medium");
   const percent = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 });
   return (
     <SettingsSection title={t("resources.usage")} testID="zelqio-usage">
@@ -156,7 +157,7 @@ function RunsSection() {
     refetchInterval: 10_000,
     retry: false,
   });
-  const dates = new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" });
+  const dates = dateFormatter(locale, "short");
   const manualReason = (reason: string | undefined) =>
     reason === "main_checkout" ? t("runs.git.reasons.main_checkout")
       : reason === "baseline_dirty" ? t("runs.git.reasons.baseline_dirty")

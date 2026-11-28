@@ -320,7 +320,7 @@ export class RunManager {
       for (const run of runs) {
         const latest = (await this.find(run.id)) ?? run;
         try {
-          if (latest.status === "running") await this.reconcile(latest);
+          if (latest.status === "running") await this.reconcile(await this.capturePrompt(latest));
           else if (latest.status === "waiting_quota" && latest.resumeAt !== null && this.clock() >= latest.resumeAt) await this.recover(latest);
           else if (TERMINAL.has(latest.status)) await this.advanceDelivery(latest);
         } catch (error) {
@@ -561,6 +561,16 @@ export class RunManager {
         error: working.gitPlan ? "Could not create the agent in its verified worktree." :
           clip(redactSecrets(error instanceof Error ? error.message : "Could not create the agent."), 300) }, "failed"));
     }
+  }
+
+  /** An agent created natively has its first message only after creation: keep it so a handoff can carry the task. */
+  private async capturePrompt(run: RunRecord): Promise<RunRecord> {
+    if (run.prompt !== ADOPTED_PROMPT || !run.current) return run;
+    const first = await this.deps.port.firstUserMessage(run.current.agentId).catch(() => null);
+    if (!first) return run;
+    const next = { ...run, prompt: clip(first, 20_000) ?? run.prompt };
+    await this.save(next);
+    return next;
   }
 
   private async reconcile(run: RunRecord, hint?: { error?: { message: string; code?: string | null } }): Promise<void> {
